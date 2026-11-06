@@ -1,0 +1,15 @@
+[package]
+name = "null_cli"
+description = "Standalone checking and formatting of Null files (not built yet)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "null"
+path = "src/main.rs"
+
+[lints]
+workspace = true
