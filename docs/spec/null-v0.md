@@ -230,7 +230,9 @@ The formatter prints one form: canonical order of attributes (the RNA definition
 
 ## 16. Live reload
 
-Saving a file (by any editor, an AI or `git checkout`) makes Sau, while it is open:
+Changes are live in both directions, all the time, the way every query in a Convex app updates the moment its data or code changes (Sau's roadmap, design decision 9). Each change, from any source, is one checked, atomic transaction with a revision number, and every view (viewport, editors, code views, the language server's clients and the gateway's subscribers) follows the same revision.
+
+There is no run step and no separate save step (the user, November 6, 2026: changes "with hot reload open and autosave, rather than making scripts"). Sau's own code editor applies an edit as soon as the text parses, a fraction of a second after typing stops, and writes it to disk. Saving a file in any other editor, an AI's edit or a `git checkout` makes Sau, while it is open:
 
 1. read and parse the changed files off the main thread;
 2. check them against the schema; on any error, keep the last good state, show the diagnostics in the code view and the status bar, and stop;
