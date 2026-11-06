@@ -2,7 +2,7 @@
 
 Draft v0, November 6, 2026. Nothing is built yet. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
 
-Null is the source code of a Sau project. A project is a folder of Null files, media and data files, laid out by Shoon (`Shoon/docs/spec/shoon-v0.md`). Sau reads the folder, shows it, renders it and edits it. People and AI change a project by editing its files directly, and every change appears live. Sau's own edits are written back into the same files.
+Null is the source code of a Sau project. A project is a folder of Null files, media and data files, laid out by Cosmósis (`Cosmosis/docs/spec/cosmosis-v0.md`). Sau reads the folder, shows it, renders it and edits it. People and AI change a project by editing its files directly, and every change appears live. Sau's own edits are written back into the same files.
 
 ## 1. Principles
 
@@ -165,7 +165,7 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 - **Handles.** Every datablock written in Null has a handle, `@pier`, unique within the project for its kind. The handle is the identity Null uses; the quoted string after it is Blender's display name, which may change freely (`object @pier "Pier"`). A handle may be omitted when the name is a valid handle and the same (`object "Pier"` gives `@pier`).
 - **Persistent IDs.** Behind every handle Sau keeps a persistent ID in DNA, so a rename in either Sau or the file never breaks links. The map from handles to IDs is a cache in `.sau/`, rebuilt from the files.
 - **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers and action slots are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine.002`.
-- **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@shoon-materials:oak`.
+- **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
 - **Linked libraries** (another `.blend` or another Null project) are packages or `link` nodes naming the source and the handles taken from it. Library overrides are written as the overridden values on top of the linked handle.
 
 ## 8. The objects
@@ -193,7 +193,7 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 | 1. Procedure | Primitives with parameters, modifier stacks, geometry-node graphs, curves and their profiles | Ordinary Null nodes | Hand, AI and Blender's editors alike |
 | 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and a residual data file | As level 1; the residual keeps the result exact |
 
-- **The threshold** between inline and data files is a Shoon setting (proposed default: 2,000 elements). `sau convert --inline` writes everything as text whatever its size.
+- **The threshold** between inline and data files is a Cosmósis setting (proposed default: 2,000 elements). `sau convert --inline` writes everything as text whatever its size.
 - **Data files** are a documented, versioned binary layout of named attribute arrays, named by the SHA-256 of their contents, so the same data is stored once and Git sees a changed hash rather than a binary diff of an unchanged mesh. Their text summary (counts, bounds, attribute names) is printed in the Null file as comments and checked on load.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
 - **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is.
@@ -255,7 +255,7 @@ Every message names the file, line and column, says what was expected, and where
 
 ## 19. Converting `.blend` files
 
-`sau convert scene.blend Scene.sau/` writes a Shoon project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
+`sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
 
 - everything RNA reaches is written as named Null properties;
 - data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
@@ -266,7 +266,7 @@ Correctness is checked by a field-by-field comparison of the original and the ro
 ## 20. Open questions
 
 1. The inline threshold for level 0 data (section 9).
-2. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Shoon, section 3).
+2. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Cosmósis, section 3).
 3. The check vocabulary (section 14), settled in phase 8.
 
 ## 21. What building Null takes
