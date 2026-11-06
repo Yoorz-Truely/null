@@ -10,7 +10,7 @@ Null is the source code of a Sau project. A project is a folder of Null files, m
 2. **Direct.** To change anything, edit the file that holds it to the exact value wanted. A file says what the project is, not how to build it, which is what lets Sau write a dragged object back as one changed line. Python generators (section 13) are optional and secondary.
    **Files describe, commands act.** What the project is lives in files. Doing something to it now (render, bake, play, frame the view, take a screenshot) is a command, the same for a person in a terminal, an AI through its tools and Sau's own buttons.
 3. **Exact.** Any value written reads back to the same bits, and any `.blend` converts to Null and back with no difference.
-4. **Blender's vocabulary.** Every name is a Blender RNA identifier in kebab-case. Someone who knows Blender's interface or its Python API can read Null without learning new words.
+4. **Blender's vocabulary.** Every name is a Blender RNA identifier in kebab-case: `_` written as `-`, enum values in lower case (settled November 6, 2026, decision S16; the mapping is exact both ways for every RNA identifier). Someone who knows Blender's interface or its Python API can read Null without learning new words.
 5. **Readable diffs.** Small records on one line, containers one attribute per line, bulky data apart from intent. A typical edit changes one line.
 6. **Accept liberally, print canonically.** The parser accepts any spelling the spec allows; the formatter prints one canonical form. Diagnostics say exactly what was expected and offer a fix.
 7. **Small and regular.** One node syntax for everything, meaning given by a schema generated from Blender's RNA. An AI that has read this document should write valid files on the first try.
@@ -41,6 +41,8 @@ More options raised November 6, 2026: `.void` (thematic, but used by Half-Life m
 
 ## 3. What kind of language it is
 
+Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender what SVG is to vector graphics**: declarative text the engine renders directly, editable as text or in the app, with high-level elements over exact low-level data (as SVG's shapes over its path data), grouping and transforms, and node graphs as data (as SVG's filters). Every element of a Blender project has a written form, down to the smallest unit Blender stores: "all geometry and logic has to be inside our language without exception, such that we can alter anything and everything by changing a line in the project files". Every term in this spec is defined strictly: what it means, in which unit, and what Blender value it becomes.
+
 | Question | Answer | Why |
 | --- | --- | --- |
 | Scripting language? | No. Declarative, like Scowr, HTML or a typed configuration language: no statements, loops, variables or functions | It describes what the project is, so editing the file edits the thing, and Sau can write edits back. Computation belongs to geometry nodes, drivers and the optional Python generators. |
@@ -48,6 +50,7 @@ More options raised November 6, 2026: `.void` (thematic, but used by Half-Life m
 | Typed? | Statically and strongly, by the schema generated from RNA, with units as part of each type | Every mistake is caught before it reaches the scene. Units stop a length being used as an angle. |
 | High-level or low-level? | Both, by levels (section 9): intent (a cube with a bevel) down to exact vertex arrays | People and AI edit intent; exactness is never lost. |
 | Turing-complete? | No, on purpose. Geometry nodes and drivers are data that Blender evaluates, not Null code | Every file always finishes loading, means one thing, and can be diffed and written back. |
+| Garbage-collected? | No. The toolchain is Rust and the engine Blender's C++ | Nothing pauses the viewport. |
 
 ## 4. A first look
 
@@ -135,7 +138,7 @@ action @lamp-flicker "LampFlicker" {
 
 ## 5. Syntax
 
-Null uses Scowr's node syntax (proposed; `Scowr/docs/spec/scowr-v0.md`, section 4), so the user's two IDEs share one way of writing and one set of front-end crates:
+Null uses Scowr's node syntax (settled November 6, 2026, decision S15; `Scowr/docs/spec/scowr-v0.md`, section 4), so the user's two IDEs share one way of writing and one set of front-end crates:
 
 - A file is a list of nodes. A node is a name, then entries (values and `key=value` properties), then an optional `{ }` block of child nodes.
 - `//` and nestable `/* */` are comments; `/-` comments out a whole node.
@@ -262,10 +265,9 @@ Correctness is checked by a field-by-field comparison of the original and the ro
 
 ## 20. Open questions
 
-1. Whether Null shares Scowr's syntax and front end (section 5), which is recommended.
-2. The inline threshold for level 0 data (section 9).
-3. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Shoon, section 3).
-4. The check vocabulary (section 14), settled in phase 8.
+1. The inline threshold for level 0 data (section 9).
+2. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Shoon, section 3).
+3. The check vocabulary (section 14), settled in phase 8.
 
 ## 21. What building Null takes
 
