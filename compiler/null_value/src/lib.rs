@@ -42,7 +42,10 @@ mod number;
 mod unit;
 
 pub use number::Float;
-pub use unit::{Dimension, ReadError, Unit, print, print_bare, print_in, read, read_int, unit_of};
+pub use unit::{
+    Dimension, ReadError, Scene, Unit, print, print_bare, print_in, print_in_scene, read, read_in,
+    read_int, unit_of,
+};
 
 #[cfg(test)]
 mod tests;

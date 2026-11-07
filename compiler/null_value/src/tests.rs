@@ -492,6 +492,35 @@ fn exact_value(negative: bool, m: u64, e: i64, unit: Unit) -> (bool, BigUint, Bi
     (negative, n, d)
 }
 
+/// `x` (finite) as an exact ratio of its magnitude, for a float32 of the scene.
+fn f32_ratio(x: f32) -> (BigUint, BigUint) {
+    float_ratio(f64::from(x))
+}
+
+/// [`exact_value`] in `scene`, from the scene's own floats, independently of the reader: divided
+/// by the unit scale to the dimension's power (as `BKE_unit_value_scale`), and for frames times
+/// fps / fps-base.
+fn exact_in(negative: bool, m: u64, e: i64, unit: Unit, scene: &Scene) -> (bool, BigUint, BigUint) {
+    let (neg, mut n, mut d) = exact_value(negative, m, e, unit);
+    let k = match unit.dimension() {
+        Dimension::Length | Dimension::Velocity | Dimension::Acceleration => 1,
+        Dimension::Area | Dimension::Power => 2,
+        Dimension::Volume | Dimension::Mass => 3,
+        _ => 0,
+    };
+    if k > 0 {
+        let (sn, sd) = f32_ratio(scene.scale_length);
+        n *= sd.pow(k);
+        d *= sn.pow(k);
+    }
+    if unit.dimension() == Dimension::Frames {
+        let (bn, bd) = f32_ratio(scene.fps_base);
+        n *= BigUint::from(scene.fps) * bd;
+        d *= bn;
+    }
+    (neg, n, d)
+}
+
 /// Whether `got` is the exact `n / d` rounded once to the nearest float of its type: the exact
 /// value lies between the midpoints to its neighbours (on them only for an even mantissa).
 fn rounds_once(n: &BigUint, d: &BigUint, got: f64, neighbours: (f64, f64), even: bool) -> bool {
@@ -527,7 +556,7 @@ proptest! {
     fn every_unit_converts_with_one_rounding(negative in any::<bool>(), m in 1..10u64.pow(12), e in -15i64..12) {
         for unit in every_unit() {
             let text = format!("{}{m}e{e}{unit}", if negative { "-" } else { "" });
-            let (neg, n, d) = exact_value(negative, m, e, unit);
+            let (neg, n, d) = exact_in(negative, m, e, unit, &Scene::default());
             let x: f64 = read(&text, unit.dimension()).unwrap();
             if x != 0.0 && x.is_finite() {
                 prop_assert_eq!(x.is_sign_negative(), neg, "{} gave {}", text, x);
@@ -618,13 +647,186 @@ fn every_unit_of_the_spec_reads() {
 
 #[test]
 fn every_rna_unit_has_its_dimension() {
-    // The spec's table: one dimension per RNA unit but `NONE` and frames (`TIME`, 1c-01c).
+    // The spec's table: one dimension per RNA unit but `NONE`, and frames (`TIME`, 1c-01h),
+    // which take the words of seconds.
     let words: Vec<(Dimension, Vec<&str>)> = Dimension::ALL
         .iter()
         .map(|d| (*d, d.units().iter().map(|u| u.suffix()).collect()))
         .collect();
-    assert_eq!(words.len(), 15);
+    assert_eq!(words.len(), 16);
+    let of = |d: Dimension| words.iter().find(|(e, _)| *e == d).unwrap().1.clone();
+    assert_eq!(of(Dimension::Frames), of(Dimension::Seconds));
     for (d, w) in &words {
         assert_eq!(w.is_empty(), *d == Dimension::None, "{d:?}");
     }
+}
+
+// --- The scene: unit scale and frame rate (task 1c-01h) ------------------------------------------
+
+/// `n / d` to 130 significant digits, for the standard library to round: the correctly rounded
+/// float unless the exact value lies within a relative 10^-129 of a rounding boundary.
+fn oracle(negative: bool, n: &BigUint, d: &BigUint) -> String {
+    let ten = BigUint::from(10u32);
+    let lead = ((n.bits() as f64 - d.bits() as f64) * std::f64::consts::LOG10_2).floor() as i64;
+    let s = 130 - lead;
+    let q = if s >= 0 {
+        n * ten.pow(s as u32) / d
+    } else {
+        n / (d * ten.pow((-s) as u32))
+    };
+    format!("{}{q}e{}", if negative { "-" } else { "" }, -s)
+}
+
+fn any_unit() -> impl Strategy<Value = Unit> {
+    let units = every_unit();
+    (0..units.len()).prop_map(move |i| units[i])
+}
+
+fn any_scene() -> impl Strategy<Value = Scene> {
+    (
+        prop_oneof![
+            Just(1.0f32),
+            Just(0.01f32),
+            Just(0.3048f32),
+            Just(1000.0f32),
+            Just(1e-30f32),
+            Just(3e30f32),
+            1e-3f32..1e3f32,
+        ],
+        1u32..240,
+        prop_oneof![Just(1.0f32), Just(1.001f32), 0.5f32..2.0],
+    )
+        .prop_map(|(scale_length, fps, fps_base)| Scene {
+            scale_length,
+            fps,
+            fps_base,
+        })
+}
+
+proptest! {
+    #[test]
+    fn every_unit_in_any_scene_is_one_rounding_from_the_exact_value(m in 1..10u64.pow(17), e in -30i64..30, negative in any::<bool>(), unit in any_unit(), scene in any_scene()) {
+        let text = format!("{}{m}e{e}{unit}", if negative { "-" } else { "" });
+        let (neg, n, d) = exact_in(negative, m, e, unit, &scene);
+        let x: f64 = read_in(&text, unit.dimension(), &scene).unwrap();
+        let y: f32 = read_in(&text, unit.dimension(), &scene).unwrap();
+        if n == BigUint::from(0u32) {
+            prop_assert_eq!(x.to_bits(), 0f64.to_bits(), "{}", text);
+            prop_assert_eq!(y.to_bits(), 0f32.to_bits(), "{}", text);
+        } else {
+            let want = oracle(neg, &n, &d);
+            prop_assert_eq!(x.to_bits(), want.parse::<f64>().unwrap().to_bits(), "{} in {:?}", text, scene);
+            prop_assert_eq!(y.to_bits(), want.parse::<f32>().unwrap().to_bits(), "{} in {:?} (f32)", text, scene);
+        }
+    }
+
+    #[test]
+    fn every_float_in_any_scene_prints_and_reads_back_bit_identical(x in f64_bits(), y in f32_bits(), unit in any_unit(), scene in any_scene()) {
+        if let Some(text) = print_in_scene(x, unit, &scene) {
+            let back: f64 = read_in(&text, unit.dimension(), &scene).unwrap();
+            prop_assert_eq!(back.to_bits(), x.to_bits(), "{:e} printed as {} in {:?}", x, text, scene);
+        }
+        if let Some(text) = print_in_scene(y, unit, &scene) {
+            let back: f32 = read_in(&text, unit.dimension(), &scene).unwrap();
+            prop_assert_eq!(back.to_bits(), y.to_bits(), "{:e} printed as {} in {:?}", y, text, scene);
+        }
+    }
+
+    #[test]
+    fn a_short_value_in_any_scene_prints_back_as_written(m in 1..10u64.pow(6), e in -6i64..6, unit in any_unit(), scene in any_scene()) {
+        // As in a plain scene (S21), when the scene leaves the value finite and nonzero.
+        let text = format!("{}{unit}", Decimal::new(false, &m.to_string(), e).layout());
+        let x: f64 = read_in(&text, unit.dimension(), &scene).unwrap();
+        if x.is_finite() && x != 0.0 {
+            prop_assert_eq!(print_in_scene(x, unit, &scene), Some(text.clone()), "{} in {:?}", text, scene);
+        }
+    }
+
+    #[test]
+    fn the_scene_path_at_scale_one_is_the_plain_one(m in 1..10u64.pow(17), e in -30i64..30, negative in any::<bool>()) {
+        // Every dimension but frames reads through the plain conversions at unit scale 1; the
+        // scene's own arithmetic, forced, gives the same bits.
+        let text = format!("{}{m}e{e}", if negative { "-" } else { "" });
+        let value = Decimal::new(negative, &m.to_string(), e);
+        for unit in every_unit().into_iter().filter(|u| u.dimension() != Dimension::Frames) {
+            let plain: f64 = read(&format!("{text}{unit}"), unit.dimension()).unwrap();
+            let scene: f64 = crate::exact::in_scene(&value, unit.conv(), unit.dimension(), &Scene::default());
+            prop_assert_eq!(scene.to_bits(), plain.to_bits(), "{}{}", text, unit);
+        }
+    }
+}
+
+#[test]
+fn the_scenes_unit_scale_divides_as_blender_does() {
+    // At unit scale 0.01, 1m is 100 Blender units, 1m2 is 10,000 and 1kg is 10^6: the exact
+    // quotients by the float 0.01, rounded once.
+    let s = Scene {
+        scale_length: 0.01,
+        ..Scene::default()
+    };
+    let r = |w: &str, d: Dimension| read_in::<f64>(w, d, &s).unwrap();
+    for (word, dimension) in [
+        ("1m", Dimension::Length),
+        ("1m2", Dimension::Area),
+        ("1kg", Dimension::Mass),
+        ("1W", Dimension::Power),
+        ("1m/s", Dimension::Velocity),
+    ] {
+        let unit = unit_of(word, dimension).unwrap();
+        let (neg, n, d) = exact_in(false, 1, 0, unit, &s);
+        let want: f64 = oracle(neg, &n, &d).parse().unwrap();
+        assert_eq!(r(word, dimension).to_bits(), want.to_bits(), "{word}");
+    }
+    // The float 0.01 is a little under a hundredth, so each is a little over.
+    assert!(r("1m", Dimension::Length) > 100.0 && r("1m", Dimension::Length) < 100.000_01);
+    assert!(r("1m2", Dimension::Area) > 1e4 && r("1m2", Dimension::Area) < 1.000_01e4);
+    assert!(r("1kg", Dimension::Mass) > 1e6 && r("1kg", Dimension::Mass) < 1.000_01e6);
+    // Never scaled: rotations, cameras, wavelengths, times; nor a bare number.
+    assert_eq!(r("90deg", Dimension::Angle), std::f64::consts::FRAC_PI_2);
+    assert_eq!(r("50mm", Dimension::Lens), 50.0);
+    assert_eq!(r("2s", Dimension::Seconds), 2.0);
+    assert_eq!(r("550nm", Dimension::Wavelength), 550.0);
+    assert_eq!(r("3", Dimension::Length), 3.0);
+    // A length prints back in the scene's terms.
+    assert_eq!(
+        print_in_scene(
+            100.0f32,
+            Unit::from_suffix("cm", Dimension::Length).unwrap(),
+            &s
+        )
+        .as_deref(),
+        Some("100cm")
+    );
+}
+
+#[test]
+fn a_time_in_frames_reads_through_the_frame_rate() {
+    // A bare number is frames; seconds are times the frame rate, exactly.
+    assert_eq!(read::<f32>("1.5s", Dimension::Frames), Ok(36.0));
+    assert_eq!(read::<f32>("36", Dimension::Frames), Ok(36.0));
+    assert_eq!(read::<f32>("1min", Dimension::Frames), Ok(1440.0));
+    let ntsc = Scene {
+        fps: 30,
+        fps_base: 1.001,
+        ..Scene::default()
+    };
+    // 1001 s at 30 / 1.001 fps is 30,000 frames, but for float32's 1.001, taken exactly.
+    let frames: f64 = read_in("1001s", Dimension::Frames, &ntsc).unwrap();
+    let unit = unit_of("1s", Dimension::Frames).unwrap();
+    let (neg, n, d) = exact_in(false, 1001, 0, unit, &ntsc);
+    assert_eq!(
+        frames.to_bits(),
+        oracle(neg, &n, &d).parse::<f64>().unwrap().to_bits()
+    );
+    assert!(frames < 30000.0 && frames > 29999.99);
+    assert_eq!(
+        print_in_scene(36.0f32, unit, &Scene::default()).as_deref(),
+        Some("1.5s")
+    );
+    // The scale never touches frames.
+    let scaled = Scene {
+        scale_length: 0.01,
+        ..Scene::default()
+    };
+    assert_eq!(read_in::<f32>("1.5s", Dimension::Frames, &scaled), Ok(36.0));
 }
