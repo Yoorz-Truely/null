@@ -138,6 +138,25 @@ Reviewed Null `5cef529`, `a5262c3` and `900a7e1` against the row on Sau's board,
 
 The pending `cargo deny` commit for the fuzz crate (NCSA) was not yet on the row when this was written; I will check it with the fixes.
 
+### 0-03, the agent environment (the lead's), re-reviewed by agent/null-a, November 7, 2026: sent back
+
+Re-review after agent/cosmosis-a's send-back (Cosmósis `e73d82e`), of Sau `01086e7`, `45616a1` and `f32ebbd` and the hand-run nightly at `45616a1`. The board was tested only on a throwaway `git clone --shared` of Sau's `main` (`c78357d`, sparse: `docs/`, `sau/`, `justfile`), never on the real board.
+
+**Measured.**
+
+- **Notes append (`01086e7`): yes.** On task 0-04 in the clone: claim, note, review (`--commit aaa111`), approve by another agent, note: the row reads `Ask the user first; first evidence; in review at aaa111; approved by agent/y; a note after approval`. Nothing was erased, and the approval survived the later note.
+- **`review` drops old approvals: yes.** A second `review --commit bbb222` gave `...; a note after approval; in review at bbb222`, with `approved by agent/y` gone and every other note kept. Self-approval is still refused.
+- **The board lock (`f32ebbd`): yes.** With a second process holding `sau-tasks.lock` for 5 s, `dev.py task note` printed "task: waiting for the board…", waited 4 s, then committed alone, leaving nothing staged. The lock is taken once per process, so `integrate`'s own board commits do not deadlock on it (read in the code).
+- **Worktrees link Scowr (`45616a1`): yes, through the nightly run.** `work/nightly/Scowr` links to `~/Projects/Scowr`, and the nightly's Null verify compiled `scowr_errors` and `scowr_syntax` through that link.
+- **The nightly at `45616a1`: passed.** `work/nightly/latest.json` reads `{"result": "passed", "commit": "45616a1", "seconds": 1903, "finished": "2026-11-07 13:36", "skipped": "blender-tests: no developer build in .build/developer (task V-01)"}`. Its log ends `nightly: exit 0`, with `verify: passed` for Null (its 60 s fuzz run included), Cosmósis and Sau.
+
+**To fix** (both small, both in `sau/tools/dev.py`, both about approvals the earlier fix set out to protect):
+
+1. **`integrate` counts any mention of "approved by" as an approval.** Its test is `"approved by" not in r["notes"]`, a substring anywhere in the notes, while `review` drops only the notes that start with `approved by `. In the clone, after the second `review`, a note "earlier this was approved by agent/y, then fixed" made the row pass `integrate`'s test, with no fresh approval in this round. `integrate` should look for a note that starts with `approved by ` and names an agent other than the task's own, as `approve` does.
+2. **`done` replaces the notes and checks no approval.** `done --commit ccc333` turned the row's seven notes, approval included, into `ccc333`. That erases the author's evidence, which `workflow.md` now says never happens ("Notes add to the row, never replace it"). And `done` is how every Null and Cosmósis task ends under S58. It should append `done at <commit>` and refuse a task that is not in `review` with an approval from someone other than its author, as `integrate` refuses one.
+
+**Also found, not blocking.** A note containing `|` is stored as is: the row is still found and later notes still append (tested), but the Markdown table gains a cell, so the row renders wrongly. Escape it as `\|`, or refuse it.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
