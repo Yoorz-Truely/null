@@ -7623,8 +7623,6 @@
      "array": [
       3
      ],
-     "subtype": "xyz-length",
-     "unit": "length",
      "range": {
       "hard": [
        -1000000000000.0,
@@ -7636,9 +7634,9 @@
       ]
      },
      "default": [
-      0.0,
-      0.0,
-      0.0
+      1.0,
+      1.0,
+      1.0
      ],
      "applies-to": "mesh"
     }
@@ -7875,8 +7873,6 @@
      "array": [
       3
      ],
-     "subtype": "xyz-length",
-     "unit": "length",
      "range": {
       "hard": [
        -1000000000000.0,
@@ -7888,9 +7884,9 @@
       ]
      },
      "default": [
-      0.0,
-      0.0,
-      0.0
+      1.0,
+      1.0,
+      1.0
      ],
      "applies-to": "mesh"
     }
@@ -7947,8 +7943,6 @@
      "array": [
       3
      ],
-     "subtype": "xyz-length",
-     "unit": "length",
      "range": {
       "hard": [
        -1000000000000.0,
@@ -7960,9 +7954,9 @@
       ]
      },
      "default": [
-      0.0,
-      0.0,
-      0.0
+      1.0,
+      1.0,
+      1.0
      ],
      "applies-to": "mesh"
     }
@@ -8063,8 +8057,6 @@
      "array": [
       3
      ],
-     "subtype": "xyz-length",
-     "unit": "length",
      "range": {
       "hard": [
        -1000000000000.0,
@@ -8076,9 +8068,9 @@
       ]
      },
      "default": [
-      0.0,
-      0.0,
-      0.0
+      1.0,
+      1.0,
+      1.0
      ],
      "applies-to": "mesh"
     }
@@ -8197,8 +8189,6 @@
      "array": [
       3
      ],
-     "subtype": "xyz-length",
-     "unit": "length",
      "range": {
       "hard": [
        -1000000000000.0,
@@ -8210,9 +8200,9 @@
       ]
      },
      "default": [
-      0.0,
-      0.0,
-      0.0
+      1.0,
+      1.0,
+      1.0
      ],
      "applies-to": "mesh"
     }
