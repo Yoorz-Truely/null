@@ -75,6 +75,65 @@ Reviewed Null `34cf222` (the task's only commit) against its row on Sau's board.
 - `every_spec_example_parses_clean_and_prints_back` asserts exactly five examples, so adding one to the spec fails it. That is a reasonable tripwire; the message says why.
 - The spec's own example `modifier @bevel bevel { width 4mm segments 3 }` does not mean what it says under the shared syntax (already recorded on 1a-06). It should be corrected in the spec itself, not only in the checker; for the spec's owner or 1a-17.
 
+### 1a-04, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed Null `95f836b` (code) and `65c6ea7` (report) against the row on Sau's board.
+
+**How.** Read the row, this report and the whole of `compiler/null_value` (`exact.rs`, `number.rs`, `unit.rs`, `tests.rs`). Ran Null's `just verify` on an exact copy of `65c6ea7` (`git archive`, `../Scowr` linked beside it). Checked the reader against an oracle of my own in Python: π from the Chudnovsky series in integers (neither Machin's formula nor the `decimal` recipe the tests' oracle uses), every conversion done exactly in fractions, and a hand-written half-to-even rounding into `f32` and `f64`, itself checked on π, 0.1, the least subnormal and a tie to zero. A probe crate outside Null's workspace fed it the cases.
+
+**Measured.**
+
+- Null's `just verify` on `65c6ea7` exits 0: `null_value`'s 17 tests (1 ignored, the exhaustive one) at Clippy, debug and 4,096 cases in release; `cargo deny`. The property tests at 100,000 cases each, in release: all pass, in 10.7 s. The 21-minute exhaustive test was not rerun.
+- 9,144 oracle cases, all matching bit for bit, and every result printed and read back bit-identical: 6,000 random words (1 to 30 significant digits, exponents -30 to 25, bare and in every unit, `f32` and `f64`), 3,000 degree values written to 25 or 45 digits so that their radians fall within a hair of a rounding midpoint (the hardest case for the π bracket), and the fixed examples. `90deg`, `2.7m` and `5mm` print back as written in `f32` and `f64`.
+- Read by hand, with no fault found: the π bounds are strict (each floored term errs by less than 1, so the error bound of 2(n + 1) per arctangent is generous); the degree bracket is monotonic and ends because π is irrational, the digits a precision cannot use being cut with the bracket widened; `round_ratio` finds its exponent in one step and rounds half to even, through subnormals and to infinity; `from_parts` is exact; lengths are exact decimal shifts and multiples of 254 and 3048, read once by the standard library's correctly rounded parser.
+- Unit errors: a unit of the wrong dimension names the units that fit (`5deg` as a length, `2rad` as a length, `5m` where no unit goes); an unknown one suggests the nearest unit of the right dimension, within two edits (`5mmm` gives `mm`, `5dg` and `5Deg` give `deg`, `5meter` gives none); `deg`, `-` and `-nan` are not numbers.
+
+**On the spec's "converted in float64 and rounded once".** The exact reading is the right one for S21 and S22 ("one exactly defined rule", exact to the stored bits), but it is a change to what the spec says and the spec should say it: "converted exactly and rounded once". Measured with the oracle on 20,000 degree values of 1 to 6 digits: for `f32` storage, converting in `f64` first (`x × (π/180)` in `f64`, as Blender does) and rounding into `f32` gives the same bits as the exact conversion every time; for `f64` storage it differs in 4,304 of 20,000 (21.5 %). So the slice's `f32` angles are unaffected, and only `f64` properties see the difference.
+
+**Findings, none blocking.**
+
+- The shortest print in a unit by search (`deg`, `in`, `ft`) can miss a decimal that exists, and then falls back to bare metres or radians: a value the user wrote in that unit is reprinted without it, which S21 ("Sau writes a value back in the unit its line already uses") would rather keep. Measured over 3,000 random values per row: never for `f32` (5 to 9 digits); for `f64`, only at 16 and 17 significant digits: degrees 0 and 6, feet 1 and 110, inches 2 and 75 (for example `-18750715569787871e-5ft`, a 17-digit value that reads back exactly yet prints as `-57152181056.71343`). The cause is the candidate window, ±1 in the last digit around an `f64` estimate. A value printed this way always reads back exactly, so nothing is lost. For 1a-07 (the minimal-edit writer): divide exactly for `in` and `ft` (by 254 and 3048), and widen the window for `deg`.
+- `5MM` suggests `m`, not `mm`; `5mn` suggests `m` where `mm` is as near. Ties in edit distance go to the first unit listed. Preferring a case-insensitive match first would help.
+- NaN payloads and the scene's unit scale are out of scope, as the report says; the spec should mention NaN when it is next edited.
+
+### 1a-02, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed Null `0edf8f4` against the row on Sau's board.
+
+**How.** Read the row, this report and the whole diff (`names.rs`, `lib.rs`, `tests/slice.rs`, the seven slice files and the eight snapshots). Ran Null's `just verify` on an exact copy of `0edf8f4` (`git archive`, `../Scowr` linked beside it). A probe crate outside Null's workspace checked printing independently, and the slice files were mutated in the copy to see the tests catch it.
+
+**Measured.**
+
+- Null's `just verify` on `0edf8f4` exits 0: `null_syntax`'s 5 unit tests, 6 slice tests and doctest, `null_value`'s 17, in debug and release; Clippy; `cargo deny`.
+- Lossless, independently: the 7 slice files and the 37 `.noll` files of Cosmósis's six corpus drafts (`corpus/slice/`, written without reference to these files) each print back byte for byte, the lexer's tokens and the tree's tokens each cover every byte, and none has a diagnostic. 20,000 random mutations of those 44 files (1 to 6 insertions, deletions or replacements from braces, brackets, quotes, `#"`, `\`, comment openers and closers, CR, CRLF, tab, NUL, BOM, U+2028, multi-byte characters), most of them broken: all lossless by the same three checks, no panic.
+- The tests catch changes: each of five mutations of `object.noll` alone, from the pristine file, fails `every_slice_file_lexes_parses_and_prints_back`: one digit (`0.35m` to `0.36m`), a trailing space, a CR, a doubled space, and `location` capitalised (also a `null-name` error). Restored, the suite passes, and no `.snap.new` is left behind.
+- Coverage: the slice files write every phase 1a construct as the spec writes them: `project`, `scene` (and `collection`), `object` with `location`, `rotation-euler`, `scale`, `parent` and `data`, `mesh` as a `primitive` and as inline `vertices` and `faces`, `material` with a `principled-bsdf`'s `base-color` and `roughness` (as children and as properties, with links and a `layout`), `camera` and `light`; `lexical.noll` adds every lexical form of section 5. `the_slice_covers_its_constructs` fails if one goes missing.
+- `null-name` fits section 18: each message names the file, line and column, says what was expected ("a node name is lower-case words joined by `-`"), and offers the kebab-case spelling as a fix; the code is stable, and section 18 lists codes "such as", so a new one is in keeping. The fixes `frameStart` to `frame-start` and `use2D` to `use2d` follow S16's mapping, and applying them gives a clean file (tested).
+
+**"Done when"** holds: every slice construct lexes and parses to a tree that prints back byte for byte, with snapshot tests, and kebab-case names are enforced.
+
+**Findings, none blocking.**
+
+- Handles are checked only where a handle names a node (`layout`'s `@Tex [0 0]`). In arguments they are not: `object @Pier`, `node @Tex principled-bsdf`, `data mesh @Pier_Deck` and `material @weathered_oak` give no diagnostic, and neither does an upper-case enum value (`rotation-mode=XYZ`, which S16 writes lower-case). The report leaves these to the checker, which is reasonable, but the same handle `@Tex` is then an error in one place and not in the other. For 1a-06: check handle definitions and references, and enum values, under `null-name`.
+- A `null-name` fix is spelling only, not schema-aware: `use2D` becomes `use2d`, which is kebab-case but need not be an RNA name. Once 1a-06 has the schema, the nearest RNA name should be the fix, so that a tool applying fixes does not get two different ones in a row.
+- Scowr's syntax messages reach Null with Scowr's examples: `frame-start=1` written as a node gives `null-syntax: expected a key before =, such as vel=96`, a sound example. For 1a-03 (the parser's error recovery): give Null's diagnostics Null's examples.
+
+## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
+
+In review, November 7, 2026.
+
+**What works.**
+
+- Seven slice files in `compiler/null_syntax/tests/slice/` cover every phase 1a construct: `project`, `scene` and `collection`; `object` with `location`, `rotation-euler`, `scale`, `parent` and `data`; `mesh` as a `primitive` and as inline `vertices` and `faces` lists spanning lines; `material` with a `principled-bsdf`'s `base-color` and `roughness`, links and a `layout` block; `camera` and `light`. A `lexical.noll` adds every lexical form: `;`, `/-` on a node and on a block, `\` continuation, nested block comments, escaped strings, raw strings, bare and `on`/`off` booleans, scientific notation, attributes as properties and as child nodes.
+- `null_syntax` now re-exports the lexer (`lex`) and has `dump`, an indented tree with each token's kind, span and text, for snapshots.
+- Kebab-case (S16) is enforced: `names::check` reports every node name and property key that is not lower-case kebab-case, code `null-name`, with the kebab-case spelling as a fix (`rotation_euler`, `frameStart`, `Rotation_Mode`, `"base color"`, `@Tex` in a layout). A node may be named by a kebab-case handle, as `layout` entries are. Strings are never names in Null. Handles in arguments, and enum values, are left to the checker. `diagnostics` returns syntax and name errors together, in text order.
+
+**Measured.** `cargo test -p null_syntax`: 11 tests and a doctest pass. For each slice file: the lexer finds no errors and its tokens cover the text; the parse has no diagnostics; the tree's tokens are exactly the lexer's (kind and length); the text prints back byte for byte; the tree is an `insta` snapshot (`tests/snapshots/`, 7 trees, 960 lines). The kebab-case messages are a snapshot too, and applying their fixes gives a file with no diagnostics. Null's `just check` exits 0.
+
+**Dependency** (licence checked): `insta` 1 for tests, without default features (Apache-2.0), with `similar` (Apache-2.0), `once_cell`, `tempfile`, `fastrand`, `rustix`, `errno`, `linux-raw-sys`, `r-efi` and `windows-sys` (each offering MIT or Apache-2.0).
+
+**Choices to review.** `null-name` is a new diagnostic code (spec section 18 lists codes "such as"). `to_kebab_case` splits a capital after a lower-case letter (`frameStart`), not after a digit (`use2D` becomes `use2d`).
+
 ## Next
 
-1a-02 once 1a-01 is done, then 1a-03.
+1a-03 once 1a-02 is done: the parser's error recovery for the slice and the first fuzz target.

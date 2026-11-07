@@ -1,0 +1,199 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..420
+  Node@0..115
+    Word@0..6 "object"
+    Whitespace@6..7 " "
+    Arg@7..16
+      Word@7..16 "@shot-cam"
+    Whitespace@16..17 " "
+    Arg@17..26
+      String@17..26 "\"ShotCam\""
+    Whitespace@26..27 " "
+    Block@27..114
+      LBrace@27..28 "{"
+      Newline@28..29 "\n"
+      Whitespace@29..31 "  "
+      Node@31..55
+        Word@31..39 "location"
+        Whitespace@39..40 " "
+        Arg@40..54
+          List@40..54
+            LBracket@40..41 "["
+            Word@41..43 "6m"
+            Whitespace@43..44 " "
+            Word@44..48 "-12m"
+            Whitespace@48..49 " "
+            Word@49..53 "2.1m"
+            RBracket@53..54 "]"
+        Newline@54..55 "\n"
+      Whitespace@55..57 "  "
+      Node@57..93
+        Word@57..71 "rotation-euler"
+        Whitespace@71..72 " "
+        Arg@72..92
+          List@72..92
+            LBracket@72..73 "["
+            Word@73..78 "82deg"
+            Whitespace@78..79 " "
+            Word@79..83 "0deg"
+            Whitespace@83..84 " "
+            Word@84..91 "26.5deg"
+            RBracket@91..92 "]"
+        Newline@92..93 "\n"
+      Whitespace@93..95 "  "
+      Node@95..113
+        Word@95..99 "data"
+        Whitespace@99..100 " "
+        Arg@100..106
+          Word@100..106 "camera"
+        Whitespace@106..107 " "
+        Arg@107..112
+          Word@107..112 "@lens"
+        Newline@112..113 "\n"
+      RBrace@113..114 "}"
+    Newline@114..115 "\n"
+  Newline@115..116 "\n"
+  Node@116..200
+    Word@116..122 "camera"
+    Whitespace@122..123 " "
+    Arg@123..128
+      Word@123..128 "@lens"
+    Whitespace@128..129 " "
+    Arg@129..135
+      String@129..135 "\"Lens\""
+    Whitespace@135..136 " "
+    Block@136..199
+      LBrace@136..137 "{"
+      Newline@137..138 "\n"
+      Whitespace@138..140 "  "
+      Node@140..150
+        Word@140..144 "lens"
+        Whitespace@144..145 " "
+        Arg@145..149
+          Word@145..149 "35mm"
+        Newline@149..150 "\n"
+      Whitespace@150..152 "  "
+      Node@152..168
+        Word@152..162 "clip-start"
+        Whitespace@162..163 " "
+        Arg@163..167
+          Word@163..167 "0.1m"
+        Newline@167..168 "\n"
+      Whitespace@168..170 "  "
+      Node@170..185
+        Word@170..178 "clip-end"
+        Whitespace@178..179 " "
+        Arg@179..184
+          Word@179..184 "1000m"
+        Newline@184..185 "\n"
+      Whitespace@185..187 "  "
+      Node@187..198
+        Word@187..191 "type"
+        Whitespace@191..192 " "
+        Arg@192..197
+          Word@192..197 "persp"
+        Newline@197..198 "\n"
+      RBrace@198..199 "}"
+    Newline@199..200 "\n"
+  Newline@200..201 "\n"
+  Node@201..274
+    Word@201..207 "object"
+    Whitespace@207..208 " "
+    Arg@208..213
+      Word@208..213 "@lamp"
+    Whitespace@213..214 " "
+    Arg@214..220
+      String@214..220 "\"Lamp\""
+    Whitespace@220..221 " "
+    Block@221..273
+      LBrace@221..222 "{"
+      Whitespace@222..223 " "
+      Node@223..248
+        Word@223..231 "location"
+        Whitespace@231..232 " "
+        Arg@232..247
+          List@232..247
+            LBracket@232..233 "["
+            Word@233..237 "0.4m"
+            Whitespace@237..238 " "
+            Word@238..241 "-2m"
+            Whitespace@241..242 " "
+            Word@242..246 "1.8m"
+            RBracket@246..247 "]"
+        Semicolon@247..248 ";"
+      Whitespace@248..249 " "
+      Node@249..272
+        Word@249..253 "data"
+        Whitespace@253..254 " "
+        Arg@254..259
+          Word@254..259 "light"
+        Whitespace@259..260 " "
+        Arg@260..271
+          Word@260..271 "@lamp-light"
+        Whitespace@271..272 " "
+      RBrace@272..273 "}"
+    Newline@273..274 "\n"
+  Newline@274..275 "\n"
+  Node@275..420
+    Word@275..280 "light"
+    Whitespace@280..281 " "
+    Arg@281..292
+      Word@281..292 "@lamp-light"
+    Whitespace@292..293 " "
+    Arg@293..304
+      String@293..304 "\"LampLight\""
+    Whitespace@304..305 " "
+    Block@305..419
+      LBrace@305..306 "{"
+      Newline@306..307 "\n"
+      Whitespace@307..309 "  "
+      Node@309..320
+        Word@309..313 "type"
+        Whitespace@313..314 " "
+        Arg@314..319
+          Word@314..319 "point"
+        Newline@319..320 "\n"
+      Whitespace@320..322 "  "
+      Node@322..334
+        Word@322..328 "energy"
+        Whitespace@328..329 " "
+        Arg@329..333
+          Word@329..333 "800W"
+        Newline@333..334 "\n"
+      Whitespace@334..336 "  "
+      Node@336..356
+        Word@336..341 "color"
+        Whitespace@341..342 " "
+        Arg@342..355
+          List@342..355
+            LBracket@342..343 "["
+            Word@343..344 "1"
+            Whitespace@344..345 " "
+            Word@345..349 "0.78"
+            Whitespace@349..350 " "
+            Word@350..354 "0.52"
+            RBracket@354..355 "]"
+        Newline@355..356 "\n"
+      Whitespace@356..358 "  "
+      Node@358..380
+        Word@358..374 "shadow-soft-size"
+        Whitespace@374..375 " "
+        Arg@375..379
+          Word@375..379 "25mm"
+        Newline@379..380 "\n"
+      Whitespace@380..382 "  "
+      Node@382..393
+        Word@382..392 "use-shadow"
+        Newline@392..393 "\n"
+      Whitespace@393..395 "  "
+      Node@395..418
+        Word@395..413 "use-contact-shadow"
+        Whitespace@413..414 " "
+        Arg@414..417
+          Word@414..417 "off"
+        Newline@417..418 "\n"
+      RBrace@418..419 "}"
+    Newline@419..420 "\n"

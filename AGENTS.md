@@ -20,7 +20,7 @@ Null writes Scowr's node syntax and uses Scowr's front-end crates for it, by pat
 
 | Shared, Scowr's (`../Scowr/compiler/`) | Null's own (`compiler/`) |
 | --- | --- |
-| `scowr_syntax`: lexer, lossless syntax tree, parser with error recovery, incremental reparse, the typed view (`ast`) | `null_syntax`: the only crate that names Scowr's; re-exports the tree and gives diagnostics Null's codes (`null-syntax`) |
+| `scowr_syntax`: lexer, lossless syntax tree, parser with error recovery, incremental reparse, the typed view (`ast`) | `null_syntax`: the only crate that names Scowr's; re-exports the tree, gives syntax diagnostics Null's code (`null-syntax`) and checks that names are kebab-case (`null-name`, S16) |
 | `scowr_errors`: spans, files, diagnostics, fixes, their rendering, `closest` for suggestions | Everything a word means: numbers and units, handles, kinds, the schema from RNA, the checker, the printer and write-back, the language server |
 
 - Every other Null crate depends on `null_syntax`, never on a `scowr_*` crate, so when the shared crates move to their own repository (S15, S55) only `null_syntax`'s manifest changes. The paths are in the root `Cargo.toml`, `[workspace.dependencies]`.

@@ -1,0 +1,160 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..381
+  Node@0..150
+    Word@0..6 "object"
+    Whitespace@6..7 " "
+    Arg@7..12
+      Word@7..12 "@pier"
+    Whitespace@12..13 " "
+    Arg@13..19
+      String@13..19 "\"Pier\""
+    Whitespace@19..20 " "
+    Block@20..149
+      LBrace@20..21 "{"
+      Newline@21..22 "\n"
+      Whitespace@22..24 "  "
+      Node@24..48
+        Word@24..32 "location"
+        Whitespace@32..33 " "
+        Arg@33..47
+          List@33..47
+            LBracket@33..34 "["
+            Word@34..36 "0m"
+            Whitespace@36..37 " "
+            Word@37..40 "-4m"
+            Whitespace@40..41 " "
+            Word@41..46 "0.35m"
+            RBracket@46..47 "]"
+        Newline@47..48 "\n"
+      Whitespace@48..50 "  "
+      Node@50..83
+        Word@50..64 "rotation-euler"
+        Whitespace@64..65 " "
+        Arg@65..82
+          List@65..82
+            LBracket@65..66 "["
+            Word@66..70 "0deg"
+            Whitespace@70..71 " "
+            Word@71..75 "0deg"
+            Whitespace@75..76 " "
+            Word@76..81 "12deg"
+            RBracket@81..82 "]"
+        Newline@82..83 "\n"
+      Whitespace@83..85 "  "
+      Node@85..99
+        Word@85..90 "scale"
+        Whitespace@90..91 " "
+        Arg@91..98
+          List@91..98
+            LBracket@91..92 "["
+            Word@92..93 "1"
+            Whitespace@93..94 " "
+            Word@94..95 "1"
+            Whitespace@95..96 " "
+            Word@96..97 "1"
+            RBracket@97..98 "]"
+        Newline@98..99 "\n"
+      Whitespace@99..101 "  "
+      Node@101..122
+        Word@101..105 "data"
+        Whitespace@105..106 " "
+        Arg@106..110
+          Word@106..110 "mesh"
+        Whitespace@110..111 " "
+        Arg@111..121
+          Word@111..121 "@pier-deck"
+        Newline@121..122 "\n"
+      Whitespace@122..124 "  "
+      Node@124..148
+        Word@124..132 "material"
+        Whitespace@132..133 " "
+        Arg@133..147
+          Word@133..147 "@weathered-oak"
+        Newline@147..148 "\n"
+      RBrace@148..149 "}"
+    Newline@149..150 "\n"
+  Newline@150..151 "\n"
+  LineComment@151..220 "// Every attribute may sit on the owner's line as a property instead."
+  Newline@220..221 "\n"
+  Node@221..315
+    Word@221..227 "object"
+    Whitespace@227..228 " "
+    Arg@228..233
+      Word@228..233 "@post"
+    Whitespace@233..234 " "
+    Arg@234..240
+      String@234..240 "\"Post\""
+    Whitespace@240..241 " "
+    Prop@241..263
+      Word@241..249 "location"
+      Equals@249..250 "="
+      List@250..263
+        LBracket@250..251 "["
+        Word@251..255 "1.2m"
+        Whitespace@255..256 " "
+        Word@256..259 "-4m"
+        Whitespace@259..260 " "
+        Word@260..262 "0m"
+        RBracket@262..263 "]"
+    Whitespace@263..264 " "
+    Prop@264..294
+      Word@264..278 "rotation-euler"
+      Equals@278..279 "="
+      List@279..294
+        LBracket@279..280 "["
+        Word@280..281 "0"
+        Whitespace@281..282 " "
+        Word@282..283 "0"
+        Whitespace@283..284 " "
+        Word@284..293 "1.5707964"
+        RBracket@293..294 "]"
+    Whitespace@294..295 " "
+    Prop@295..314
+      Word@295..300 "scale"
+      Equals@300..301 "="
+      List@301..314
+        LBracket@301..302 "["
+        Word@302..305 "0.1"
+        Whitespace@305..306 " "
+        Word@306..309 "0.1"
+        Whitespace@309..310 " "
+        Word@310..313 "1.5"
+        RBracket@313..314 "]"
+    Newline@314..315 "\n"
+  Node@315..381
+    Word@315..321 "object"
+    Whitespace@321..322 " "
+    Arg@322..331
+      Word@322..331 "@post-cap"
+    Whitespace@331..332 " "
+    Arg@332..341
+      String@332..341 "\"PostCap\""
+    Whitespace@341..342 " "
+    Block@342..380
+      LBrace@342..343 "{"
+      Whitespace@343..344 " "
+      Node@344..357
+        Word@344..350 "parent"
+        Whitespace@350..351 " "
+        Arg@351..356
+          Word@351..356 "@post"
+        Semicolon@356..357 ";"
+      Whitespace@357..358 " "
+      Node@358..379
+        Word@358..366 "location"
+        Whitespace@366..367 " "
+        Arg@367..378
+          List@367..378
+            LBracket@367..368 "["
+            Word@368..369 "0"
+            Whitespace@369..370 " "
+            Word@370..371 "0"
+            Whitespace@371..372 " "
+            Word@372..377 "0.75m"
+            RBracket@377..378 "]"
+        Whitespace@378..379 " "
+      RBrace@379..380 "}"
+    Newline@380..381 "\n"

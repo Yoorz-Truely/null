@@ -1,0 +1,127 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..336
+  Node@0..97
+    Word@0..4 "mesh"
+    Whitespace@4..5 " "
+    Arg@5..15
+      Word@5..15 "@pier-deck"
+    Whitespace@15..16 " "
+    Arg@16..26
+      String@16..26 "\"PierDeck\""
+    Whitespace@26..27 " "
+    Block@27..96
+      LBrace@27..28 "{"
+      Newline@28..29 "\n"
+      Whitespace@29..31 "  "
+      Node@31..95
+        Word@31..40 "primitive"
+        Whitespace@40..41 " "
+        Arg@41..45
+          Word@41..45 "cube"
+        Whitespace@45..46 " "
+        Prop@46..66
+          Word@46..50 "size"
+          Equals@50..51 "="
+          List@51..66
+            LBracket@51..52 "["
+            Word@52..56 "1.2m"
+            Whitespace@56..57 " "
+            Word@57..59 "3m"
+            Whitespace@59..60 " "
+            Word@60..65 "0.08m"
+            RBracket@65..66 "]"
+        Whitespace@66..71 "     "
+        LineComment@71..94 "// level 1: a procedure"
+        Newline@94..95 "\n"
+      RBrace@95..96 "}"
+    Newline@96..97 "\n"
+  Newline@97..98 "\n"
+  BlockComment@98..194 "/* Level 0: exact data, inline. Lists may span lines,\n   and comments /* nest */ inside them. */"
+  Newline@194..195 "\n"
+  Node@195..336
+    Word@195..199 "mesh"
+    Whitespace@199..200 " "
+    Arg@200..206
+      Word@200..206 "@plank"
+    Whitespace@206..207 " "
+    Arg@207..214
+      String@207..214 "\"Plank\""
+    Whitespace@214..215 " "
+    Block@215..335
+      LBrace@215..216 "{"
+      Newline@216..217 "\n"
+      Whitespace@217..219 "  "
+      Node@219..314
+        Word@219..227 "vertices"
+        Whitespace@227..228 " "
+        Arg@228..313
+          List@228..313
+            LBracket@228..229 "["
+            Newline@229..230 "\n"
+            Whitespace@230..234 "    "
+            List@234..247
+              LBracket@234..235 "["
+              Word@235..239 "-0.5"
+              Whitespace@239..240 " "
+              Word@240..244 "-0.1"
+              Whitespace@244..245 " "
+              Word@245..246 "0"
+              RBracket@246..247 "]"
+            Whitespace@247..248 " "
+            List@248..260
+              LBracket@248..249 "["
+              Word@249..252 "0.5"
+              Whitespace@252..253 " "
+              Word@253..257 "-0.1"
+              Whitespace@257..258 " "
+              Word@258..259 "0"
+              RBracket@259..260 "]"
+            Newline@260..261 "\n"
+            Whitespace@261..265 "    "
+            List@265..276
+              LBracket@265..266 "["
+              Word@266..269 "0.5"
+              Whitespace@269..270 " "
+              Word@270..273 "0.1"
+              Whitespace@273..274 " "
+              Word@274..275 "0"
+              RBracket@275..276 "]"
+            Whitespace@276..279 "   "
+            List@279..291
+              LBracket@279..280 "["
+              Word@280..284 "-0.5"
+              Whitespace@284..285 " "
+              Word@285..288 "0.1"
+              Whitespace@288..289 " "
+              Word@289..290 "0"
+              RBracket@290..291 "]"
+            Whitespace@291..294 "   "
+            LineComment@294..309 "// the far edge"
+            Newline@309..310 "\n"
+            Whitespace@310..312 "  "
+            RBracket@312..313 "]"
+        Newline@313..314 "\n"
+      Whitespace@314..316 "  "
+      Node@316..334
+        Word@316..321 "faces"
+        Whitespace@321..322 " "
+        Arg@322..333
+          List@322..333
+            LBracket@322..323 "["
+            List@323..332
+              LBracket@323..324 "["
+              Word@324..325 "0"
+              Whitespace@325..326 " "
+              Word@326..327 "1"
+              Whitespace@327..328 " "
+              Word@328..329 "2"
+              Whitespace@329..330 " "
+              Word@330..331 "3"
+              RBracket@331..332 "]"
+            RBracket@332..333 "]"
+        Newline@333..334 "\n"
+      RBrace@334..335 "}"
+    Newline@335..336 "\n"
