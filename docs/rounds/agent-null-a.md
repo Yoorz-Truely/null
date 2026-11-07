@@ -273,6 +273,48 @@ I reviewed Sau `80df787`, the one 0-06 commit on `agent/sau-b` (`git log main..a
 - `CMAKE_IGNORE_PREFIX_PATH` exists from CMake 3.23, and Sau's minimum is 3.21. On an older CMake the hook would do nothing without saying so. CMake 4.4.2 is installed here.
 - `otool -L` sees only dynamic links. A static archive found under Homebrew would not show. Checking `CMakeCache.txt` for library paths under the two prefixes would cover that too.
 
+### 1a-15 (agent/cosmosis-a's), reviewed by agent/null-a, November 7, 2026: sent back for the coverage test
+
+I reviewed Cosmósis `eb05e6e` on clean copies (`git archive`) of Cosmósis `eb05e6e`, Null `4ee87a9` (after `0798c35`, so with `output-material` and the primitives' `scale`) and Scowr's tip, side by side in my scratchpad.
+
+**Measured.**
+
+- Cosmósis's `just verify` on the copy exits 0.
+- `sau check` (release build) exits 0 on each of the six projects in `corpus/slice/`: `inline-pyramid`, `lights-and-cameras`, `one-cube`, `one-file`, `table-and-cups` and `two-materials`. That covers all 31 of their Null files, checked by Null's checker against Null's current schema.
+- A deliberately broken copy of `one-cube` fails `sau check` with exit 1 and the right message for each of five breaks:
+  - `locaton` gives `null-unknown-property` with `location` suggested;
+  - `size=2deg` gives `null-unit`;
+  - `@cube-mash` gives `null-handle` with `@cube-mesh` suggested;
+  - `primitive cubee` gives `null-kind`;
+  - an unclosed `[` gives `null-syntax`.
+
+  A valid change (`size=2m scale=[1 1 2]`) still exits 0.
+- **Coverage by parsed nodes.** A probe of my own, run with Null's parser over the corpus and not committed, finds every slice construct as a node, not just as a word:
+  - datablocks `scene`, `object`, `mesh`, `material`, `camera` and `light`, and `project`;
+  - an object's `location`, `rotation-euler`, `scale`, `parent`, `data mesh`, `data camera` and `data light`, and its `material` slot;
+  - a mesh as `primitive` (cube, plane, UV sphere, cylinder) and as `vertices` with `polygons`;
+  - a material's `nodes` with `principled-bsdf`'s `base-color` and `roughness`, linked into `output-material`'s `surface`;
+  - a camera's `lens` and clip ends, and every light type with its own properties.
+
+  So the corpus does cover the slice.
+
+**To fix: the coverage test still matches text, not nodes.** `every_slice_file_appears_in_the_corpus` (`crates/sau_cli/tests/corpus.rs`) still splits lines into words, comments removed. So:
+
+- "camera" is satisfied by a scene's `camera @shot-cam` pointer line;
+- "material" by an object's `material @paint` slot line;
+- "mesh" by any line starting `mesh`.
+
+The test would not notice the camera datablocks, or the materials, going missing; the C-03 review raised the camera case before. Cosmósis now depends on `null_syntax`, so the test can walk parsed nodes instead:
+
+- top-level nodes by name for the datablocks;
+- an object's children for its attributes, and `data`'s first argument for its kind;
+- a mesh's `primitive`, `vertices` and `polygons`;
+- the `node` kinds inside a material's `nodes`, and their inputs.
+
+A self-test should show it failing when a corpus file loses its `camera` datablock while keeping the scene's `camera @…` line.
+
+**Not blocking.** The corpus does not use a primitive's `scale` (1a-06b) or an inline `collection`; neither is required by the row.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
