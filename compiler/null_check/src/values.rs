@@ -384,7 +384,12 @@ pub(crate) fn check_float_matrix(
         );
         return;
     }
-    for row in &items {
+    // A 4×4 transform (subtype `matrix`) holds lengths in its translation column, the first
+    // three rows' last items, read as `location` is, through the scene's unit scale; its other
+    // items are bare (spec, section 6, "Units in arrays and matrices"; the lead's call on the
+    // 1b-03e review).
+    let transform = p.subtype.as_deref() == Some("matrix") && rows == 4 && columns == 4;
+    for (i, row) in items.iter().enumerate() {
         let cells = row.items();
         if cells.len() != columns {
             out.error(
@@ -394,7 +399,12 @@ pub(crate) fn check_float_matrix(
             );
             continue;
         }
-        for cell in &cells {
+        for (j, cell) in cells.iter().enumerate() {
+            let dimension = match (transform, i < 3 && j == 3) {
+                (true, true) => Dimension::Length,
+                (true, false) => Dimension::None,
+                (false, _) => dimension,
+            };
             check_float(cell, name, dimension, p, out);
         }
     }

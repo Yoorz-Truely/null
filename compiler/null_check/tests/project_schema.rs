@@ -177,6 +177,25 @@ fn matrices_are_rows_of_lists_and_run_time_enums_take_unlisted_items() {
             "{wrong}: {found:#?}"
         );
     }
+    // Section 6's own example: a 4×4 transform's translation column takes lengths, read through
+    // the scene's unit scale; every other item is bare (the 1b-03e review, the lead's call).
+    let spec = "  matrix-basis [[1 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1]]";
+    assert!(errors(&schema, &[&object(spec)]).is_empty());
+    let outside = errors(
+        &schema,
+        &[&object(
+            "  matrix-basis [[1m 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1m]]",
+        )],
+    );
+    assert_eq!(outside.len(), 2, "{outside:#?}");
+    assert!(outside.iter().all(|d| d.code == codes::UNIT));
+    let angle = errors(
+        &schema,
+        &[&object(
+            "  matrix-basis [[1 0 0 90deg] [0 1 0 0] [0 0 1 0] [0 0 0 1]]",
+        )],
+    );
+    assert_eq!(angle.len(), 1, "{angle:#?}");
     // `instance-type`'s items come from a function: a listed one is taken, a misspelt one is
     // refused with its fix, and one far from every listed item is left to Blender.
     assert!(errors(&schema, &[&object("  instance-type faces")]).is_empty());
