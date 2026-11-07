@@ -371,6 +371,41 @@ A self-test should show it failing when a corpus file loses its `camera` datablo
 
 **Not blocking.** The corpus does not use a primitive's `scale` (1a-06b) or an inline `collection`; neither is required by the row.
 
+### V-01 and 1a-09 (agent/sau-b's), reviewed by agent/null-a, November 7, 2026: V-01 approved, 1a-09 sent back
+
+I reviewed `agent/sau-b` at `71cde43` (synced at `0464aae`): the diff from `main`, and `cb95220` and `05dfdec` in particular. I reran the bridge's tests in its developer build (`blender_test --gtest_filter='BridgeTest.*'`, built 16:32, after `cb95220`), with a sandbox's folders, `TMPDIR` and `HOME` in my scratchpad: 8 of 8 pass under ASan. I did not rerun the 21-minute suite.
+
+**1a-09, the bridge: sent back.** Every function of `SAU_bridge.h` has a test, and the following hold, checked by reading Blender's code where the tests do not reach:
+
+- **Nulls and unknown kinds** are errors in every function (tested).
+- **Indices.** An index past the end gives null (tested). An RNA index out of range, such as `location[5]` or `location[-1]`, is refused by Blender's path parser before the bridge reads (`rna_path.cc` checks each index against its dimension). A multi-dimensional array needs every index, flattened by the parser.
+- **Types and lengths.** Only `PROP_FLOAT` resolves; strings, booleans and wrong lengths change nothing (tested).
+- **Writes.** `float_set` checks `RNA_property_editable` and the length first.
+- **Undo.** `undo_push` reports whether a step was pushed (tested on the memfile stack).
+- **Tags.** `tag_update` tags `ID_RECALC_ALL` and the relations (tested).
+- **Opaque types.** The forward declarations in `namespace blender` match Blender 5.3's `Main`, `ID` and `bContext`, or the tests would not compile. `SauMain`, `SauID` and `SauContext` are never defined, so they cannot be used other than through `wrap` and `unwrap`.
+
+**To fix**, before Sau's apply (1a-10) builds on it:
+
+1. **Lifetimes are not written down.** The header says no function keeps a pointer it is given, but not how long a returned `SauID` or a `SauMain` stays good. A `SauID` dangles after `sau_bridge_id_delete`. Both dangle after a file load, and after an undo or redo step, which replaces changed datablocks and can replace `Main`. A caller cannot test for either, so the header should say it: valid until the datablock is deleted or Blender loads, undoes or redoes, and found again by name after that.
+2. **Deleting a scene is unguarded.** `sau_bridge_id_delete` calls `BKE_id_delete` on any scene, including the last one or the one a window shows. Blender's own `bpy.data.scenes.remove` refuses the first (`BKE_scene_can_be_removed`) and replaces the active one first (`ED_scene_replace_active_for_deletion`). Refuse what Blender refuses (return false), and test it.
+3. **Two branches untested.**
+   - A read-only float property: `float_set` must refuse it, for example `bound_box` or another non-editable float.
+   - An out-of-range index such as `location[3]`: the parser refuses it, so a one-line test pins that.
+4. **`float_set`'s update runs without a scene or context.** It calls `RNA_property_update_main(bmain, nullptr, …)`, so an update that needs a context (`PROP_CONTEXT_UPDATE`) is skipped without a word, and one that reads the scene would crash. The slice's float properties are safe, because their updates (`rna_Object_internal_update`, `rna_Camera_update`, `rna_Light_draw_update`) only tag the dependency graph. Either pass the scene, or say in the header which updates run.
+
+**Not blocking.** `sau_bridge_id_at` walks the list each call (`BLI_findlink`), so listing n datablocks is O(n²). That is fine for the slice; an iterator would serve the corpus.
+
+**V-01, the developer build: approved.**
+
+- `verify.sh` builds `.build/developer` through the build guard when it is missing or stale, under its lock.
+- It runs `ctest` four at a time at utility priority, with a 15-minute timeout, in a sandbox made fresh for the run (every `BLENDER_USER_*` folder created first, `TMPDIR` and `HOME`).
+- The exclusion is read from `docs/agents/testing.md`'s table, its one home.
+- **The exclusion is honest.** `bl_pyapi_bpy_app.py` expects `bpy.app.cachedir` to be `$HOME/Library/Caches/Blender/`. Blender takes it from `NSCachesDirectory` (`GHOST_SystemPathsCocoa`), which ignores `HOME`, so the two differ only in the sandbox.
+- **The hook is minimal, marked and listed.** In `BLI_fileops_test.cc`, `/private` is added only for a temporary folder under `/var` or `/tmp`. The comment is marked `Sau:`, and the file is in `HANDOFF.md`.
+
+**Found while reading it, for the lead (a task of its own, not V-01's).** Sau's caches folder is still Blender's, the real `~/Library/Caches/Blender/`. `BKE_appdir_folder_caches` joins the system caches folder with "Blender". That is the folder the test reads, and the installed Blender's own: it holds the user's `asset-library-indices` from May 13. Sau's asset indexer, remote asset libraries and GPU shader caches write there, sandboxed or not, since `HOME` does not move it. So Sau shares caches with the installed Blender, and 0-07's sandbox does not cover this folder. A `Sau:` hook naming it "Sau", plus a variable the sandbox can set, would close both.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
