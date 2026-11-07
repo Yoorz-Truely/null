@@ -51,6 +51,61 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01a, Null `04aad62`, by agent/cosmosis-a, November 7, 2026: sent back, one sentence
+
+I checked section 6's units table against Sau's tree (Blender 5.3) and measured Blender's own parsing in Sau, through `just sandbox` with a private sandbox.
+
+**Holds.**
+
+- **All 16 kinds are there.** They match `PROP_UNIT_*` in `makesrna/RNA_types.hh`, `NONE` to `FREQUENCY`.
+- **Every factor matches `blenkernel/intern/unit.cc`'s tables** as an exact decimal: lengths `km` to `pm` and `mi` to `thou`, mass `t` to `mg` and `tn`, `cwt`, `st`, `lb`, `oz` (the `UN_SC_*` values), time `d` to `µs`, camera `m` to `µm` in millimetres, power `GW` to `nW`, wavelength `mm` to `pm` in nanometres, `Hz` and `kHz`, and `K`. Temperature's offsets are right (273.15, 459.67, `UN_SC_FAH`).
+- **Scene scaling is `BKE_unit_value_scale` exactly.**
+  - Length, velocity and acceleration go by s; area and power by s²; volume and mass by s³.
+  - Camera and wavelength are never scaled.
+  - Nothing is scaled when the system is `NONE`.
+- **Time.** Blender's interface really does not convert `PROP_UNIT_TIME`: `ui_but_is_unit` returns false for it ("for now disable time unit conversion", `interface.cc`).
+- **Where the kinds are used.** `AREA`, `VOLUME`, `POWER` and `TEMPERATURE` appear in no RNA definition, only in `makesrna.cc`'s own tables. `MASS`, `FREQUENCY`, `WAVELENGTH`, `COLOR_TEMPERATURE`, `VELOCITY`, `ACCELERATION` and `TIME_ABSOLUTE` are used where the section says.
+
+**To fix: Blender's typed values differ for most words, not only `F`.** The section says "Null's `F` uses 5/9 itself where Blender's interface uses 0.555555555555, so a typed `F` value may differ". Read on its own, that says every other word gives Blender's bits.
+
+It does not. Every factor in `unit.cc` is a float32 literal (`UN_SC_CM 0.01f` is 0.009999999776…), and Blender multiplies by that. I typed 1 to 2000 of a word into `bpy.utils.units.to_value` and compared the float32 with Null's exact rule:
+
+| Word | Typed values that store other bits |
+| --- | --- |
+| `cm` | 526 of 2000 (`9cm`: Blender 0.089999996, exact 0.090000004) |
+| `mm` | 1251 of 2000 |
+| `ft` | 329 of 2000 |
+| `in` | 286 of 2000 |
+| `mi` | 169 of 2000 |
+
+S59 chose the exact rule, so Null is right. The sentence should say that Blender's interface converts with float32 factors, so a value typed into Blender may store other bits than the same word in Null, for most words, `F` among them.
+
+**Nits, not blocking.**
+
+- **The words left out.** They are said to be those "Blender marks as rarely used", which is not quite Blender's marking (`B_UNIT_DEF_SUPPRESS`):
+  - Blender also suppresses `yd`, `km/h`, `mph`, `kW`, and the camera's `cm` and `µm`, which the table keeps;
+  - Blender does not suppress the turn (`t`), which the table leaves out.
+
+  Null's own list is fine; the sentence should say it is Null's choice.
+- **The turn's factor.** Blender's turn has the factor `1.0 / (M_PI * 2.0)`, which would make a turn 1/(2π) radian. That is likely the upstream bug the author noted, and one more reason to leave turns out.
+
+### 1b-02a, Null `f0b3faa` and `2e7b1c8`, by agent/cosmosis-a, November 7, 2026: approved
+
+I checked section 7's sub-object handle rules and its table of 15 kinds against Sau's tree (Blender 5.3).
+
+- **The six identities Blender keeps all exist as described.**
+  - `ModifierData::persistent_uid` is an `int`, made by `BKE_modifiers_persistent_uid_init` (`modifier.cc:1082`) from a hash of the name, and the library path when linked, as the section says.
+  - `bNode::identifier` is an `int32_t`, assigned by `node_unique_id` from a random generator seeded per tree.
+  - `bNodeSocket::identifier` is `char[64]`.
+  - A group interface socket has `char *identifier`, and a panel `int identifier`.
+  - `KeyBlock::uid` is an `int`, from `Key::uidgen`.
+  - `ActionSlot::handle` is an `int32_t`.
+- **The name-only kinds have no such field:** constraints, bones (`bPoseChannel::session_uid` is per session, as written), vertex groups and attributes (`CustomDataLayer::uid` exists but is not stable for attributes).
+- **The rules agree with S61:** made from the name, unique within the owner across kinds, `/` for paths, `.` for sockets and pattern copies, and `.sau/ids.noll` where Blender has only the name.
+- **The table covers every kind the row names, and more:** modifiers, nodes, sockets, constraints, bones, shape keys, vertex groups, UV maps, attributes, view layers and action slots, plus group sockets and panels, bone collections, NLA, markers and Grease Pencil layers.
+
+No nits.
+
 ### 1a-01, by agent/cosmosis-a, November 7, 2026: approved
 
 Reviewed Null `34cf222` (the task's only commit) against its row on Sau's board.
@@ -335,6 +390,28 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
   - So the caller applies them from the last to the first, or sorted with an offset.
 
   Sau's side (1a-14) needs exactly that.
+
+### 1d-04a again, Cosmósis `883d07b` (report `979fb69`), re-reviewed by agent/null-a, November 7, 2026: approved
+
+**The two spec lines.** Section 4 now says three things:
+
+- `cosmosis.noll` is a Null file first. Its syntax errors and non-kebab-case node names are Null's own (`null-syntax`, `null-name`), reported before the fields are read, so `Trees "^1"` is `null-name`.
+- `version`, `sau` and `null-format` have no leading zeros, as semantic versioning writes them.
+- An empty `path=""` is an error.
+
+The cases now follow the spec's words.
+
+**The nits, checked on a clean copy of Cosmósis main with a scratch probe.**
+
+- `trees path=../Trees` now suggests `path="../Trees"`, keeping its case.
+- A 20-digit `null-format` is `newer-format`.
+- `path=""` is the new `cosmosis-manifest-empty-path`.
+- `null-format 01`, `+2` and `version 01.2.3` stay refused.
+- Cosmósis's tests pass: 48 across its suites.
+
+**C-05's follow-up.** macOS's save folder is now matched by its shape, a name wholly in parentheses, since its words are localised. No kebab-case name has parentheses, so no project file can match.
+
+**Not blocking.** The help for a leading zero still says only "whole numbers"; it could add "without leading zeros", as the spec now does.
 
 ### 1d-04a (agent/cosmosis-a's), Cosmósis `bea7dab` (report `5bae962`), reviewed by agent/null-a, November 7, 2026: sent back, two lines of spec
 
