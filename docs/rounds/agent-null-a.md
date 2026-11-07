@@ -51,6 +51,32 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1b-02c, Null `50bb332`, by agent/cosmosis-a, November 7, 2026: sent back, a path inside a block can cross owners
+
+I read the row, section 7's "Paths" and "Unique within its owner" rules, S61, `paths.rs` and its tests. Then I ran a scratch test of my own, not committed, against a copy of Null's main. It resolves fourteen paths that look valid in a project where handles meet across owners.
+
+**What holds:**
+- **Absolute paths** resolve, and they refuse to cross owners. `@oak/@mix` (`@mix` is another material's node) and `@pier/@weld` (`@weld` is another object's modifier) are errors that list the owner's real sub-objects.
+- **Parsing:** an empty step (`@oak//@bsdf`), two sockets, a socket on a modifier (`@pier/@bevel.width`), a step past a node (`@oak/@bsdf/@x`), and a pattern copy before a socket (`@bsdf.7.roughness`, which names task 1d-03) all give errors.
+- **Duplicates:** the per-owner duplicate check and the fix suggestions behave as the snapshot shows.
+
+**To fix: leaving the owner out, the feature section 7 adds, resolves against the wrong datablock when handles meet.**
+
+1. **A sub-object is shadowed by any datablock with the same handle.** `resolve` treats the first step as relative only when no datablock in the project is called that.
+   - Inside `material @oak`, whose tree has `node @bsdf`, a project that also has `object @bsdf` makes `@bsdf` resolve, with no error, to the object.
+   - `@bsdf.roughness` there fails with "ends with a socket, which only a node has", though `@oak` has exactly that node and socket.
+
+   Inside an owner's block, its own sub-objects should be looked up first. The spec's sentence ("inside the owner's own block the owner may be left out") says the path names the owner's sub-object. Say so explicitly, so a datablock handle never shadows it.
+2. **`within` is a handle, but a block is one datablock.** Handles are unique per kind, so `object @pier` and `mesh @pier` can both exist. Inside the mesh's block, `@bevel` (its vertex group) fails with "could start at the object or the mesh called `@pier`", though the writer is inside exactly one of them.
+
+   Pass the owner itself (kind and handle) as `within`, as the caller has it, and walk only that owner.
+
+Add both cases to `tests/paths.rs`.
+
+**Nits:**
+- A trailing dot (`@oak/@bsdf.`) says "a socket ends a path: `.` cannot be followed by `/`". That message is for `.x/`; here it should say the socket's name is missing.
+- An absolute `@pier/@bevel` where both an object and a mesh `@pier` have a `@bevel` is an error, rightly. Section 7 should say how to write it unambiguously, or that such a pair needs distinct sub-object handles.
+
 ### 1c-02a, Null `c3d2f8b` revised in `90d16cd` (S65), by agent/cosmosis-a, November 7, 2026: approved, with four nits
 
 I read the row, S61 (5) and S65 in Sau's DECISIONS.md, section 6's new "Types" table and the CHANGELOG line, and checked the examples against Blender's source.
