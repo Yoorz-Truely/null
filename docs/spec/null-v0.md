@@ -162,7 +162,7 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 
 ### Types
 
-How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's decision S61 (5)). The schema says which type a property has; the checker refuses any other form (S24).
+How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's decisions S61 (5) and S65). The schema says which type a property has; the checker refuses any other form (S24).
 
 | RNA type | Written | Examples |
 | --- | --- | --- |
@@ -171,7 +171,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
 | Enum | One item's identifier in kebab-case | `rotation-mode xyz`, `type point` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none | `delimit [normal material]` (a decimate modifier), `delimit []` |
-| String | A quoted string. Text is UTF-8; a byte that is not part of valid UTF-8 (an old file path, a name from another system) is written `\xNN`, two hexadecimal digits, so every byte Blender stores is written exactly. A string longer than Blender's field for it is an error, never cut | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath "//textures/m\xfcller.png"` |
+| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). A string that is valid UTF-8 is always written as a string. A string longer than Blender's field for it is an error, never cut | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
 | Pointer | A handle (section 7); `none` for an empty pointer where the property allows one | `camera @shot-cam`, `parent none` |
 | Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
 | Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
@@ -179,7 +179,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Matrix | Row by row, as a person reads it and as Python's `mathutils.Matrix` prints it: `[[row 1] [row 2] …]`. DNA and RNA's flat array keep a matrix column by column, so row `i`, column `j` is RNA's element `j × rows + i` | `[[1 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1]]` (a translation of 2 m in x) |
 
 - **Units in arrays and matrices** go on each item that has one, as in `location [0m 0m 1m]`; in a matrix only the translation column's items are lengths.
-- **`\xNN` in strings** is Null's addition to the escapes it shares with Scowr (`\"`, `\\`, `\n`, `\t`, `\u{...}`). Scowr's lexer does not read it yet, so writing it needs a change to the shared syntax, agreed with Scowr's tests (S15); until then such a string cannot be written (task 1c-02b).
+- **Raw bytes, not an escape.** A string keeps the escapes Null shares with Scowr (`\"`, `\\`, `\n`, `\t`, `\u{...}`). Bytes outside UTF-8 are a byte list rather than a new `\xNN` escape, because Scowr's lexer refuses `\x` and its syntax changes only with the user's agreement (S15, S65).
 
 ### Units
 
