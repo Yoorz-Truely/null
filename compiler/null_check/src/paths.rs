@@ -356,8 +356,11 @@ impl Index {
             let full = format!("{handle}/{word}");
             match walk_path(schema, owner, &relative, &full) {
                 Ok(r) => return Ok(r),
-                // Not one of the owner's: a path that starts at a datablock is read as written.
-                Err(_) if self.owners.contains_key(first) => {}
+                // Not one of the owner's: a path that starts at a datablock is read as written,
+                // but only when the owner has no sub-object of that handle.
+                Err(_)
+                    if self.owners.contains_key(first)
+                        && !owner.subs.iter().any(|s| s.handle == *first) => {}
                 Err(e) => {
                     return Err(Unresolved {
                         message: e.message,

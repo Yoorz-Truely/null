@@ -201,7 +201,9 @@ material @oak \"Oak\" {
   }
 }
 
-object @bsdf \"Bsdf\"
+object @bsdf \"Bsdf\" {
+  modifier @edge bevel
+}
 
 object @pier \"Pier\" {
   modifier @bevel bevel
@@ -248,4 +250,20 @@ mesh @pier \"Pier\"
         .resolve(&schema, "@pier/@bevel", Some(("material", "@oak")))
         .unwrap();
     assert_eq!(r.owner_kind, "object");
+    // From the second 1b-02c review: once the first step is the owner's own sub-object, a
+    // later error stays the owner's, with its fix, and lists the owner's sub-objects.
+    let e = index
+        .resolve(&schema, "@bsdf.rougness", Some(("material", "@oak")))
+        .unwrap_err();
+    assert_eq!(e.fix.as_deref(), Some("@bsdf.roughness"), "{}", e.message);
+    let e = index
+        .resolve(&schema, "@bsdf/@x", Some(("material", "@oak")))
+        .unwrap_err();
+    assert!(
+        e.message
+            .contains("`@bsdf` has no sub-object `@x`: it has none"),
+        "{}",
+        e.message
+    );
+    assert!(!e.message.contains("@edge"), "{}", e.message);
 }
