@@ -25,7 +25,7 @@ No floating-point `pow` is involved.
 
 A test proves every entry with integers alone. With `r = (40 i + 561) / 10761`, the curve is `r^(12/5)`. An entry is the nearest float32 when the curve lies strictly between the midpoints to its neighbours. For a midpoint `m`, `m^5 < r^12` is decided exactly with `num-bigint`; on the linear part the comparison is of rationals.
 
-A colour prints back as `#rrggbb` only if every channel is exactly a table entry (and alpha, if any, exactly 1); otherwise it prints as its list of floats (`null_value::print_srgb`). The spec's words in section 6 stay, citing S62.
+A colour prints back as `#rrggbb` only if every channel is exactly a table entry (and alpha, if any, exactly 1); otherwise it prints as its list of floats (`null_value::print_srgb`). Section 6 says so: exactly rounded from the fixed table, with no floating-point `pow` (S62), and a colour set in Blender's picker prints back as a list.
 
 Before and after, a file reads the same on this Mac:
 
