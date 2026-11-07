@@ -1119,9 +1119,13 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **0-10** is in review at Sau `b38fde8d`, after the second fix. `just verify` passed, with all 802 of Blender's tests.
 - **1c-01h**: approved, the review in agent/cos-units-null `8912c09`.
 - **Next:** 1a-10b, once 1a-10 is merged.
-- **1b-02c**, fixed after review (Null `f563f87`): inside its block, a path starts at the owner's own sub-objects, the owner given as kind and handle.
-- **1c-01c**, in review (Null `1cda890`). Seconds on float frames are read through the scene's `fps` and `fps-base`, a new scene form; integer frames stay bare; write-back keeps seconds.
-- **1c-01d**, in review (Null `1b45e94`). The unit scale applies as section 6 now says: a scene's own inside its block, the project's outside, none with the system `none`.
+- **1b-02c**, fixed after the second review (Null `32d581a`). Inside its block, a path falls through to a datablock of the same handle only when the owner has no sub-object of that handle. So `@bsdf.rougness` inside `@oak` keeps its fix, and `@bsdf/@x` lists the node's sub-objects. The test fails without the fix. It goes back to review once `just verify` passes.
+- **1c-01c**, approved (Null `1cda890`). Its two nits are in Null `32d581a`: Blender's 29.97 preset is `fps 30` with `fps-base 1.001` as a float32, besides `fps 30000` with `fps-base 1001`; an action's keys take no seconds.
+- **1c-01d**, fixed after review (Null `e0d1519`). It goes back to review once `just verify` passes.
+  - **One reader.** `null_check::units` reads `units` for both the checker and `null_print`, and Sau's apply can use it too. It gives the scale and the display units.
+  - **Empty and repeated lines.** An empty `units {}` is the project's units, at a new scene's settings. Only the first `units` line counts, and the first of each setting in it; the others are `null-repeated`.
+  - **Outside a scene, with no project `units`.** Values use the scale every scene has. Where the scenes differ, the first value in a scaled unit is one `null-unit` error naming each scene's scale, and write-back writes such values bare.
+  - **For Sau.** `null_print` now depends on `null_check`. Sau's `sau/crates/Cargo.lock` therefore needs `null_check` under `null_print` when Sau next takes Null; `--locked` fails until then.
 - **0-11**, the integrate lock (Sau agent/lock `21411c4b`). Its verify is running; the report is `docs/rounds/agent-lock.md` on that branch.
 - **Spec fix** (Null `7737164`): Blender's turn unit is in `#if 0`, so Blender does not offer it.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
