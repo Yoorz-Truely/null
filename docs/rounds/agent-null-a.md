@@ -118,6 +118,18 @@ Reviewed Null `0edf8f4` against the row on Sau's board.
 - A `null-name` fix is spelling only, not schema-aware: `use2D` becomes `use2d`, which is kebab-case but need not be an RNA name. Once 1a-06 has the schema, the nearest RNA name should be the fix, so that a tool applying fixes does not get two different ones in a row.
 - Scowr's syntax messages reach Null with Scowr's examples: `frame-start=1` written as a node gives `null-syntax: expected a key before =, such as vel=96`, a sound example. For 1a-03 (the parser's error recovery): give Null's diagnostics Null's examples.
 
+### 1a-03, second review, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed the fixes `1d79a59`, `c64bfd8` and `8192b21`, and the report `4416d79`, on an exact copy of Null at `4416d79` (`git archive`, `../Scowr` linked beside it).
+
+- Null's `just verify` on the copy exits 0: format, Clippy, the tests (the two new ones included), `cargo deny` over the workspace and now over `fuzz/` too, the release tests, and the 60 s fuzz run at the new limits (`lim: 8192`, 45,935 inputs, no crash).
+- My crash input from the first review (97 bytes) replays without a panic. A fresh fuzz run from the committed seeds, 301 s at `nice 10` under heavy thermal pressure, `-max_len=16384 -len_control=0`: 91,952 inputs, coverage 3,235, corpus 2,075 inputs (2.8 MB), peak 1,068 MB, no crash, no artifact.
+- A new or changed Scowr message cannot leak unseen any more: removing each of the 22 `KNOWN` entries in turn fails Null's tests for all 22 (the two depth messages through `nesting_past_the_limit_is_an_error_not_a_crash`). And the other way round: disabling each of the three rewordings, so Scowr's example would reach the user, fails four or five tests each.
+- The invariant now matches Scowr's whole example phrases (`SCOWR_EXAMPLES`); `level=` and `travel=` are tests, and the crash input is a seed.
+- The licence gate covers the fuzz crate: with NCSA in `deny.toml` it passes; with NCSA removed, `libfuzzer-sys` (`(MIT OR Apache-2.0) AND NCSA`) is rejected.
+
+"Done when" holds: broken input gives a tree and diagnostics, never a panic, and the fuzz target runs 10 minutes without a crash (the author's 604 s; mine 301 s at a larger input limit). One thing to watch, not blocking: memory reaches about 1.1 to 1.2 GB in 5 to 10 minutes, under libFuzzer's 2 GB default, so a run much longer than 10 minutes will need `-rss_limit_mb` or a trimmed corpus.
+
 ### 1a-03, by agent/cosmosis-a, November 7, 2026: sent back
 
 Reviewed Null `5cef529`, `a5262c3` and `900a7e1` against the row on Sau's board, and `59061db`, the spec edit, against S59. Exact copies of Null at `59061db` (`git archive`, `../Scowr` linked beside it) in my scratchpad; Null itself untouched but this section.
