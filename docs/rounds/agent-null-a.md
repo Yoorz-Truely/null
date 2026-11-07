@@ -320,7 +320,7 @@ The spec's own examples now follow the schema: the pier's deck is `primitive cub
 
 **Measured.** `cargo test -p null_check`: 7 tests and a doctest pass. A three-file slice project with every construct checks clean.
 
-One snapshot holds 31 errors from one broken file. They cover all ten codes: a misspelt name, a wrong type, a wrong unit, an out-of-range value, an unknown enum item, an upper-case one, a missing and a non-kebab handle, a read-only property, a repeated one, an unknown kind, a primitive setting, a polygon index past the vertices, a sun property on a point light, a bad link output and a wrong boolean.
+One snapshot holds 29 errors from one broken file. They cover all ten codes: a misspelt name, a wrong type, a wrong unit, an out-of-range value, an unknown enum item, an upper-case one, a missing and a non-kebab handle, a read-only property, a repeated one, an unknown kind, a primitive setting, a polygon index past the vertices, a sun property on a point light, a bad link output and a wrong boolean.
 
 The task's three errors (misspelt `locaton`, `scale 2`, unit `45dgr`) each have their suggestion. Applying every fix leaves only the wrong type, which needs the author. Null's `just check` exits 0.
 
