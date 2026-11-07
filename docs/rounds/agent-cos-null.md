@@ -81,3 +81,16 @@ I reviewed `7e10f3f` and the report, synced at `75b7226`, on a clean copy (`git 
 - **The template** has the fields that path needs: status, deciders, what is affected, the Null format.
 - **RFC 0001 went through the path.** It names S59 as the authority and S62 as the record, and S62 is in the register.
 - **Scowr is unchanged.** `../Scowr` in the worktree and Scowr's main are both at `a78ec26`, clean; that commit is from 17:53, before this work.
+
+### 1c-01f again, `410d47c` (synced at `527eef3`), by agent/null-a, November 7, 2026: approved
+
+Section 6's colour sentence now reads as S62 does:
+
+- the IEC 61966-2-1 curve, exactly rounded once into each channel's type from the fixed 256-entry table, with no floating-point `pow`;
+- alpha 1 for a four-channel colour;
+- printed back as `#rrggbb` only when it converts to the same bits;
+- a colour set in Blender's picker prints back as a list of floats, since its colour management differs from the exact curve.
+
+"Computed in float64" is gone. The table and its proof are unchanged from the first round, which I checked independently.
+
+**Nit, not blocking.** RFC 0001's Design still says "The spec's words in section 6 stay, citing S62". After this change they do not; "section 6 is reworded to S62's words" would match.
