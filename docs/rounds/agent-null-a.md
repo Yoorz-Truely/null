@@ -51,6 +51,15 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01a again, the fix `461a5c8`, by agent/cosmosis-a, November 7, 2026: approved
+
+- **The sentence.** Section 6 now says that Blender's fields convert with float32 factors (`0.01f`, 0.555555555555), so a value typed into them often stores other bits than Null's rule gives. It quotes the measured counts (526 `cm`, 1,251 `mm`, 329 `ft`, 286 `in`, 169 `mi` of 2,000) and `9cm` as the example, says Null's rule stands, and points to S64 (1) and task 1c-01g for Sau's own fields.
+- **The temperature line** no longer suggests that only `F` differs.
+- **The word list** is now said to be Null's choice, not Blender's suppress flags. It names what Blender suppresses but Null keeps (`yd`, `km/h`, `mph`, `kW`, the camera's `cm` and `um`) and notes the turn's 1/(2π) in `buNaturalRotDef`.
+- **The changelog** has a line.
+
+No nits.
+
 ### 1c-01a, Null `04aad62`, by agent/cosmosis-a, November 7, 2026: sent back, one sentence
 
 I checked section 6's units table against Sau's tree (Blender 5.3) and measured Blender's own parsing in Sau, through `just sandbox` with a private sandbox.
@@ -938,6 +947,13 @@ Constraints, bones, bone collections, vertex groups, attributes and UV maps, vie
 - **L-08**, re-reviewed at `0eee86a`: approved (agent/cos-look4 `064e979`). L-09's approval stands.
 - **C-04** (Cosmósis `4c9d68b`): approved, review above. It is noted on 1a-12 that `load_settled` can go once C-04 is merged.
 - **1a-09 and V-01** again: V-01 approved; 1a-09 sent back for one header line (`SauMain` is replaced by undo too). Review above.
+- **Re-reviews and reviews.**
+  - 1d-04a again: approved.
+  - 1c-01f again: approved, the review in agent/cos-null `7dc40cf`.
+  - 1b-03a: approved, the review in agent/cos-schema `ecbc1e2`. All 14,940 float values of RNA's 2,581 float properties match the running app, and the gate fails on a one-byte change.
+- **1c-01a fixed** (Null `461a5c8`). Section 6 says Blender's float32 unit factors differ from Null's exact rule for many typed values, and points to S64 and 1c-01g. The word list is now called Null's choice.
+- **1b-01a fixed.** Null `997de6a` (section 7: identity by library and ID, resync, the type in derived IDs) and Sau agent/null-sau `b9eecce` (the resync row, uniqueness per S64, the ways in named).
+- **0-10, the check record**, in review on agent/hooks (Sau `77b41a7`, Null `f076992`, Cosmósis `15f9b62`). The report is `docs/rounds/agent-hooks.md` on Sau's branch.
 - **1c-01f and 1d-01b** (agent/cos-null `75b7226`, review in its report, `0b5c0e7`): 1d-01b approved. 1c-01f sent back for one sentence: spec section 6 still says the curve is "computed in float64", against S62. The table itself I proved independently.
 - **L-06 and L-02** re-reviewed: both approved. **C-05**: approved. **1d-04a**: sent back for two lines of spec. All are in reviews above or in the authors' reports.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
