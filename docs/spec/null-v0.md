@@ -91,7 +91,7 @@ scene @main "Main" {
 object @pier "Pier" {
   location [0m -4m 0.35m]
   rotation-euler [0deg 0deg 12deg]
-  scale [1 1 1]
+  scale [1.2 3 0.08]
   data mesh @pier-deck
 
   modifier @array array {
@@ -103,7 +103,7 @@ object @pier "Pier" {
 }
 
 mesh @pier-deck "PierDeck" {
-  primitive cube size=[1.2m 3m 0.08m]     // level 1: a procedure
+  primitive cube size=1m     // level 1: a procedure, scaled by its object
 }
 ```
 
@@ -118,7 +118,7 @@ material @weathered-oak "Weathered Oak" {
     }
     node @out output-material { surface @bsdf.bsdf }
   }
-  layout { @tex [-420 0]  @bsdf [-160 0]  @out [120 0] }
+  layout { @tex [-420 0]; @bsdf [-160 0]; @out [120 0] }
 }
 
 image @oak-diffuse "oak_diffuse.png" { source media/3f9a…c1.png colorspace=srgb }
@@ -155,7 +155,7 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 - **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59).
 - **Units** follow the RNA unit of each property: length (`m`, `cm`, `mm`, `km`, `in`, `ft`), rotation (`deg`, `rad`), time (`s`, `ms`, frames as bare numbers), power (`W`), temperature (`K`, `C`), wavelength (`nm`), camera lens (`mm`), mass (`kg`), velocity and acceleration. A bare number is Blender's internal unit (metres, radians, frames, watts). Writing a unit a property cannot take is an error.
 - **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): lengths by exact decimal shifts and multiples, degrees by π/180 computed as precisely as the rounding needs. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
-- **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, and printed back in that form only if it converts to the same bits.
+- **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, the IEC 61966-2-1 sRGB curve computed in float64 and rounded once into each channel's type (alpha 1 for a four-channel colour), and printed back in that form only if it converts to the same bits.
 - **Enums** are RNA enum identifiers in kebab-case (`cubic`, `agx`, `bezier`); flag sets are lists of them. Raw numbers are never needed.
 - **References** are handles (section 7). A pointer property takes a handle; a socket takes a value or a link `@node.socket`.
 - **Strings** are names, paths and text. Text datablocks (Blender's text editor content, Python scripts) are files of their own in the project, referenced by path.
@@ -182,6 +182,28 @@ Every one of Blender's datablock types (31 kinds of ID in this source tree) has 
 | Settings | `render` (Cycles, EEVEE, Workbench), `color-management`, `units`, `preferences`, `keymap`, `theme` |
 
 Each object kind's properties are the RNA properties of its struct, by the same names. The generated field reference, one table per struct, is an appendix produced from the schema at build time; it is never written by hand.
+
+### Null's forms over RNA
+
+The schema Sau generates from RNA (`schema/null-schema.json`) gives every name, type, unit, range and enum item. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
+
+| Form | Means | Why |
+| --- | --- | --- |
+| `project "Name" { units …; scene @s }` | The project: its name, its units, its scenes. No RNA struct | A project is Cosmósis's, not Blender's |
+| `units metric scale=1 length=m rotation=deg` | A scene's `UnitSettings`: the argument is `system`; `scale` is `scale-length`; `length` is `length-unit`, written as a unit (`m`, `cm`, `mm`, `km`, `in`, `ft`) or an item (`meters`); `rotation` is `system-rotation`, as `deg` or `rad` or an item. The full names may be child lines instead. In `project` it applies to every scene | Short forms first (S35); RNA's `unit-settings` is read-only |
+| `object @h` and `collection @h` in a `scene` or `collection` | Members: objects and child collections of the scene's master collection, or of the collection. A `collection` line with a display name or a block defines the collection there | RNA's `objects` and `children` are read-only collections |
+| `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
+| `material @h` in an `object` | One material slot, in order; the first is the active material | RNA keeps materials in slots |
+| `primitive <kind> settings…` in a `mesh` | The mesh as made by Blender's add operator of that kind (`cube`, `uv-sphere`, …) with the operator's settings by their names. `size` is one length: a box of other proportions is a cube scaled by its object | Level 1 geometry (section 9); the operators are RNA's |
+| `vertices [[x y z] …]` and `polygons [[0 1 2] …]` in a `mesh` | Level 0 data: each vertex's `co`, and each polygon's `vertices`, three or more indices of existing vertices | A collection of one-value structs is written as a list of the values. The name is RNA's `polygons`, not `faces` (S16) |
+| `nodes { node @h <kind> { inputs } }` and `layout { @h [x y]; … }` in a `material` | The material's node tree: each node's handle, kind and input sockets by name, a socket taking a value or a link `@node.output`; `layout` holds positions, one node per line or `;` | Section 10 |
+| `energy` of a point, spot or area light | A power, in `W` | RNA gives `energy` no unit; Blender shows watts. A sun's `energy` is an irradiance, written bare |
+| A light's properties | `Light`'s, and those of its `type`'s struct (`point-light`, `sun-light`, …) | RNA splits lights by type |
+| `lens` of a camera | A focal length, in `mm`: `50mm` is 50 | RNA's camera unit is millimetres, not a length |
+
+A property's default, which the formatter omits (section 15), is its value in a new datablock: the schema's `new` where it differs from RNA's own default (a new scene's units are `metric` and `meters`).
+
+Handles are kebab-case wherever they appear, defined or referenced (S16, S18). Enum values are the items' kebab-case names; `XYZ` is an error whose fix is `xyz`.
 
 ## 9. Geometry as source
 
@@ -251,7 +273,7 @@ Every edit in Sau's interface (a drag, a slider, an operator, a node link) ends 
 
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable (`null-unit`, `null-unknown-property`, `null-handle`), so tools and AI can act on them.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`.
 
 ## 19. Converting `.blend` files
 

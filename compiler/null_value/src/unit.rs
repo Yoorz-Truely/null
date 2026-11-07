@@ -14,6 +14,10 @@ pub enum Dimension {
     Length,
     /// An angle, stored in radians.
     Angle,
+    /// A camera's focal length, stored in millimetres (RNA's camera unit).
+    Lens,
+    /// Power, stored in watts (a light's energy, a refinement of Null's: RNA gives none).
+    Power,
 }
 
 impl Dimension {
@@ -23,6 +27,8 @@ impl Dimension {
             Dimension::None => &[],
             Dimension::Length => &[Unit::M, Unit::Cm, Unit::Mm, Unit::Km, Unit::In, Unit::Ft],
             Dimension::Angle => &[Unit::Rad, Unit::Deg],
+            Dimension::Lens => &[Unit::LensMm],
+            Dimension::Power => &[Unit::W],
         }
     }
 }
@@ -46,11 +52,15 @@ pub enum Unit {
     Rad,
     /// Degrees: π/180 rad.
     Deg,
+    /// Millimetres of focal length, the internal unit of a camera's lens: `50mm` is 50.
+    LensMm,
+    /// Watts, the internal unit of power.
+    W,
 }
 
 impl Unit {
     /// Every unit.
-    pub const ALL: [Unit; 8] = [
+    pub const ALL: [Unit; 10] = [
         Unit::M,
         Unit::Cm,
         Unit::Mm,
@@ -59,6 +69,8 @@ impl Unit {
         Unit::Ft,
         Unit::Rad,
         Unit::Deg,
+        Unit::LensMm,
+        Unit::W,
     ];
 
     /// How it is written after the number.
@@ -72,6 +84,8 @@ impl Unit {
             Unit::Ft => "ft",
             Unit::Rad => "rad",
             Unit::Deg => "deg",
+            Unit::LensMm => "mm",
+            Unit::W => "W",
         }
     }
 
@@ -80,19 +94,23 @@ impl Unit {
         match self {
             Unit::M | Unit::Cm | Unit::Mm | Unit::Km | Unit::In | Unit::Ft => Dimension::Length,
             Unit::Rad | Unit::Deg => Dimension::Angle,
+            Unit::LensMm => Dimension::Lens,
+            Unit::W => Dimension::Power,
         }
     }
 
-    /// The unit written as `suffix`.
-    pub fn from_suffix(suffix: &str) -> Option<Unit> {
-        Unit::ALL.into_iter().find(|u| u.suffix() == suffix)
+    /// The unit written as `suffix`, the one of `dimension` first (`mm` is a length,
+    /// and a camera's lens in millimetres).
+    pub fn from_suffix(suffix: &str, dimension: Dimension) -> Option<Unit> {
+        let mut units = dimension.units().iter().copied().chain(Unit::ALL);
+        units.find(|u| u.suffix() == suffix)
     }
 
     /// A value in this unit, as an exact decimal in the internal unit, where a
     /// decimal shift or a whole multiple gives it; `None` for degrees.
     fn to_internal(self, value: &Decimal) -> Option<Decimal> {
         Some(match self {
-            Unit::M | Unit::Rad => value.clone(),
+            Unit::M | Unit::Rad | Unit::LensMm | Unit::W => value.clone(),
             Unit::Cm => value.shifted(-2),
             Unit::Mm => value.shifted(-3),
             Unit::Km => value.shifted(3),
@@ -105,7 +123,7 @@ impl Unit {
     /// One unit in the internal unit, approximately, to find candidates for printing.
     fn approx_factor(self) -> f64 {
         match self {
-            Unit::M | Unit::Rad => 1.0,
+            Unit::M | Unit::Rad | Unit::LensMm | Unit::W => 1.0,
             Unit::Cm => 0.01,
             Unit::Mm => 0.001,
             Unit::Km => 1000.0,
@@ -127,6 +145,8 @@ impl fmt::Display for Unit {
 pub enum ReadError {
     /// The word does not start with a number.
     NotANumber,
+    /// The number is not a whole number, or is past the range of 64-bit integers.
+    NotAnInteger,
     /// The number is followed by something that is not a unit.
     UnknownUnit {
         /// What followed the number.
@@ -156,6 +176,7 @@ impl fmt::Display for ReadError {
         };
         match self {
             ReadError::NotANumber => write!(f, "expected a number"),
+            ReadError::NotAnInteger => write!(f, "expected a whole number"),
             ReadError::UnknownUnit { unit, suggestion } => {
                 write!(f, "`{unit}` is not a unit")?;
                 if let Some(s) = suggestion {
@@ -183,7 +204,7 @@ pub fn read<F: Float>(word: &str, dimension: Dimension) -> Result<F, ReadError> 
     let unit = if suffix.is_empty() {
         None
     } else {
-        let unit = Unit::from_suffix(suffix).ok_or_else(|| ReadError::UnknownUnit {
+        let unit = Unit::from_suffix(suffix, dimension).ok_or_else(|| ReadError::UnknownUnit {
             unit: suffix.to_string(),
             suggestion: closest_unit(suffix, dimension),
         })?;
@@ -203,8 +224,52 @@ pub fn read<F: Float>(word: &str, dimension: Dimension) -> Result<F, ReadError> 
     })
 }
 
-/// The unit of `dimension` nearest to `text` by edit distance, if within two edits.
+/// Reads `word` as a whole number with no unit, exactly (DNA's integer properties, and
+/// frames, which are bare numbers). `1e3` is a whole number; `1.5` and `inf` are not.
+pub fn read_int(word: &str) -> Result<i64, ReadError> {
+    let (number, used) = scan(word).ok_or(ReadError::NotANumber)?;
+    let suffix = &word[used..];
+    if !suffix.is_empty() {
+        return Err(match Unit::from_suffix(suffix, Dimension::None) {
+            Some(unit) => ReadError::WrongUnit {
+                unit,
+                dimension: Dimension::None,
+            },
+            None => ReadError::UnknownUnit {
+                unit: suffix.to_string(),
+                suggestion: None,
+            },
+        });
+    }
+    let Number::Finite(value) = number else {
+        return Err(ReadError::NotAnInteger);
+    };
+    if value.is_zero() {
+        return Ok(0);
+    }
+    if value.exp < 0 || value.leading_exp() > 18 {
+        return Err(ReadError::NotAnInteger);
+    }
+    let digits = format!("{}{}", value.digits, "0".repeat(value.exp as usize));
+    let magnitude: i128 = digits.parse().map_err(|_| ReadError::NotAnInteger)?;
+    let signed = if value.negative {
+        -magnitude
+    } else {
+        magnitude
+    };
+    i64::try_from(signed).map_err(|_| ReadError::NotAnInteger)
+}
+
+/// The unit of `dimension` nearest to `text`: one that differs only in case (`MM` is
+/// `mm`), else the nearest by edit distance within two edits.
 fn closest_unit(text: &str, dimension: Dimension) -> Option<Unit> {
+    if let Some(&u) = dimension
+        .units()
+        .iter()
+        .find(|u| u.suffix().eq_ignore_ascii_case(text))
+    {
+        return Some(u);
+    }
     dimension
         .units()
         .iter()
@@ -258,7 +323,7 @@ pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
     let suffix = unit.suffix();
     let shortest = value.shortest();
     let shift = match unit {
-        Unit::M | Unit::Rad => Some(0),
+        Unit::M | Unit::Rad | Unit::LensMm | Unit::W => Some(0),
         Unit::Cm => Some(2),
         Unit::Mm => Some(3),
         Unit::Km => Some(-3),

@@ -13,6 +13,7 @@ rust-version = "1.99"
 # these; every other Null crate goes through it. The boundary is in AGENTS.md.
 [workspace.dependencies]
 null_syntax = { path = "compiler/null_syntax" }
+null_value = { path = "compiler/null_value" }
 scowr_errors = { path = "../Scowr/compiler/scowr_errors" }
 scowr_syntax = { path = "../Scowr/compiler/scowr_syntax" }
 

@@ -1,0 +1,44 @@
+---
+source: compiler/null_check/tests/check.rs
+expression: map.render_all(&found)
+---
+objects/cases.noll:5:3 error[null-unknown-property]: a scene has no `frame-strat`; did you mean `frame-start`?
+  fix: write `frame-start`
+objects/cases.noll:9:3 error[null-unknown-property]: an object has no `locaton`; did you mean `location`?
+  fix: write `location`
+objects/cases.noll:10:12 error[null-type]: `location` takes 3 lengths, as a list such as [0m 0m 0m]
+objects/cases.noll:11:20 error[null-unit]: `rotation-euler` cannot take `m`: it takes rad, deg or a bare number
+objects/cases.noll:11:23 error[null-unit]: `rotation-euler` cannot take `m`: it takes rad, deg or a bare number
+objects/cases.noll:12:17 error[null-name]: `XYZ` is not kebab-case: `rotation-mode`'s values are written in lower case, `xyz`
+  fix: write `xyz`
+objects/cases.noll:13:9 error[null-type]: `scale` takes 3 numbers, as a list such as [0 0 0]; this list has 2
+objects/cases.noll:15:12 error[null-handle]: no material is called `@steel`
+objects/cases.noll:16:10 error[null-name]: `@Cube` is not a kebab-case handle: `@`, then lower-case words joined by `-`
+  fix: write `@cube`
+objects/cases.noll:20:8 error[null-type]: `data` names the data's kind before its handle, such as `data mesh @name`
+  fix: write `camera @lens`
+objects/cases.noll:21:17 error[null-enum]: `spherical` is not a value of `rotation-mode`: it takes `quaternion`, `xyz`, `xzy`, `yxz`, `yzx`, `zxy`, `zyx`, `axis-angle`
+objects/cases.noll:24:58 error[null-unit]: `MM` is not a unit `location` takes; it takes m, cm, mm, km, in, ft or a bare number
+  fix: write `mm`
+objects/cases.noll:27:26 error[null-unknown-property]: a cube primitive has no `segments`
+objects/cases.noll:28:3 error[null-unknown-property]: a mesh has no `faces`: write `polygons`, as RNA calls a mesh's faces `polygons` (S16: RNA's own names)
+  fix: write `polygons`
+objects/cases.noll:33:18 error[null-range]: vertex 3 does not exist: the mesh has 3 vertices, 0 to 2
+objects/cases.noll:33:21 error[null-type]: a polygon has 3 or more vertices; this one has 2
+objects/cases.noll:37:10 error[null-unit]: `lens` cannot take `m`: it takes mm or a bare number
+objects/cases.noll:38:14 error[null-range]: `0` is outside `clip-start`'s range, 0.000001 to 3.4028235e38
+objects/cases.noll:39:8 error[null-enum]: `perspective` is not a value of `type`: it takes `persp`, `ortho`, `pano`, `custom`
+  fix: write `persp`
+objects/cases.noll:44:13 error[null-unit]: `lm` is not a unit `energy` takes; it takes W or a bare number
+  fix: write `W`
+objects/cases.noll:45:3 error[null-unknown-property]: `angle` is a sun light's, and this light's `type` is `point`
+objects/cases.noll:46:14 error[null-type]: `use-shadow` is on or off: write it bare for on, or `on` or `off`, not `yes`
+  fix: write `on`
+objects/cases.noll:50:13 error[null-range]: `1.5` is outside `roughness`'s range, 0 to 1
+objects/cases.noll:51:3 error[null-repeated]: `roughness` is given twice; a material has one
+objects/cases.noll:52:3 error[null-readonly]: `name-full` is read-only in Blender, so it is not written
+objects/cases.noll:54:34 error[null-unknown-property]: a principled-bsdf node has no `base-colour`; did you mean `base-color`?
+  fix: write `base-color`
+objects/cases.noll:54:64 error[null-handle]: a principled-bsdf node has no output `out`: it has `bsdf`
+objects/cases.noll:55:15 error[null-kind]: `mix-shader` is not a node kind the schema knows: `principled-bsdf`
+objects/cases.noll:59:1 error[null-kind]: `lamp` is not a kind of datablock the schema knows: `project`, `scene`, `collection`, `object`, `mesh`, `material`, `camera`, `light`

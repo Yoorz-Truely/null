@@ -1,0 +1,55 @@
+//! Null's forms over RNA: where the schema alone does not say how a thing is written.
+//!
+//! Spec, section 8 ("Null's forms over RNA"), lists these with their reasons; this
+//! module holds the tables the checker reads. Everything else is RNA's own, by its
+//! own names (S16).
+
+/// The project file's kind, Null's own: the project's name, units and scenes.
+pub const PROJECT: &str = "project";
+
+/// Names the checker answers with another, because they are not Null's but are
+/// often written: (written, Null's name, why).
+pub const ALIASES: [(&str, &str, &str); 3] = [
+    (
+        "faces",
+        "polygons",
+        "RNA calls a mesh's faces `polygons` (S16: RNA's own names)",
+    ),
+    (
+        "active-material",
+        "material",
+        "an object's materials are written as `material @handle` lines, one per slot",
+    ),
+    (
+        "unit-settings",
+        "units",
+        "a scene's unit settings are written with `units`",
+    ),
+];
+
+/// The datablock kinds that can be an object's `data`.
+pub const OBJECT_DATA: [&str; 3] = ["mesh", "camera", "light"];
+
+/// The light structs whose `energy` is a power in watts. RNA gives `energy` no unit;
+/// Blender shows it in watts for these. A sun's is an irradiance, written bare.
+pub const POWER_LIGHTS: [&str; 3] = ["PointLight", "SpotLight", "AreaLight"];
+
+/// `units`' short settings: (Null's short name, the `UnitSettings` property).
+pub const UNITS_SHORT: [(&str, &str); 3] = [
+    ("scale", "scale-length"),
+    ("length", "length-unit"),
+    ("rotation", "system-rotation"),
+];
+
+/// Length units as `units length=…` takes them: (unit, `length-unit` item).
+pub const LENGTH_UNITS: [(&str, &str); 6] = [
+    ("m", "meters"),
+    ("cm", "centimeters"),
+    ("mm", "millimeters"),
+    ("km", "kilometers"),
+    ("in", "inches"),
+    ("ft", "feet"),
+];
+
+/// Rotation units as `units rotation=…` takes them: (unit, `system-rotation` item).
+pub const ROTATION_UNITS: [(&str, &str); 2] = [("deg", "degrees"), ("rad", "radians")];

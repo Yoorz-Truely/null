@@ -1,0 +1,38 @@
+object @pier "Pier" {
+  location [0m -4m 0.35m]
+  rotation-euler [0deg 0deg 12deg]
+  rotation-mode xyz
+  scale [1 1 1]
+  data mesh @deck
+  material @oak
+}
+
+object @boat "Boat" parent=@pier location=[20cm 1.5m 0m] rotation-euler=[0 0 1.5707964] {
+  data mesh @hull
+}
+
+mesh @deck "Deck" {
+  primitive cube size=2m
+}
+
+mesh @hull "Hull" {
+  vertices [
+    [-0.5m -0.1m 0m] [0.5m -0.1m 0m]
+    [0.5m 0.1m 0m] [-0.5m 0.1m 0m]
+    [0m 0m 0.4m]
+  ]
+  polygons [[0 1 2 3] [0 1 4] [1 2 4] [2 3 4] [3 0 4]]
+}
+
+material @oak "Weathered Oak" {
+  roughness 0.62
+  diffuse-color #8a6a4a
+  nodes {
+    node @bsdf principled-bsdf {
+      base-color [0.8 0.62 0.41 1]
+      roughness 0.62
+      metallic 0
+    }
+  }
+  layout { @bsdf [-160 0] }
+}

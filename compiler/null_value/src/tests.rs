@@ -322,3 +322,73 @@ fn all_f32_round_trip_exhaustively() {
     }
     assert_eq!(checked, (1u64 << 32) - 2 * ((1u64 << 23) - 1));
 }
+
+#[test]
+fn a_cameras_lens_and_a_lights_power_read_in_their_own_units() {
+    // `mm` on a lens is the lens's own millimetre (stored 50), not a length (0.05).
+    let lens: f32 = read("50mm", Dimension::Lens).unwrap();
+    assert_eq!(lens, 50.0);
+    assert_eq!(print(lens, Some(Unit::LensMm)), "50mm");
+    let length: f32 = read("50mm", Dimension::Length).unwrap();
+    assert_eq!(length, 0.05);
+    let power: f32 = read("800W", Dimension::Power).unwrap();
+    assert_eq!(power, 800.0);
+    assert_eq!(print(power, Some(Unit::W)), "800W");
+    assert_eq!(
+        read::<f32>("800W", Dimension::Length),
+        Err(ReadError::WrongUnit {
+            unit: Unit::W,
+            dimension: Dimension::Length
+        })
+    );
+    assert_eq!(
+        read::<f32>("5cm", Dimension::Lens).unwrap_err().to_string(),
+        "`cm` does not fit here: this value takes mm or a bare number"
+    );
+}
+
+#[test]
+fn a_unit_in_the_wrong_case_suggests_the_right_one() {
+    // From the 1a-04 review: `5MM` suggested `m`.
+    for (word, dimension, unit) in [
+        ("5MM", Dimension::Length, Unit::Mm),
+        ("5Deg", Dimension::Angle, Unit::Deg),
+        ("5w", Dimension::Power, Unit::W),
+        ("5CM", Dimension::Length, Unit::Cm),
+    ] {
+        assert_eq!(
+            read::<f32>(word, dimension),
+            Err(ReadError::UnknownUnit {
+                unit: word[1..].to_string(),
+                suggestion: Some(unit)
+            }),
+            "{word}"
+        );
+    }
+}
+
+#[test]
+fn whole_numbers_read_exactly() {
+    for (word, value) in [
+        ("0", 0),
+        ("-0", 0),
+        ("240", 240),
+        ("+7", 7),
+        ("-12", -12),
+        ("1e3", 1000),
+        ("2.0", 2),
+        ("9223372036854775807", i64::MAX),
+        ("-9223372036854775808", i64::MIN),
+    ] {
+        assert_eq!(read_int(word), Ok(value), "{word}");
+    }
+    for word in ["1.5", "inf", "nan", "9223372036854775808", "1e19", "1e999"] {
+        assert_eq!(read_int(word), Err(ReadError::NotAnInteger), "{word}");
+    }
+    assert!(matches!(
+        read_int("24fps"),
+        Err(ReadError::UnknownUnit { .. })
+    ));
+    assert!(matches!(read_int("2m"), Err(ReadError::WrongUnit { .. })));
+    assert_eq!(read_int("x"), Err(ReadError::NotANumber));
+}

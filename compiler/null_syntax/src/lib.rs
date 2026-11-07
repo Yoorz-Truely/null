@@ -30,7 +30,7 @@
 
 pub use scowr_errors::{
     Diagnostic, FileId, Fix, Label, LineCol, Location, Severity, SourceFile, SourceMap, Span,
-    TextEdit, apply_edits,
+    TextEdit, apply_edits, closest, edit_distance,
 };
 pub use scowr_syntax::lexer::{LexError, Token, lex};
 pub use scowr_syntax::{

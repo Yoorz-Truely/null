@@ -41,7 +41,7 @@ mod number;
 mod unit;
 
 pub use number::Float;
-pub use unit::{Dimension, ReadError, Unit, print, print_bare, print_in, read};
+pub use unit::{Dimension, ReadError, Unit, print, print_bare, print_in, read, read_int};
 
 #[cfg(test)]
 mod tests;

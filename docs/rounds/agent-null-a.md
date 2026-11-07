@@ -277,6 +277,69 @@ In review again, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes below: `
 
 **Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (1,218 MB after 10 minutes with 8 KB inputs, under libFuzzer's 2 GB limit); runs much longer than 10 minutes may need `-rss_limit_mb`.
 
+## 1a-06: checker, names, types and units against the schema
+
+In review, November 7, 2026.
+
+**What works.** A new crate, `compiler/null_check`, checks a project's files together against `schema/null-schema.json` (Sau's 1a-05):
+
+- Handles are collected project-wide first (S7), so references may point forward or into other files.
+- Every datablock (`scene`, `collection`, `object`, `mesh`, `material`, `camera`, `light`) and the `project` file are checked: their line (handle and display name only), each attribute against RNA's properties of the struct and its bases, and Null's own forms.
+- Each value is checked for its type and shape: floats and fixed-length lists with units, read by `null_value`, and their hard range; integers; booleans (bare, `on`, `off`); enums; strings; pointers to handles of the right kind; read-only properties; attributes given twice.
+- Light properties follow the light's `type`.
+- `#rrggbb` colours are read by the sRGB rule.
+- Mesh data is checked: `vertices`, and `polygons` of three or more indices of existing vertices.
+- Node trees are checked: node kinds, inputs, and links to an existing node's output. So is `layout`.
+
+Every error carries a stable code and, wherever one is clear, a fix:
+
+- the nearest schema name;
+- Null's name for a common other one (`faces` to `polygons`, `active-material` to `material`);
+- the lower-case enum item (`XYZ` to `xyz`);
+- the unit in the right case (`MM` to `mm`; the 1a-04 review's finding, now in `null_value`);
+- `on` for `yes`;
+- the kind for `data @lens` (`camera @lens`);
+- the nearest handle.
+
+Handles are kebab-checked where defined and where referenced, and enum values likewise (both from the 1a-02 review).
+
+**`null_value` gained** the camera lens's millimetre (`50mm` is 50, not 0.05), watts, and `read_int` for DNA's integers.
+
+**Decided where the spec and register were silent, recorded in the spec's section 8 ("Null's forms over RNA"), 6 and 18:**
+
+- RNA's `polygons`, not `faces` (S16).
+- `units` maps to `UnitSettings`.
+- Scene and collection members are lines, and an inline `collection` defines one.
+- `data <kind> @h`; `material @h` as slots.
+- A primitive's settings are the add operator's, `size` one length.
+- Light `energy` is in watts for point, spot and area lights; a sun's is bare.
+- Defaults are a new datablock's (the schema's `new`), for the formatter.
+- The diagnostic codes are listed.
+
+The spec's own examples now follow the schema: the pier's deck is `primitive cube size=1m` scaled by its object, and `layout` has one node per `;`.
+
+**Measured.** `cargo test -p null_check`: 7 tests and a doctest pass. A three-file slice project with every construct checks clean.
+
+One snapshot holds 31 errors from one broken file. They cover all ten codes: a misspelt name, a wrong type, a wrong unit, an out-of-range value, an unknown enum item, an upper-case one, a missing and a non-kebab handle, a read-only property, a repeated one, an unknown kind, a primitive setting, a polygon index past the vertices, a sun property on a point light, a bad link output and a wrong boolean.
+
+The task's three errors (misspelt `locaton`, `scale 2`, unit `45dgr`) each have their suggestion. Applying every fix leaves only the wrong type, which needs the author. Null's `just check` exits 0.
+
+**Run on Cosmósis's slice corpus** (`Cosmosis/corpus/slice`, read only): 6 projects, 9 errors, all real.
+
+- 4: `primitive cube size=[2m 2m 2m]`. RNA's `size` is one length.
+- 2: `faces`, which is RNA's `polygons`.
+- 3: `node … output-material`. **The schema has no `output-material` node**, so no material can be connected to its output. That is the schema generator's to add (Sau's `null-schema.py`, 1a-05), not Null's.
+
+The corpus changes are 1a-15's. For the lead: the schema needs `ShaderNodeOutputMaterial`, with its `surface` input.
+
+**Dependencies** (licences checked): `serde` 1 and `serde_json` 1 (MIT OR Apache-2.0), with `serde_core`, `serde_derive`, `proc-macro2`, `quote`, `syn`, `itoa` (MIT OR Apache-2.0), `unicode-ident` (MIT OR Apache-2.0 AND Unicode-3.0) and `memchr` (Unlicense OR MIT). `insta` for tests.
+
+**Unverified.**
+
+- Lengths assume unit scale 1.
+- Link types are not checked (a shader output into a vector input passes).
+- Only the slice's structs are in the schema, so anything else (`modifier`, `render`, `world`) is an unknown name.
+
 ## Next
 
-Whatever the lead routes next. The S59 spec corrections are committed (see the commit after `900a7e1`).
+1a-07: the canonical printer and minimal-edit writer.

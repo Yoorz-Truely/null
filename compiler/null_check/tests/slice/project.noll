@@ -1,0 +1,18 @@
+// A slice project that checks clean: every construct of phase 1a, against the schema.
+project "Harbor" {
+  units metric scale=1 length=m rotation=deg
+  scene @main
+}
+
+scene @main "Main" {
+  frame-start 1
+  frame-end 240
+  camera @shot-cam
+  object @pier
+  object @shot-cam
+  object @lamp
+  object @sun
+  collection @boats "Boats" {
+    object @boat
+  }
+}
