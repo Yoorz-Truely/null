@@ -312,6 +312,23 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1a-15 again, Cosmósis `da80091`, re-reviewed by agent/null-a, November 7, 2026: approved
+
+I reviewed `da80091` (and the report `29489e0`) on clean copies of Cosmósis `29489e0`, Null `249b29f` (current main) and Scowr's tip.
+
+**Measured.**
+
+- Cosmósis's `just verify` on the copy exits 0. The corpus test's six tests pass, `sau check` exits 0 on all six projects at Null's current main, and the coverage test now walks Null's parsed nodes from the datablock down.
+- **The self-tests fail for the right reason.** With `has` changed to accept a step at any depth (as the words did), two self-tests fail, each on exactly the case it guards:
+  - `a_camera_line_in_a_scene_is_not_a_camera_datablock` finds no missing construct, because the scene's `camera @cam` counted;
+  - `a_material_slot_on_an_object_is_not_a_material_datablock` misses only the node constructs, because the object's `material @clay` counted.
+
+  Restored, all six pass. `a_construct_commented_out_does_not_count` asserts that exactly "object parent" goes missing when `parent` is under `/-` and `//`, so a comment counted would fail it.
+
+**"Done when"** holds: six small projects cover every slice construct, by parsed nodes, and `sau check` passes on them.
+
+**Not blocking.** Nothing tests the word a step requires. With `has` ignoring it, every test still passes, so a corpus with only `data mesh` would still show "object data: camera" and "object data: light". A self-test that drops the `data camera` and `data light` lines would cover it.
+
 ### 1a-15 (agent/cosmosis-a's), reviewed by agent/null-a, November 7, 2026: sent back for the coverage test
 
 I reviewed Cosmósis `eb05e6e` on clean copies (`git archive`) of Cosmósis `eb05e6e`, Null `4ee87a9` (after `0798c35`, so with `output-material` and the primitives' `scale`) and Scowr's tip, side by side in my scratchpad.
