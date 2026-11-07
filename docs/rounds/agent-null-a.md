@@ -721,6 +721,67 @@ The spec's sections 15 and 17 say so, and that `format` makes a CRLF file's line
 
 **After the approval.** The review's nit is fixed: `DefinedTwice`'s message now says "that object is defined more than once", which fits one file defining it twice as well as two files. Nothing else changed.
 
+## 1c-01a: every RNA unit in the spec
+
+Null `04aad62`, November 7, 2026.
+
+**What it adds.** Spec section 6 gains a "Units" table listing all sixteen `PropertyUnit` kinds in Blender 5.3 (`PROP_UNIT_NONE` to `PROP_UNIT_FREQUENCY`, `makesrna/RNA_types.hh:221`). For each kind it gives:
+
+- what a bare number means;
+- the words Null accepts, each with its exact value;
+- how the scene's `scale-length` enters.
+
+**Read from Blender's source.**
+
+- The units, factors and base units come from `blenkernel/intern/unit.cc`'s unit collections.
+- Scaling follows `BKE_unit_value_scale`: length, velocity and acceleration ÷ s; area and power ÷ s²; volume and mass ÷ s³; only with a metric or imperial system.
+- Blender's interface converts no frame-time units (`button_is_unit`). Null converts seconds through `fps / fps-base`.
+- `AREA`, `VOLUME`, `POWER` and `TEMPERATURE` have no RNA property in 5.3. `MASS` is used by rigid bodies, cloth, particles and force fields.
+
+**Chosen.**
+
+- The words are Blender's short names in ASCII, without the decimal steps Blender marks as rarely used.
+- Area and volume are a length word plus `2` or `3`.
+- `F` converts with an exact 5/9, where Blender's interface uses 0.555555555555.
+
+**Found.** Blender's rotation unit "turn" (`t`) has the scalar `1.0 / (M_PI * 2.0)` (`unit.cc`, `buNaturalRotDef`). A turn is 2π radians, so typing `1t` gives 0.159 rad: it looks like an upstream bug. Null does not offer turns.
+
+**Unverified.** Only the words for length, rotation, camera and power are implemented in `null_value`; the rest are 1c-01b.
+
+## 1b-02a: sub-object handles specified
+
+Null `f0b3faa` and `2e7b1c8`, November 7, 2026.
+
+**What it adds.** Spec section 7 gains a "Sub-object handles" part:
+
+- **Handles.** A handle is made from the name. It is unique within its owner across kinds; a second `bevel` becomes `bevel-2`.
+- **Paths.** `/` steps into an owner, `.` plus a name is a socket, and `.` plus a number is a pattern's copy (S61 (6)).
+- **The table.** Each sub-object kind is listed with its owner and what keeps its identity across a rename.
+
+**Checked in Blender 5.3's DNA.** Blender's own identities:
+
+- `ModifierData::persistent_uid`; a rename keeps it (`rna_Modifier_name_set` only makes the name unique).
+- `bNode::identifier`, kept by rename (`node_unique_id`).
+- `bNodeSocket::identifier`.
+- `bNodeTreeInterfaceSocket::identifier` and the panel's `identifier`.
+- `KeyBlock::uid`.
+- `ActionSlot::handle`.
+
+Constraints, bones, bone collections, vertex groups, attributes and UV maps, view layers, action layers and strips, NLA tracks and strips, markers, and Grease Pencil layers have only names. They go through `.sau/ids.noll` (S61 (3)). S61 lists six of these kinds; the table names the rest under the same rule. `CustomDataLayer::uid` serves only shape keys.
+
+**Changed.** The spec's example `@rig/@spine.002` is now `@rig/@spine-002`.
+
+## 1b-01a: the persistent ID's rules (in progress)
+
+**Null's side is done.** Null `68d13dc`: section 7's "Persistent IDs" states each case's rule.
+
+**Sau's side waits on a worktree from the lead.** ARCHITECTURE.md is to gain a table of every case (new, added to `Main`, copy, duplicate, evaluated copies, rename, save, reopen, old files, undo, append, link, override, copy buffer, embedded IDs, projects opened from text), each with its rule and the Blender function it hooks, checked in Sau's tree at `33b69ad`. The draft is ready.
+
+**Chosen beyond S61.**
+
+- Data from files saved before the field gets a derived ID, not a random one: a hash of the type, the name and the library's path. An unchanged old file, or an old library linked in, then gives the same IDs every time it opens, as Blender's own `BKE_modifiers_persistent_uid_init` does for modifiers.
+- Evaluated copies carry no ID of their own.
+
 ## Next
 
 - **1a-12a and 1a-13a** (as agent/sau-g, report `docs/rounds/agent-sau-g.md` on Sau's `agent/sau-g`): the review's fixes are in `ddd7662`, synced at `9da78cd`. `just verify` passed, and both are back in review.
