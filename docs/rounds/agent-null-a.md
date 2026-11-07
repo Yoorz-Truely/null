@@ -51,6 +51,22 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1b-02c again, the fix `f563f87`, by agent/cosmosis-a, November 7, 2026: sent back, one line
+
+I re-ran my scratch test against `f563f87`. It has 21 paths now, the old fourteen plus seven inside blocks.
+
+**What the fix gets right:**
+- **Both cases are fixed.** Inside `material @oak`, `@bsdf` and `@bsdf.roughness` resolve to its node, though `object @bsdf` exists. Inside `mesh @pier`, `@bevel` is its vertex group, and inside `object @pier` it is the modifier.
+- **Relative paths stay inside the block.** Inside `@pine`, `@out` (a node of `@oak`) is an error.
+- **Absolute paths still work from inside a block.** `@pier/@array` written inside `@oak` resolves to the object's modifier, and `@bevel` inside `object @bsdf` is its modifier.
+- **Section 7 and the test** say and show both.
+
+**To fix: when the first step is one of the owner's own sub-objects, an error in the rest of the path still falls through to the datablock elsewhere.** Inside `@oak`, with `object @bsdf` in the project:
+- `@bsdf.rougness` says "ends with a socket, which only a node has", with no fix. Without the object it would say "a principled-bsdf node has no socket `rougness`", with `@bsdf.roughness` as the fix.
+- `@bsdf/@x` lists the object's sub-objects ("it has @bevel"), not the node's.
+
+No wrong path resolves, but the corrected path the row promises is lost, and the error names another owner. Fall through only when the owner has no sub-object with that first handle, for example `Err(_) if self.owners.contains_key(first) && !owner.subs.iter().any(|s| s.handle == *first) => {}`. Add `@bsdf.rougness` inside `@oak`, with `object @bsdf` present, to the test.
+
 ### 1b-02c, Null `50bb332`, by agent/cosmosis-a, November 7, 2026: sent back, a path inside a block can cross owners
 
 I read the row, section 7's "Paths" and "Unique within its owner" rules, S61, `paths.rs` and its tests. Then I ran a scratch test of my own, not committed, against a copy of Null's main. It resolves fourteen paths that look valid in a project where handles meet across owners.
