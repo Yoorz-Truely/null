@@ -172,3 +172,57 @@ fn bracket<F: Float>(value: &Decimal) -> F {
         bits *= 2;
     }
 }
+
+/// |`value`| expressed in `unit` to about 40 significant digits, for finding the
+/// shortest decimal in that unit: exactly divided for inches (0.0254 m) and feet
+/// (0.3048 m), and through π's bracket for degrees. `None` for zero and non-finite
+/// values, and for units that are decimal shifts.
+pub(crate) fn in_unit<F: Float>(value: F, unit: crate::Unit) -> Option<Decimal> {
+    let x = value.to_f64();
+    if !x.is_finite() || x == 0.0 {
+        return None;
+    }
+    // |x| = m × 2^e exactly.
+    let bits = x.abs().to_bits();
+    let (raw_exp, frac) = ((bits >> 52) as i64, bits & ((1u64 << 52) - 1));
+    let (m, e) = if raw_exp == 0 {
+        (frac, -1074)
+    } else {
+        (frac | (1u64 << 52), raw_exp - 1075)
+    };
+    let (mut num, mut den) = if e >= 0 {
+        (BigUint::from(m) << e as u64, BigUint::one())
+    } else {
+        (BigUint::from(m), BigUint::one() << (-e) as u64)
+    };
+    match unit {
+        crate::Unit::In => {
+            num *= 10000u32;
+            den *= 254u32;
+        }
+        crate::Unit::Ft => {
+            num *= 10000u32;
+            den *= 3048u32;
+        }
+        crate::Unit::Deg => {
+            let (lo, _) = pi_first();
+            num = (num * 180u32) << FIRST_BITS;
+            den *= lo;
+        }
+        _ => return None,
+    }
+    // 40 significant digits: q = floor(num × 10^s / den) with s chosen so q has about 40.
+    let ten = BigUint::from(10u32);
+    let magnitude = num.bits() as i64 - den.bits() as i64; // log2 of the ratio, roughly
+    let s = 40 - (magnitude as f64 * std::f64::consts::LOG10_2).floor() as i64;
+    let q = if s >= 0 {
+        (num * ten.pow(s as u32)) / den
+    } else {
+        num / (den * ten.pow((-s) as u32))
+    };
+    Some(Decimal {
+        negative: x < 0.0,
+        digits: q.to_string(),
+        exp: -s,
+    })
+}

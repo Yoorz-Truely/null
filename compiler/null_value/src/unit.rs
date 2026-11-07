@@ -119,19 +119,6 @@ impl Unit {
             Unit::Deg => return None,
         })
     }
-
-    /// One unit in the internal unit, approximately, to find candidates for printing.
-    fn approx_factor(self) -> f64 {
-        match self {
-            Unit::M | Unit::Rad | Unit::LensMm | Unit::W => 1.0,
-            Unit::Cm => 0.01,
-            Unit::Mm => 0.001,
-            Unit::Km => 1000.0,
-            Unit::In => 0.0254,
-            Unit::Ft => 0.3048,
-            Unit::Deg => std::f64::consts::PI / 180.0,
-        }
-    }
 }
 
 impl fmt::Display for Unit {
@@ -222,6 +209,16 @@ pub fn read<F: Float>(word: &str, dimension: Dimension) -> Result<F, ReadError> 
             Some(u) => u.to_internal(&value).expect("a decimal unit").round(),
         },
     })
+}
+
+/// The unit `word` is written in, if it is a number followed by a unit of any kind
+/// (`mm` read as `dimension`'s where both have one). `None` for a bare number.
+pub fn unit_of(word: &str, dimension: Dimension) -> Option<Unit> {
+    let (_, used) = scan(word)?;
+    let suffix = &word[used..];
+    (!suffix.is_empty())
+        .then(|| Unit::from_suffix(suffix, dimension))
+        .flatten()
 }
 
 /// Reads `word` as a whole number with no unit, exactly (DNA's integer properties, and
@@ -340,12 +337,12 @@ pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
         read::<F>(&format!("{}{suffix}", d.layout()), unit.dimension())
             .is_ok_and(|v| v.bits() == target)
     };
-    let approx = value.to_f64() / unit.approx_factor();
-    if !approx.is_finite() || approx == 0.0 {
-        return None;
-    }
+    // The value in this unit to about 40 digits, exactly derived, so rounding it to
+    // each length finds the decimal that reads back (the 1a-04 review found an f64
+    // estimate missing some at 16 and 17 digits).
+    let precise = exact::in_unit(value, unit)?;
     for digits in 1..=17usize {
-        let rounded = round_to_digits(approx, digits);
+        let rounded = round_decimal(&precise, digits);
         let mantissa: u64 = rounded.digits.parse().unwrap_or(0);
         let exp = rounded.exp;
         let mut candidates = vec![Decimal::new(rounded.negative, &rounded.digits, exp)];
@@ -362,18 +359,37 @@ pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
     None
 }
 
-/// `x` rounded to `digits` significant digits, as a decimal whose digit string has
-/// exactly that many digits (trailing zeros kept, so neighbours are one apart).
-fn round_to_digits(x: f64, digits: usize) -> Decimal {
-    let sci = format!("{:.*e}", digits - 1, x);
-    let (mantissa, exp) = sci.split_once('e').expect("an exponent");
-    let exp: i64 = exp.parse().expect("a whole exponent");
-    let negative = mantissa.starts_with('-');
-    let mantissa = mantissa.trim_start_matches('-').replace('.', "");
+/// `d` rounded half up to `digits` significant digits, as a decimal whose digit
+/// string has exactly that many digits (trailing zeros kept, so neighbours are one apart).
+fn round_decimal(d: &Decimal, digits: usize) -> Decimal {
+    let all = d.digits.as_bytes();
+    let mut kept: Vec<u8> = all.iter().take(digits).copied().collect();
+    while kept.len() < digits {
+        kept.push(b'0');
+    }
+    let mut exp = d.exp + all.len() as i64 - digits as i64;
+    if all.get(digits).is_some_and(|&b| b >= b'5') {
+        let mut i = kept.len();
+        loop {
+            if i == 0 {
+                kept.insert(0, b'1');
+                kept.pop();
+                exp += 1;
+                break;
+            }
+            i -= 1;
+            if kept[i] == b'9' {
+                kept[i] = b'0';
+            } else {
+                kept[i] += 1;
+                break;
+            }
+        }
+    }
     Decimal {
-        negative,
-        exp: exp - (mantissa.len() as i64 - 1),
-        digits: mantissa,
+        negative: d.negative,
+        digits: String::from_utf8(kept).expect("ASCII digits"),
+        exp,
     }
 }
 

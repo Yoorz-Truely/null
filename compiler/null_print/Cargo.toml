@@ -1,0 +1,19 @@
+[package]
+name = "null_print"
+description = "Null's canonical printer and minimal-edit writer, on the lossless syntax tree"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+null_syntax.workspace = true
+null_value.workspace = true
+
+[dev-dependencies]
+null_check.workspace = true
+proptest = { version = "1", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true

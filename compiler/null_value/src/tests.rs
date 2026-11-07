@@ -392,3 +392,38 @@ fn whole_numbers_read_exactly() {
     assert!(matches!(read_int("2m"), Err(ReadError::WrongUnit { .. })));
     assert_eq!(read_int("x"), Err(ReadError::NotANumber));
 }
+
+proptest! {
+    #[test]
+    fn a_value_written_in_a_unit_prints_back_in_it(m in 1..10u64.pow(17), e in -25i64..10, ft in any::<bool>(), deg in any::<bool>()) {
+        // From the 1a-04 review: at 16 and 17 digits the printer sometimes fell back to
+        // the bare unit although a decimal in deg, in or ft read back. Every value read
+        // from such a decimal must print in that unit again (S21: the line's unit is kept).
+        let unit = if deg { Unit::Deg } else if ft { Unit::Ft } else { Unit::In };
+        let text = format!("{m}e{e}{unit}");
+        let x: f64 = read(&text, unit.dimension()).unwrap();
+        let printed = print_in(x, unit);
+        prop_assert!(printed.is_some(), "{} printed bare as {}", text, print_bare(x));
+        let back: f64 = read(&printed.unwrap(), unit.dimension()).unwrap();
+        prop_assert_eq!(back.to_bits(), x.to_bits());
+    }
+}
+
+#[test]
+fn the_reviews_case_keeps_its_feet() {
+    let x: f64 = read("-18750715569787871e-5ft", Dimension::Length).unwrap();
+    let printed = print_in(x, Unit::Ft).unwrap();
+    let back: f64 = read(&printed, Dimension::Length).unwrap();
+    assert_eq!(back.to_bits(), x.to_bits());
+    assert!(printed.ends_with("ft"), "{printed}");
+}
+
+#[test]
+fn the_unit_of_a_word() {
+    assert_eq!(unit_of("2.7m", Dimension::Length), Some(Unit::M));
+    assert_eq!(unit_of("50mm", Dimension::Lens), Some(Unit::LensMm));
+    assert_eq!(unit_of("50mm", Dimension::Length), Some(Unit::Mm));
+    assert_eq!(unit_of("90deg", Dimension::Angle), Some(Unit::Deg));
+    assert_eq!(unit_of("0.5", Dimension::Angle), None);
+    assert_eq!(unit_of("5parsec", Dimension::Length), None);
+}

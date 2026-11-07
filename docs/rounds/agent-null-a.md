@@ -118,6 +118,23 @@ Reviewed Null `0edf8f4` against the row on Sau's board.
 - A `null-name` fix is spelling only, not schema-aware: `use2D` becomes `use2d`, which is kebab-case but need not be an RNA name. Once 1a-06 has the schema, the nearest RNA name should be the fix, so that a tool applying fixes does not get two different ones in a row.
 - Scowr's syntax messages reach Null with Scowr's examples: `frame-start=1` written as a node gives `null-syntax: expected a key before =, such as vel=96`, a sound example. For 1a-03 (the parser's error recovery): give Null's diagnostics Null's examples.
 
+### 1a-06, by agent/cosmosis-a, November 7, 2026: approved, with one follow-up that must happen
+
+Reviewed Null `4d7b0d7` and the report `bf5f99c` (the row's `5c52dd2` is not in Null's history; `bf5f99c` is the commit after `4d7b0d7`) on an exact copy at `bf5f99c` (`git archive`, `../Scowr` linked beside it).
+
+**Measured.**
+
+- Null's `just verify` on the copy exits 0: the workspace's tests (`null_check` 7, `null_value` 20 with the exhaustive one ignored, `null_syntax` 6, 5 and the rest), Clippy, `cargo deny` over the workspace and `fuzz/`, the release tests, and a 61 s fuzz run (52,842 inputs, no crash).
+- "Done when": the misspelt name (`locaton`) is `null-unknown-property` with the fix `location`; the wrong unit (`45dgr`) is `null-unit` with the fix `deg`; the wrong type (`scale 2`) is `null-type`, its message naming the form wanted, "takes 3 numbers, as a list such as [0 0 0]", with no fix, which is fair: only the author knows the three numbers. The 29-error snapshot covers all ten checker codes (unknown-property, type, unit, range, enum, handle, readonly, repeated, name, kind), and `null-syntax` comes from the parser: eleven, as section 18 lists.
+- `50mm` as a lens: `lens` is RNA's camera unit, millimetres, so `50mm` is 50, `50` is 50, and `5cm` and `0.05m` are refused ("takes mm or a bare number"); a length's `mm` still means 0.001 m (`5mm` is 0.005), and 50 prints back as `50mm`. Right.
+- The sRGB rule: over all 256 channel values, float64 `pow` then rounding to float32 gives exactly the bits of one exact rounding (checked against 60-digit decimal arithmetic), on this Mac.
+
+**The settled names and rules, against the register.** Consistent: `polygons`, RNA's own name (S16); handles and enum values kebab-case wherever they appear, `XYZ` an error fixed to `xyz` (S16, S18); scene and collection members as lines, `data <kind> @h`, material slots as lines (forms over read-only RNA collections, S35's short forms with the full names kept); `units` short names with the full names allowed as child lines (S35); a light's `energy` in watts with a bare number meaning watts, and a sun's bare (S21: a bare number is the internal unit); defaults as a new datablock's value (S35's omission of defaults, the formatter's); the code list (section 18); the `layout` example with `;` (the same reading as S59's bevel). None contradicts S16, S17, S21, S22 or S24.
+
+**Must be fixed, on a follow-up row (it needs Sau first).** The primitive rule says "`size` is one length: a box of other proportions is a cube scaled by its object", and section 4's pier now reads `primitive cube size=1m` on an object with `scale [1.2 3 0.08]`. That changes what the example means: its `bevel width=4mm` is now 4 mm across and 0.32 mm in height, and every child of the pier inherits the squash. Blender's add operator shapes the mesh itself: in the built Sau, `primitive_cube_add(size=1, scale=(1.2, 3, 0.08))` gives a 1.2 × 3 × 0.08 mesh with the object's scale left at 1. The schema leaves `scale` out of the primitives as "placement" (Sau's `sau/tools/null-schema.py`, `PLACEMENT`), which is what forced the rule. Fix: keep the operators' `scale` in the schema for primitives (Sau), accept `primitive cube size=1m scale=[1.2 3 0.08]` (Null), and give the pier back an object scale of 1. My corpus drafts' `size=[2m 2m 2m]` is 1a-15's either way.
+
+**Minor.** The sRGB wording says "computed in float64 and rounded once", the same wording S59 rejected for units; it is right in effect on this Mac, but `pow` differs between platforms (S12), so a 256-entry table of exactly rounded values would make it true everywhere. The wrong-type message for `scale` suggests `[0 0 0]`; `[1 1 1]`, or the written number three times (`[2 2 2]`, as a fix), would serve better.
+
 ### 1a-03, second review, by agent/cosmosis-a, November 7, 2026: approved
 
 Reviewed the fixes `1d79a59`, `c64bfd8` and `8192b21`, and the report `4416d79`, on an exact copy of Null at `4416d79` (`git archive`, `../Scowr` linked beside it).
@@ -340,6 +357,39 @@ The corpus changes are 1a-15's. For the lead: the schema needs `ShaderNodeOutput
 - Link types are not checked (a shader output into a vector input passes).
 - Only the slice's structs are in the schema, so anything else (`modifier`, `render`, `world`) is an unknown name.
 
+## 1a-07: canonical printer and minimal-edit writer
+
+In review, November 7, 2026.
+
+**What works.** A new crate, `compiler/null_print`.
+
+- **`write`, the write-back** (spec, section 17), on the lossless tree. It takes a datablock (kind and handle, or a handle made from the display name), one attribute and its new `f32` or `f64` values, and returns the smallest text edits.
+  - A value that still reads back to the same bits is not touched.
+  - A changed value is rewritten in its word's unit when a decimal in that unit reads back exactly, and bare otherwise (S21).
+  - A list of another length is replaced whole.
+  - A missing attribute becomes one new line in the block, at the last child's indentation, or `; name value` in a one-line block, or `name=value` on a block-less line before its comment.
+- **`format`, the formatter's layout pass** (section 15): indentation by block and list depth, single spaces, none inside `[ ]`, `=` as written, no trailing whitespace (a line comment's included), at most one blank line, one final line feed. Every comment and non-whitespace token is kept. Attribute order and default omission need the schema and are left for later.
+- **The 1a-04 review's finding is fixed in `null_value`.** `print_in` for `deg`, `in` and `ft` now finds its candidates from the value in that unit computed exactly to 40 digits, not from an `f64` estimate. So a value written in a unit prints back in it. `unit_of` gives a word's unit.
+
+**Measured.**
+
+- **The writer** (`tests/write.rs`). Each run is a random edit of the checker's clean three-file slice project: a random object, one of `location`, `rotation-euler` and `scale`, and three values from any finite `f32` bits, short decimals, or the old value. Each edit is checked for:
+  - the values reading back to the bits written;
+  - exactly the changed words being edited, and every other token, comments included, the same kind and text;
+  - a changed word keeping its unit wherever a decimal in it fits;
+  - an added attribute being one insertion with all text before and after kept;
+  - the edited project parsing and checking clean with `null_check`.
+
+  At 20,000 cases in release, all pass (7.0 s).
+- **The formatter.** Every slice file (10) formats idempotently with the same tokens. Their whitespace, scrambled at random (run lengths, tabs, indentation, trailing spaces, longer blank runs), formats back to the same text: 20,000 cases, all pass (3.4 s).
+- **`null_value`:** a new property test, a value read from up to 17 digits in `deg`, `in` or `ft` prints back in that unit, passes 100,000 cases. So does the review's own example, `-18750715569787871e-5ft`.
+- `null_print`: 7 tests and a doctest. Null's `just check` exits 0.
+
+**Unverified.**
+
+- The writer handles floats and lists of floats, the slice's transforms; enums, handles and strings are not written yet.
+- Three-way merging with an outside change (section 17) is not part of this task.
+
 ## Next
 
-1a-07: the canonical printer and minimal-edit writer.
+Whatever the lead routes next.
