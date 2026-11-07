@@ -8,9 +8,10 @@ set -euo pipefail
 name=${1:?usage: tools/sau-crosscheck-test.sh <Null|Cosmosis>}
 root=$(git rev-parse --show-toplevel)
 case $name in
-# A function Sau's sau_core calls and nothing in this repository's libraries does, renamed.
-Null) file=compiler/null_print/src/project.rs before='pub fn write_transform(' after='pub fn write_transform_renamed(' ;;
-Cosmosis) file=crates/cosmosis/src/layout.rs before='pub fn find_root(' after='pub fn find_root_renamed(' ;;
+# A function Sau's sau_core calls given one more parameter, which this repository's own
+# libraries still build with: only Sau's call breaks.
+Null) file=compiler/null_print/src/project.rs before='pub fn write_transform(' after='pub fn write_transform(_extra: (), ' ;;
+Cosmosis) file=crates/cosmosis/src/layout.rs before='pub fn find_root(' after='pub fn find_root(_extra: (), ' ;;
 *) echo "usage: tools/sau-crosscheck-test.sh <Null|Cosmosis>" >&2 && exit 2 ;;
 esac
 scratch=$(mktemp -d)
