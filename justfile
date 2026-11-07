@@ -15,11 +15,14 @@ check:
     cargo deny --offline --manifest-path fuzz/Cargo.toml check licenses bans sources
     @echo "check: passed"
 
-# The full gate before review and integration, and nightly: check, deeper property tests, fuzzing
+# The full gate before review and integration, and nightly: check, deeper property tests, fuzzing,
+# and Sau's crates built against this checkout
 verify:
     just check
     PROPTEST_CASES=4096 cargo test --workspace --locked --release
     tools/fuzz.sh 60
+    # Sau's crates built against this checkout, when Sau is beside it (Sau task 0-12).
+    tools/sau-crosscheck.sh Null
     @echo "verify: passed"
 
 # Format everything
