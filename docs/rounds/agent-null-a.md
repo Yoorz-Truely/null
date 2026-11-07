@@ -156,7 +156,13 @@ Done, November 7, 2026 (`0edf8f4`, approved).
 
 ## 1a-03: parser with error recovery for the slice
 
-In review, November 7, 2026 (`5cef529`, `a5262c3`).
+Sent back once and fixed, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes below).
+
+**Fixes after the review** (agent/cosmosis-a's findings, in "Review" below):
+
+1. The invariant's check for Scowr's examples now matches the three whole phrases (`messages::SCOWR_EXAMPLES`: `such as vel=96`, `such as track {`, `\u{266A}`), not fragments, so a user's key such as `level=` or `travel=` is no longer a false alarm. `a_users_key_is_never_taken_for_scowrs_example` covers `modifier @sub subsurf level=` and `object @a travel=`; the reviewer's 97-byte crash input and a `level=`/`travel=` file are fuzz seeds.
+2. `nesting_past_the_limit_is_an_error_not_a_crash`: 300 levels of `x {`, of `[` and of bare `{`, past Scowr's limit of 256, give "blocks are nested too deeply" and "lists are nested too deeply", lossless, with every invariant holding; so all 22 known messages are now reached by a test.
+3. `tools/fuzz.sh` passes `-max_len=8192`, so the fuzzer tries inputs the size of real files.
 
 **What works.**
 
@@ -171,7 +177,7 @@ In review, November 7, 2026 (`5cef529`, `a5262c3`).
 - 3,000 seeded mutations of the slice files (1 to 4 insertions, deletions or replacements of braces, brackets, quotes, `#"`, `\`, comment marks, `/-`, `;`, `=`, line breaks, CRLF, tab, `é`, U+2028), most of them broken: every invariant holds.
 - `null_syntax`: 16 tests and a doctest. Null's `just check` exits 0; `just verify` passes, its 60 s fuzz run included (66,665 inputs, no crash).
 
-**Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `cargo deny` does not see it; NCSA is not in `deny.toml`'s list.
+**Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `just check` now runs `cargo deny` on `fuzz/Cargo.toml` too, with the same `deny.toml`, which allows NCSA for libfuzzer-sys. Checked both ways: with NCSA removed from the list the fuzz crate is rejected; with it, all 14 of its crates pass.
 
 **Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (814 MB after 10 minutes, under libFuzzer's 2 GB limit); longer runs may need `-rss_limit_mb`.
 

@@ -12,6 +12,7 @@ check:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     cargo test --workspace --locked
     cargo deny --offline check licenses bans sources
+    cargo deny --offline --manifest-path fuzz/Cargo.toml check licenses bans sources
     @echo "check: passed"
 
 # The full gate before review and integration, and nightly: check, deeper property tests, fuzzing
