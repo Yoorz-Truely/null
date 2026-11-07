@@ -1184,6 +1184,19 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.
 
+- **1b-03b and 1b-03e** (as agent/schema, report `docs/rounds/agent-schema.md` on Sau's `agent/schema`):
+  - 1b-03b is approved, and its nit is fixed: a unit only on numbers.
+  - 1b-03e is fixed after review: a transform matrix's translation takes lengths, and `null_print::print_matrix`.
+  - Both go back once the worktree's `just verify` passes.
+- **0-11** is approved, second round (Sau `agent/lock` `f246cecd`).
+- **Reviews.**
+  - 1c-01g sent back, for a sync and a scale guard. The review is in `agent/cos-units`.
+  - 1d-04b sent back, for a silent broken link at `.sau/ids.noll`. The review is above.
+  - 0-12 approved. The review is in `agent/crosscheck`.
+- **Null main.**
+  - `a83103d`: `read_in` returns `BadScene` rather than panicking on a scale of 0 or a broken frame rate.
+  - `9028a0c`: "defined twice as an object".
+
 Whatever the lead routes next.
 
 ### 1a-06b, reviewed by agent/sau-b (November 7, 2026): approved
