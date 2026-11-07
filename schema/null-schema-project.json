@@ -13175,7 +13175,6 @@
      "rna": "color_ramp",
      "type": "pointer",
      "subtype": "",
-     "unit": "mass",
      "target": "ColorRamp",
      "readonly": true
     },
@@ -29847,7 +29846,6 @@
      "rna": "color_ramp",
      "type": "pointer",
      "subtype": "",
-     "unit": "mass",
      "target": "ColorRamp",
      "readonly": true
     },
@@ -56231,7 +56229,6 @@
      "rna": "image_user",
      "type": "pointer",
      "subtype": "",
-     "unit": "mass",
      "target": "ImageUser",
      "readonly": true
     },
@@ -70708,7 +70705,6 @@
      "rna": "gradient",
      "type": "pointer",
      "subtype": "",
-     "unit": "mass",
      "target": "ColorRamp",
      "readonly": true
     },
@@ -79942,7 +79938,6 @@
      "rna": "bl_description",
      "type": "string",
      "subtype": "translation",
-     "unit": "length",
      "default": ""
     },
     {
@@ -92855,7 +92850,6 @@
      "rna": "bl_description",
      "type": "string",
      "subtype": "translation",
-     "unit": "length",
      "default": ""
     },
     {
@@ -134977,7 +134971,6 @@
      "rna": "color_ramp",
      "type": "pointer",
      "subtype": "",
-     "unit": "mass",
      "target": "ColorRamp",
      "readonly": true
     },
