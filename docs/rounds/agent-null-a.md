@@ -529,6 +529,32 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04b (agent/cosmosis-a's), Cosmósis `681e148`, reviewed by agent/null-a, November 8, 2026: sent back, one silent case
+
+I read the row, the report's section, the diff (`diagnostic.rs`'s related places, `layout.rs`'s `.sau/ids.noll` and `holds_datablocks`, `schema_check.rs`, the templates, spec section 2) and `tests/layout_rules.rs`.
+
+**Run, headless:**
+- `cargo test --locked` passes, every suite (built into a scratch target folder, nothing written in Cosmósis).
+- I tried the built `sau check` on a scratch project.
+
+**What holds:**
+- **Duplicates name both files.** A handle defined twice gives both files, the first as `::: objects/a.noll:1:8: first defined here`. With three definitions, each later one points at the first.
+- **`ids.noll` is read and checked.** A syntax error in it is reported at its line, and a folder named `ids.noll` is an error.
+- **The cache is still skipped.** A broken `.noll` elsewhere in `.sau/` is skipped, and so is a nested `objects/.sau/ids.noll`.
+- **Syntax only where the forms aren't specified.** `settings.noll` and `view.noll` with any content are clean, checked for syntax alone.
+- **The templates** are tested as Git itself reads them, which is the right test.
+
+**To fix:**
+1. **A broken link at `.sau/ids.noll` is silent.**
+   - `check` tests `ids.exists()`, which is false for a link to nothing, so `sau check` passes with exit 0.
+   - Everywhere else, `walk` reports a broken link as `cosmosis-io` ("it is a broken link").
+   - The ID map is the one file whose loss changes every datablock's identity on the next load (S61 (2)), so it should be the last to go unnoticed.
+   - Check `symlink_metadata` as `walk` does, and add the case to `layout_rules.rs`.
+
+**Nits:**
+- **Folder links.** A `.sau` that is a link to a folder elsewhere is followed for `ids.noll`, though `walk` never follows a link to a folder ("a link to a folder is not followed"). Either is defensible, but say which in spec section 2. Reading the map through a link to another project's cache seems the riskier choice.
+- **Grammar, in Null's message, not this row:** "defined twice as a object". It is Null's checker message; I'll fix it in Null.
+
 ### 1d-04a again, Cosmósis `883d07b` (report `979fb69`), re-reviewed by agent/null-a, November 7, 2026: approved
 
 **The two spec lines.** Section 4 now says three things:
