@@ -75,6 +75,27 @@ Reviewed Null `34cf222` (the task's only commit) against its row on Sau's board.
 - `every_spec_example_parses_clean_and_prints_back` asserts exactly five examples, so adding one to the spec fails it. That is a reasonable tripwire; the message says why.
 - The spec's own example `modifier @bevel bevel { width 4mm segments 3 }` does not mean what it says under the shared syntax (already recorded on 1a-06). It should be corrected in the spec itself, not only in the checker; for the spec's owner or 1a-17.
 
+### 1a-04, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed Null `95f836b` (code) and `65c6ea7` (report) against the row on Sau's board.
+
+**How.** Read the row, this report and the whole of `compiler/null_value` (`exact.rs`, `number.rs`, `unit.rs`, `tests.rs`). Ran Null's `just verify` on an exact copy of `65c6ea7` (`git archive`, `../Scowr` linked beside it). Checked the reader against an oracle of my own in Python: π from the Chudnovsky series in integers (neither Machin's formula nor the `decimal` recipe the tests' oracle uses), every conversion done exactly in fractions, and a hand-written half-to-even rounding into `f32` and `f64`, itself checked on π, 0.1, the least subnormal and a tie to zero. A probe crate outside Null's workspace fed it the cases.
+
+**Measured.**
+
+- Null's `just verify` on `65c6ea7` exits 0: `null_value`'s 17 tests (1 ignored, the exhaustive one) at Clippy, debug and 4,096 cases in release; `cargo deny`. The property tests at 100,000 cases each, in release: all pass, in 10.7 s. The 21-minute exhaustive test was not rerun.
+- 9,144 oracle cases, all matching bit for bit, and every result printed and read back bit-identical: 6,000 random words (1 to 30 significant digits, exponents -30 to 25, bare and in every unit, `f32` and `f64`), 3,000 degree values written to 25 or 45 digits so that their radians fall within a hair of a rounding midpoint (the hardest case for the π bracket), and the fixed examples. `90deg`, `2.7m` and `5mm` print back as written in `f32` and `f64`.
+- Read by hand, with no fault found: the π bounds are strict (each floored term errs by less than 1, so the error bound of 2(n + 1) per arctangent is generous); the degree bracket is monotonic and ends because π is irrational, the digits a precision cannot use being cut with the bracket widened; `round_ratio` finds its exponent in one step and rounds half to even, through subnormals and to infinity; `from_parts` is exact; lengths are exact decimal shifts and multiples of 254 and 3048, read once by the standard library's correctly rounded parser.
+- Unit errors: a unit of the wrong dimension names the units that fit (`5deg` as a length, `2rad` as a length, `5m` where no unit goes); an unknown one suggests the nearest unit of the right dimension, within two edits (`5mmm` gives `mm`, `5dg` and `5Deg` give `deg`, `5meter` gives none); `deg`, `-` and `-nan` are not numbers.
+
+**On the spec's "converted in float64 and rounded once".** The exact reading is the right one for S21 and S22 ("one exactly defined rule", exact to the stored bits), but it is a change to what the spec says and the spec should say it: "converted exactly and rounded once". Measured with the oracle on 20,000 degree values of 1 to 6 digits: for `f32` storage, converting in `f64` first (`x × (π/180)` in `f64`, as Blender does) and rounding into `f32` gives the same bits as the exact conversion every time; for `f64` storage it differs in 4,304 of 20,000 (21.5 %). So the slice's `f32` angles are unaffected, and only `f64` properties see the difference.
+
+**Findings, none blocking.**
+
+- The shortest print in a unit by search (`deg`, `in`, `ft`) can miss a decimal that exists, and then falls back to bare metres or radians: a value the user wrote in that unit is reprinted without it, which S21 ("Sau writes a value back in the unit its line already uses") would rather keep. Measured over 3,000 random values per row: never for `f32` (5 to 9 digits); for `f64`, only at 16 and 17 significant digits: degrees 0 and 6, feet 1 and 110, inches 2 and 75 (for example `-18750715569787871e-5ft`, a 17-digit value that reads back exactly yet prints as `-57152181056.71343`). The cause is the candidate window, ±1 in the last digit around an `f64` estimate. A value printed this way always reads back exactly, so nothing is lost. For 1a-07 (the minimal-edit writer): divide exactly for `in` and `ft` (by 254 and 3048), and widen the window for `deg`.
+- `5MM` suggests `m`, not `mm`; `5mn` suggests `m` where `mm` is as near. Ties in edit distance go to the first unit listed. Preferring a case-insensitive match first would help.
+- NaN payloads and the scene's unit scale are out of scope, as the report says; the spec should mention NaN when it is next edited.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 In review, November 7, 2026.
