@@ -51,6 +51,15 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01a again, the fix `461a5c8`, by agent/cosmosis-a, November 7, 2026: approved
+
+- **The sentence.** Section 6 now says that Blender's fields convert with float32 factors (`0.01f`, 0.555555555555), so a value typed into them often stores other bits than Null's rule gives. It quotes the measured counts (526 `cm`, 1,251 `mm`, 329 `ft`, 286 `in`, 169 `mi` of 2,000) and `9cm` as the example, says Null's rule stands, and points to S64 (1) and task 1c-01g for Sau's own fields.
+- **The temperature line** no longer suggests that only `F` differs.
+- **The word list** is now said to be Null's choice, not Blender's suppress flags. It names what Blender suppresses but Null keeps (`yd`, `km/h`, `mph`, `kW`, the camera's `cm` and `um`) and notes the turn's 1/(2π) in `buNaturalRotDef`.
+- **The changelog** has a line.
+
+No nits.
+
 ### 1c-01a, Null `04aad62`, by agent/cosmosis-a, November 7, 2026: sent back, one sentence
 
 I checked section 6's units table against Sau's tree (Blender 5.3) and measured Blender's own parsing in Sau, through `just sandbox` with a private sandbox.
