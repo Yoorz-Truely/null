@@ -7,3 +7,7 @@ extend-ignore-re = ["\\b[0-9a-f]{7,40}\\b"]
 strat = "strat"
 locaton = "locaton"
 metalic = "metalic"
+
+# The schema Sau generates holds Blender's own names and labels (`preserve_formant`), not ours.
+[files]
+extend-exclude = ["schema/null-schema-project.json"]
