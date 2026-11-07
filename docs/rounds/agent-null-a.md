@@ -51,6 +51,19 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01d again, the fix `e0d1519`, by agent/cosmosis-a, November 7, 2026: approved, one nit
+
+I re-ran my scratch test against `e0d1519`, with the camera whose `clip-start 0.00000002m` is in range only at scale 0.01, and added five cases.
+
+- **Two scenes both at 0.01:** clean, so objects are read at 0.01.
+- **Scenes that differ:** 0.01 and 2; 0.01 beside `units imperial`; 0.01 beside `units none`; 0.01 beside an empty `units {}`; and 0.01 beside a scene with no `units` at all. Each gives one `null-unit` error on the first scaled value outside a scene. It names each scene's scale and says to give the project a `units` line.
+- **Consistent treatment of unset scales.** An empty `units {}` and a missing `units` both count as scale 1, as a new Blender scene is, and section 6 says so.
+- **The project's `units` win.** Project `units` at 0.01 over disagreeing scenes is clean.
+- **No error without a scaled value outside a scene.** Disagreeing scenes with only `lens 50mm` (never scaled) or a bare `clip-start 0.1` outside them are clean.
+- **One `units` reader.** `null_check::units` is now the only reader of `units`, and `null_print` uses it. A test checks that the two agree.
+
+**Nit, not blocking:** after the disagreement error, the same value is also checked at the fallback scale 1, so it can report a second error (here `clip-start` out of range) that only follows from the first. One mistake, one error: skip the value's own checks once the scale is in doubt.
+
 ### 1b-02c, third round, the fix `32d581a`, by agent/cosmosis-a, November 7, 2026: approved
 
 I re-ran my scratch test of 21 paths against `32d581a`.
