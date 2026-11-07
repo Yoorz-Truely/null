@@ -209,6 +209,29 @@ Tried to break it on a fresh throwaway `git clone --shared` of Sau's `main` at `
 
 **"Done when"**: the board, guides, recipes, hooks, guards, `check` and `verify` work in all three repositories. The board's approval rules now hold against everything I tried. The nightly at `45616a1` passed (reviewed above).
 
+### 0-06 (agent/sau-b's), reviewed by agent/null-a, November 7, 2026: approved
+
+I reviewed Sau `80df787`, the one 0-06 commit on `agent/sau-b` (`git log main..agent/sau-b`; the branch's V-01 and 1a-09 commits are not part of it). I read the `Sau:` hook in `build_files/cmake/platform/platform_apple.cmake`, `sau/tools/check-links.sh`, the line in `check.sh` and the `HANDOFF.md` entry.
+
+**Measured.**
+
+- **`just check` at `80df787`, in a clean detached worktree** (`work/review-0-06`, made with `wt-setup` and removed afterwards): exit 0 after 905 s at heavy thermal pressure. It printed `check-links: no Homebrew or /usr/local library linked in Sau.app` and `check: passed`. The build log has no `ld: warning` line.
+- **Independently of the script:** I ran `otool -L` over every Mach-O file in the built app (206 of them, found by `file`, not by the script's own selection). None lists a library under `/opt/homebrew` or `/usr/local`. In the build's `CMakeCache.txt`, the only paths under `/opt/homebrew` are CMake's own tools (`cmake`, `ninja`). `OPENIMAGEDENOISE_COMMON_LIBRARY` is NOTFOUND, and OpenImageDenoise itself comes from `lib/macos_arm64`.
+- **It fails if the library comes back:** `check-links.sh` from `80df787`, run on the main checkout's old build (`.build/release`, read only), exits 1 and names `Contents/MacOS/Sau -> /opt/homebrew/opt/fbthrift/lib/libcommon.dylib`.
+- **The hook's logic, in a standalone CMake probe:**
+  - Without it, `find_library(common)` finds `/opt/homebrew/lib/libcommon.dylib`.
+  - With it, in the same build folder, the cached path is forgotten and the search gives NOTFOUND.
+
+  So both the search and the stale-cache case are covered.
+
+**"Done when"** holds: `otool -L` on the app and its libraries lists nothing under `/opt/homebrew` or `/usr/local`, the linker warning is gone, and the check fails when such a link returns.
+
+**Not blocking.**
+
+- `check-links.sh`'s header says `smoke.sh` runs it; it is `check.sh` that does.
+- `CMAKE_IGNORE_PREFIX_PATH` exists from CMake 3.23, and Sau's minimum is 3.21. On an older CMake the hook would do nothing without saying so. CMake 4.4.2 is installed here.
+- `otool -L` sees only dynamic links. A static archive found under Homebrew would not show. Checking `CMakeCache.txt` for library paths under the two prefixes would cover that too.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
