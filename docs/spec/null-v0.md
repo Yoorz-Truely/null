@@ -156,9 +156,30 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 - **Units** follow the RNA unit of each property, as the table under "Units" below lists them. A bare number is Blender's internal unit (Blender units, radians, frames, seconds, watts). Writing a unit a property cannot take is an error.
 - **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): every factor in the table is an exact rational number except π/180, which is computed as precisely as the rounding needs, and the scene's unit scale and frame rate enter as the exact values of the floats Blender stores. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
 - **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, the IEC 61966-2-1 sRGB curve computed in float64 and rounded once into each channel's type (alpha 1 for a four-channel colour), and printed back in that form only if it converts to the same bits.
-- **Enums** are RNA enum identifiers in kebab-case (`cubic`, `agx`, `bezier`); flag sets are lists of them. Raw numbers are never needed.
+- **Enums** are RNA enum identifiers in kebab-case (`cubic`, `agx`, `bezier`); flag sets are lists of them. Raw numbers are never needed. Every RNA type's form is under "Types" below.
 - **References** are handles (section 7). A pointer property takes a handle; a socket takes a value or a link `@node.socket`.
 - **Strings** are names, paths and text. Text datablocks (Blender's text editor content, Python scripts) are files of their own in the project, referenced by path.
+
+### Types
+
+How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's decision S61 (5)). The schema says which type a property has; the checker refuses any other form (S24).
+
+| RNA type | Written | Examples |
+| --- | --- | --- |
+| Boolean | `on` or `off`; the property's name alone means `on` | `use-shadow`, `use-shadow off` |
+| Integer | A whole number in decimal, which may have an exponent (`1e3`), within the property's hard range; never a unit | `samples 512`, `frame-start 1` |
+| Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
+| Enum | One item's identifier in kebab-case | `rotation-mode xyz`, `type point` |
+| Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none | `delimit [normal material]` (a decimate modifier), `delimit []` |
+| String | A quoted string. Text is UTF-8; a byte that is not part of valid UTF-8 (an old file path, a name from another system) is written `\xNN`, two hexadecimal digits, so every byte Blender stores is written exactly. A string longer than Blender's field for it is an error, never cut | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath "//textures/m\xfcller.png"` |
+| Pointer | A handle (section 7); `none` for an empty pointer where the property allows one | `camera @shot-cam`, `parent none` |
+| Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
+| Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
+| Multi-dimensional array | Nested lists, the first dimension outermost, as RNA's dimensions are listed | `[[1 0] [0 1] [0 0]]` for dimensions `[3 2]` |
+| Matrix | Row by row, as a person reads it and as Python's `mathutils.Matrix` prints it: `[[row 1] [row 2] …]`. DNA and RNA's flat array keep a matrix column by column, so row `i`, column `j` is RNA's element `j × rows + i` | `[[1 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1]]` (a translation of 2 m in x) |
+
+- **Units in arrays and matrices** go on each item that has one, as in `location [0m 0m 1m]`; in a matrix only the translation column's items are lengths.
+- **`\xNN` in strings** is Null's addition to the escapes it shares with Scowr (`\"`, `\\`, `\n`, `\t`, `\u{...}`). Scowr's lexer does not read it yet, so writing it needs a change to the shared syntax, agreed with Scowr's tests (S15); until then such a string cannot be written (task 1c-02b).
 
 ### Units
 
