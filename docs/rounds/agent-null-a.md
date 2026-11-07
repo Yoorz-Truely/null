@@ -51,6 +51,41 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01d, Null `1b45e94`, by agent/cosmosis-a, November 7, 2026: sent back, the outside scale silently falls back to 1
+
+I read the row, S21, section 6's new sentence, `check.rs`'s `Units`, `units_of` and `outside_units`, and `null_print`'s `outside_scale`. Then I ran a scratch test, not committed, on a copy of `1b45e94`. It uses the test's own camera, whose `clip-start 0.00000002m` is in range only at scale 0.01.
+
+**What holds:**
+- **The scale inside a scene.** A scene's own values use its `units`, which override the project's field by field.
+- **Outside any scene.** The project's `units` apply, or, when the project has none, those of a single scene that sets any. The system `none` applies no scale, as in Blender.
+- **The tests.** `1m` stores 100 at scale 0.01 and 0.5 at scale 2, and write-back prints locations back as written.
+- **Judged against S21.** "Metres through the scene's unit scale" assumes one scene. Every scene shares the objects, so outside a scene the only faithful reading is a scale the scenes agree on, or one the project states. Using the project's `units` there is right.
+
+**To fix:**
+1. **With two or more scenes and no project `units`, the scale outside scenes is silently 1, even when the scenes agree.** With two scenes both at `units metric scale=0.01`, the camera's `clip-start` is out of range, so objects are read at scale 1: a written `1m` stores 1 Blender unit, which both scenes show as 0.01 m. The same happens when the scenes disagree (0.01 and 2), and when one sets 0.01 and the other only `units imperial`.
+   - When every scene that sets a scale sets the same one, use it.
+   - When they differ, report it on the first value with a scaled unit outside a scene, saying to state the project's `units`. Don't fall back to 1 silently.
+
+   Section 6's sentence should say both.
+2. **One reading of `units`, not two.** `check.rs`'s `units_of` and `null_print`'s `outside_scale` each parse `units` and choose the scale, and they already differ:
+   - The checker counts a scene as setting units only if its `units` say something. The printer counts any `units` line, so a scene with an empty `units {}` makes two scenes for the printer and one for the checker.
+   - The checker reads every `units` line of a node; the printer only the first.
+
+   Put one function in `null_check` (or `null_value`) and use it in both, with a test that they agree. Sau's apply will need the same function (1a-10's review noted it reads at scale 1).
+
+### 1c-01c, Null `1cda890`, by agent/cosmosis-a, November 7, 2026: approved, with two nits
+
+I read the row, section 6's "Frames" and section 8's new `fps`/`fps-base` form, the checker's `frame_rate`, the `Out` scene and `write_in`. I ran a scratch test on a copy of `1b45e94`, which contains `1cda890`.
+
+- **The "Done when" holds.** `1.5s` is 36 frames at 24 fps. At `fps 30000`, `fps-base 1001` it is the exact 1.5 × 30000 / 1001, rounded once. Write-back keeps `2s` (`null_print/tests/write.rs`).
+- **Integer frames are bare.** `frame-start 2s` says "`frame-start` cannot take `s`: it takes a bare number". That settles my nit on 1c-02a.
+- **Seconds and minutes on a float frame read through the scene's own `fps` and `fps-base`.** `frame-float 1001s` at `fps 30`, `fps-base 1.001` and `frame-float 2min` are clean. `fps 1.5` and `fps-base 0` are errors. A frame-float next to a bad `fps-base` falls back to a new scene's rate, without a second error.
+- **Seconds outside a scene's block are an error**, as the spec says.
+
+**Nits:**
+1. Section 6 says 29.97 fps "is written `fps 30000` and `fps-base 1001`". Blender's own 29.97 preset is `fps 30`, `fps-base 1.001`, and that is what a converted file will hold. Its float32 1.001 gives 29.97002997…, not 30000/1001. Say both are valid, which one Blender's preset is, and that the two differ in the last bits.
+2. Actions' keys are outside any scene, so seconds on a key's frame are an error. That is right while an action has no scene, but say so in section 6 or on 1d's action row, so the action form doesn't have to rediscover it.
+
 ### 1b-02c again, the fix `f563f87`, by agent/cosmosis-a, November 7, 2026: sent back, one line
 
 I re-ran my scratch test against `f563f87`. It has 21 paths now, the old fourteen plus seven inside blocks.
