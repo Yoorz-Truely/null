@@ -529,6 +529,32 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04b (agent/cosmosis-a's), Cosmósis `681e148`, reviewed by agent/null-a, November 8, 2026: sent back, one silent case
+
+I read the row, the report's section, the diff (`diagnostic.rs`'s related places, `layout.rs`'s `.sau/ids.noll` and `holds_datablocks`, `schema_check.rs`, the templates, spec section 2) and `tests/layout_rules.rs`.
+
+**Run, headless:**
+- `cargo test --locked` passes, every suite (built into a scratch target folder, nothing written in Cosmósis).
+- I tried the built `sau check` on a scratch project.
+
+**What holds:**
+- **Duplicates name both files.** A handle defined twice gives both files, the first as `::: objects/a.noll:1:8: first defined here`. With three definitions, each later one points at the first.
+- **`ids.noll` is read and checked.** A syntax error in it is reported at its line, and a folder named `ids.noll` is an error.
+- **The cache is still skipped.** A broken `.noll` elsewhere in `.sau/` is skipped, and so is a nested `objects/.sau/ids.noll`.
+- **Syntax only where the forms aren't specified.** `settings.noll` and `view.noll` with any content are clean, checked for syntax alone.
+- **The templates** are tested as Git itself reads them, which is the right test.
+
+**To fix:**
+1. **A broken link at `.sau/ids.noll` is silent.**
+   - `check` tests `ids.exists()`, which is false for a link to nothing, so `sau check` passes with exit 0.
+   - Everywhere else, `walk` reports a broken link as `cosmosis-io` ("it is a broken link").
+   - The ID map is the one file whose loss changes every datablock's identity on the next load (S61 (2)), so it should be the last to go unnoticed.
+   - Check `symlink_metadata` as `walk` does, and add the case to `layout_rules.rs`.
+
+**Nits:**
+- **Folder links.** A `.sau` that is a link to a folder elsewhere is followed for `ids.noll`, though `walk` never follows a link to a folder ("a link to a folder is not followed"). Either is defensible, but say which in spec section 2. Reading the map through a link to another project's cache seems the riskier choice.
+- **Grammar, in Null's message, not this row:** "defined twice as a object". It is Null's checker message; I'll fix it in Null.
+
 ### 1d-04a again, Cosmósis `883d07b` (report `979fb69`), re-reviewed by agent/null-a, November 7, 2026: approved
 
 **The two spec lines.** Section 4 now says three things:
@@ -1157,6 +1183,19 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.
+
+- **1b-03b and 1b-03e** (as agent/schema, report `docs/rounds/agent-schema.md` on Sau's `agent/schema`):
+  - 1b-03b is approved, and its nit is fixed: a unit only on numbers.
+  - 1b-03e is fixed after review: a transform matrix's translation takes lengths, and `null_print::print_matrix`.
+  - Both go back once the worktree's `just verify` passes.
+- **0-11** is approved, second round (Sau `agent/lock` `f246cecd`).
+- **Reviews.**
+  - 1c-01g sent back, for a sync and a scale guard. The review is in `agent/cos-units`.
+  - 1d-04b sent back, for a silent broken link at `.sau/ids.noll`. The review is above.
+  - 0-12 approved. The review is in `agent/crosscheck`.
+- **Null main.**
+  - `a83103d`: `read_in` returns `BadScene` rather than panicking on a scale of 0 or a broken frame rate.
+  - `9028a0c`: "defined twice as an object".
 
 Whatever the lead routes next.
 
