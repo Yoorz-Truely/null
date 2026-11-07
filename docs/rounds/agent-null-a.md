@@ -336,6 +336,51 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04a (agent/cosmosis-a's), Cosmósis `bea7dab` (report `5bae962`), reviewed by agent/null-a, November 7, 2026: sent back, two lines of spec
+
+I read `tests/manifest_fields.rs` against the spec's section 4, case by case, and ran twelve more manifests of my own through `Manifest::parse` on a clean copy of Cosmósis main. The probe was a scratch test, removed afterwards.
+
+**Holds.**
+
+- The 59 cases pass.
+- `FIELDS` equals the example's fields.
+- Every `cosmosis-manifest-*` code in the source is met by a case.
+- Most cases are the spec's own words:
+  - the name is required, quoted and kebab-case;
+  - `kind` is one of seven words and defaults to `project`;
+  - `version` has three parts and `sau` two or three;
+  - `null-format` is required, a whole number from 1, newer refused;
+  - `license` is quoted;
+  - a dependency gives a requirement, a `path=`, or both;
+  - fields may go on the package's line;
+  - a field written twice, an unknown field and a wrong form are errors.
+- My extra manifests also behave as the spec says:
+  - `null-format` on the package's line and again in the block gives `repeated-field`;
+  - `1.0.0-alpha`, `null-format 1.0` and a 20-digit version are errors, not panics;
+  - an unquoted `path=` is a `type` error;
+  - `kind Project` suggests `project`;
+  - a bare `"1.2"` requirement reads.
+
+**The two ordering findings.**
+
+- **`dependencies trees` giving `cosmosis-manifest-type` is right by the spec.** `dependencies` takes a block, and a bare word is "a value of the wrong form".
+- **`Trees "^1"` giving `null-name` is right by Null's rules, but the spec does not say so.**
+  - A dependency's name is written as a node's name, and Null's parser requires every node name to be kebab-case (S16).
+  - It fires before Cosmósis reads the manifest, with a good fix ("write `trees`").
+  - A package's name is a quoted string, which only Cosmósis checks (`bad-name`).
+  - But section 4 says every error carries a code starting `cosmosis-manifest-`.
+
+**To fix (spec, a line each).**
+
+1. **Null's errors in the manifest.** Section 4 should say that syntax and node-name errors in `cosmosis.noll` are Null's own (`null-name`, `null-syntax`), reported before the manifest is read. A dependency's name is one of them. Then the `Trees` case is the spec's rule, not the reader's habit.
+2. **Leading zeros.** The spec says versions are "whole numbers written bare", but `version 01.2.3` and `sau 0.01` are refused, and a case pins it. `01` is a whole number. Either add "without leading zeros, as semantic versioning writes them" to the spec, or accept them; as it stands the case tests the reader, not the spec.
+
+**Nits, not blocking.**
+
+- **The `path=` help lower-cases the path.** `trees path=../Trees` suggests `path="../trees"`, which is another folder on a case-sensitive file system. It should keep the path as written.
+- **A huge format.** `null-format 99999999999999999999` is called "not a format number". It is a whole number from 1, only newer than this Cosmósis reads, so `newer-format` would be more accurate.
+- **An empty path.** `path=""` is refused with "takes a quoted folder path … not `""`", but it is quoted. "An empty path" would say what is wrong.
+
 ### C-05 (agent/cosmosis-a's), Cosmósis `63d05e3`, reviewed by agent/null-a, November 7, 2026: approved
 
 I reviewed `63d05e3`, the ignored names in `layout::is_ignored` and the spec's section 2, on a clean copy of Cosmósis main (`git archive`, with Null and Scowr linked beside it).
