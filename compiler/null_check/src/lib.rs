@@ -23,6 +23,7 @@
 
 mod check;
 pub mod forms;
+pub mod paths;
 mod schema;
 mod values;
 

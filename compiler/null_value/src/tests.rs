@@ -278,7 +278,7 @@ fn wrong_and_unknown_units_are_errors_with_suggestions() {
         read::<f32>("2rad", Dimension::Length)
             .unwrap_err()
             .to_string(),
-        "`rad` does not fit here: this value takes m, cm, mm, km, in, ft or a bare number"
+        "`rad` does not fit here: this value takes m, cm, mm, km, um, nm, pm, mi, yd, ft, in, thou or a bare number"
     );
     assert_eq!(
         read::<f32>("deg", Dimension::Angle),
@@ -341,9 +341,13 @@ fn a_cameras_lens_and_a_lights_power_read_in_their_own_units() {
             dimension: Dimension::Length
         })
     );
+    // A lens also takes the camera unit's other words (task 1c-01b): 5 cm is 50 mm.
+    assert_eq!(read::<f32>("5cm", Dimension::Lens).unwrap(), 50.0);
     assert_eq!(
-        read::<f32>("5cm", Dimension::Lens).unwrap_err().to_string(),
-        "`cm` does not fit here: this value takes mm or a bare number"
+        read::<f32>("5deg", Dimension::Lens)
+            .unwrap_err()
+            .to_string(),
+        "`deg` does not fit here: this value takes mm, cm, m, um or a bare number"
     );
 }
 
@@ -426,4 +430,201 @@ fn the_unit_of_a_word() {
     assert_eq!(unit_of("90deg", Dimension::Angle), Some(Unit::Deg));
     assert_eq!(unit_of("0.5", Dimension::Angle), None);
     assert_eq!(unit_of("5parsec", Dimension::Length), None);
+}
+
+// --- Every RNA unit (task 1c-01b; spec, section 6, "Units") ---------------------------------
+
+/// Every unit but degrees, which have tests of their own above.
+fn every_unit() -> Vec<Unit> {
+    Unit::all().filter(|u| *u != Unit::Deg).collect()
+}
+
+/// `x` (finite, nonzero) as an exact ratio `n / d` of its magnitude.
+fn float_ratio(x: f64) -> (BigUint, BigUint) {
+    let bits = x.abs().to_bits();
+    let (raw, frac) = ((bits >> 52) as i64, bits & ((1u64 << 52) - 1));
+    let (m, e) = if raw == 0 {
+        (frac, -1074)
+    } else {
+        (frac | (1u64 << 52), raw - 1075)
+    };
+    if e >= 0 {
+        (BigUint::from(m) << e as u64, BigUint::from(1u32))
+    } else {
+        (BigUint::from(m), BigUint::from(1u32) << (-e) as u64)
+    }
+}
+
+/// The exact value, in the internal unit, of `m` × 10^`e` written in `unit`, as (negative,
+/// n, d), from the unit's own factor, independently of the reader.
+fn exact_value(negative: bool, m: u64, e: i64, unit: Unit) -> (bool, BigUint, BigUint) {
+    let ten = BigUint::from(10u32);
+    let (mut n, mut d) = if e >= 0 {
+        (BigUint::from(m) * ten.pow(e as u32), BigUint::from(1u32))
+    } else {
+        (BigUint::from(m), ten.pow((-e) as u32))
+    };
+    match unit.conv() {
+        unit::Conv::Shift(k) if k >= 0 => n *= ten.pow(k as u32),
+        unit::Conv::Shift(k) => d *= ten.pow((-k) as u32),
+        unit::Conv::Ratio(a, b) => {
+            n *= BigUint::from(a);
+            d *= BigUint::from(b);
+        }
+        unit::Conv::Affine { offset, factor } => {
+            let (on, od) = (BigUint::from(offset.0), BigUint::from(offset.1));
+            let (a, b) = (&n * &od, &on * &d);
+            let (neg, sum) = if negative && a > b {
+                (true, a - b)
+            } else if negative {
+                (false, b - a)
+            } else {
+                (false, a + b)
+            };
+            return (
+                neg,
+                sum * BigUint::from(factor.0),
+                d * od * BigUint::from(factor.1),
+            );
+        }
+        unit::Conv::Pi => unreachable!("degrees are tested above"),
+    }
+    (negative, n, d)
+}
+
+/// Whether `got` is the exact `n / d` rounded once to the nearest float of its type: the exact
+/// value lies between the midpoints to its neighbours (on them only for an even mantissa).
+fn rounds_once(n: &BigUint, d: &BigUint, got: f64, neighbours: (f64, f64), even: bool) -> bool {
+    let (gn, gd) = float_ratio(got);
+    let mid = |other: f64| {
+        let (on, od) = float_ratio(other);
+        // (got + other) / 2 = (gn × od + on × gd) / (2 × gd × od)
+        (&gn * &od + &on * &gd, BigUint::from(2u32) * &gd * &od)
+    };
+    let (lo_n, lo_d) = mid(neighbours.0);
+    let (hi_n, hi_d) = mid(neighbours.1);
+    let above_lo = n * &lo_d > &lo_n * d || (even && n * &lo_d == &lo_n * d);
+    let below_hi = n * &hi_d < &hi_n * d || (even && n * &hi_d == &hi_n * d);
+    above_lo && below_hi
+}
+
+proptest! {
+    #[test]
+    fn every_unit_prints_and_reads_back_bit_identical(x in f64_bits(), y in f32_bits()) {
+        for unit in every_unit() {
+            if let Some(text) = print_in(x, unit) {
+                let back: f64 = read(&text, unit.dimension()).unwrap();
+                prop_assert_eq!(back.to_bits(), x.to_bits(), "{} in {}", text, unit);
+            }
+            if let Some(text) = print_in(y, unit) {
+                let back: f32 = read(&text, unit.dimension()).unwrap();
+                prop_assert_eq!(back.to_bits(), y.to_bits(), "{} in {}", text, unit);
+            }
+        }
+    }
+
+    #[test]
+    fn every_unit_converts_with_one_rounding(negative in any::<bool>(), m in 1..10u64.pow(12), e in -15i64..12) {
+        for unit in every_unit() {
+            let text = format!("{}{m}e{e}{unit}", if negative { "-" } else { "" });
+            let (neg, n, d) = exact_value(negative, m, e, unit);
+            let x: f64 = read(&text, unit.dimension()).unwrap();
+            if x != 0.0 && x.is_finite() {
+                prop_assert_eq!(x.is_sign_negative(), neg, "{} gave {}", text, x);
+                let a = x.abs();
+                let neighbours = (f64::from_bits(a.to_bits() - 1), f64::from_bits(a.to_bits() + 1));
+                prop_assert!(rounds_once(&n, &d, a, neighbours, a.to_bits().is_multiple_of(2)), "{} gave {:e}", text, x);
+            }
+            let y: f32 = read(&text, unit.dimension()).unwrap();
+            if y != 0.0 && y.is_finite() {
+                let a = y.abs();
+                let neighbours = (f32::from_bits(a.to_bits() - 1) as f64, f32::from_bits(a.to_bits() + 1) as f64);
+                prop_assert!(rounds_once(&n, &d, a as f64, neighbours, a.to_bits().is_multiple_of(2)), "{} gave {:e} (f32)", text, y);
+            }
+        }
+    }
+
+    #[test]
+    fn a_short_value_in_any_unit_prints_back_as_written(m in 1..10u64.pow(6), e in -6i64..6) {
+        // A value typed with a few digits in a unit reads back in that unit, as typed (S21).
+        for unit in every_unit() {
+            let text = format!("{}{unit}", Decimal::new(false, &m.to_string(), e).layout());
+            let x: f64 = read(&text, unit.dimension()).unwrap();
+            prop_assert_eq!(print_in(x, unit), Some(text.clone()), "{}", text);
+        }
+    }
+}
+
+#[test]
+fn every_unit_of_the_spec_reads() {
+    let cases: &[(&str, Dimension, f64)] = &[
+        ("1.5m", Dimension::Length, 1.5),
+        ("3um", Dimension::Length, 3e-6),
+        ("1mi", Dimension::Length, 1609.344),
+        ("2yd", Dimension::Length, 1.8288),
+        ("1thou", Dimension::Length, 0.0000254),
+        ("1cm2", Dimension::Area, 1e-4),
+        ("1ft2", Dimension::Area, 0.09290304),
+        ("1in3", Dimension::Volume, 0.000016387064),
+        ("2.5kg", Dimension::Mass, 2.5),
+        ("1lb", Dimension::Mass, 0.45359237),
+        ("1oz", Dimension::Mass, 0.028349523125),
+        ("1st", Dimension::Mass, 6.35029318),
+        ("1tn", Dimension::Mass, 907.18474),
+        ("1t", Dimension::Mass, 1000.0),
+        ("1.5s", Dimension::Seconds, 1.5),
+        ("2min", Dimension::Seconds, 120.0),
+        ("1d", Dimension::Seconds, 86400.0),
+        ("36km/h", Dimension::Velocity, 10.0),
+        ("1mph", Dimension::Velocity, 0.44704),
+        ("9.81m/s2", Dimension::Acceleration, 9.81),
+        ("35mm", Dimension::Lens, 35.0),
+        ("3.5cm", Dimension::Lens, 35.0),
+        ("2kW", Dimension::Power, 2000.0),
+        ("5mW", Dimension::Power, 0.005),
+        ("20C", Dimension::Temperature, 293.15),
+        ("-40F", Dimension::Temperature, 233.15),
+        ("-273.15C", Dimension::Temperature, 0.0),
+        ("550nm", Dimension::Wavelength, 550.0),
+        ("0.55um", Dimension::Wavelength, 550.0),
+        ("6500K", Dimension::ColorTemperature, 6500.0),
+        ("2kHz", Dimension::Frequency, 2000.0),
+    ];
+    for (text, dim, want) in cases {
+        let got: f64 = read(text, *dim).unwrap();
+        assert_eq!(got, *want, "{text}");
+    }
+    // Temperatures print back in their own unit.
+    let k: f32 = read("20C", Dimension::Temperature).unwrap();
+    assert_eq!(
+        print_in(k, Unit::from_suffix("C", Dimension::Temperature).unwrap()).as_deref(),
+        Some("20C")
+    );
+    let zero: f64 = read("-273.15C", Dimension::Temperature).unwrap();
+    assert_eq!(zero.to_bits(), 0f64.to_bits(), "absolute zero is +0");
+    assert_eq!(
+        print_in(
+            0f64,
+            Unit::from_suffix("C", Dimension::Temperature).unwrap()
+        )
+        .as_deref(),
+        Some("-273.15C")
+    );
+    // Case matters: a milliwatt is not a megawatt.
+    let mw: f64 = read("1mW", Dimension::Power).unwrap();
+    let big: f64 = read("1MW", Dimension::Power).unwrap();
+    assert_eq!((mw, big), (0.001, 1e6));
+}
+
+#[test]
+fn every_rna_unit_has_its_dimension() {
+    // The spec's table: one dimension per RNA unit but `NONE` and frames (`TIME`, 1c-01c).
+    let words: Vec<(Dimension, Vec<&str>)> = Dimension::ALL
+        .iter()
+        .map(|d| (*d, d.units().iter().map(|u| u.suffix()).collect()))
+        .collect();
+    assert_eq!(words.len(), 15);
+    for (d, w) in &words {
+        assert_eq!(w.is_empty(), *d == Dimension::None, "{d:?}");
+    }
 }

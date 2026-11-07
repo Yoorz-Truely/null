@@ -5,12 +5,13 @@
 //!
 //! - A number is read exactly as written and rounded once, to nearest even, into
 //!   the property's stored type, `f32` or `f64` ([`read`]).
-//! - A value with a unit is converted exactly and then rounded once. Metric and
-//!   imperial lengths are exact decimal shifts and multiples, so they reach the
-//!   standard library's correctly rounded reading as one exact decimal; degrees
-//!   are multiplied by π/180 in exact integer arithmetic, with π bracketed as
-//!   tightly as the rounding needs (module `exact`). A bare number is the internal
-//!   unit: metres, radians.
+//! - A value with a unit is converted exactly and then rounded once. Every word of the
+//!   spec's units table (section 6) is a decimal shift of the internal unit, an exact
+//!   ratio (inches, pounds, miles per hour), an offset and ratio (°C, °F), or π/180
+//!   (degrees). Shifts reach the standard library's correctly rounded reading as one
+//!   exact decimal; ratios and offsets are rounded from exact integers; degrees are
+//!   multiplied by π/180 with π bracketed as tightly as the rounding needs (module
+//!   `exact`). A bare number is the internal unit: metres, radians, kilograms, kelvin.
 //! - The printer writes the shortest decimal that reads back to exactly the
 //!   stored bits ([`print_bare`]), in the display unit whenever such a decimal
 //!   exists in it ([`print_in`], [`print`]), so `0.1`, `90deg`, `2.7m` and `5mm`

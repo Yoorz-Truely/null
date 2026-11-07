@@ -1,0 +1,18 @@
+---
+source: compiler/null_check/tests/paths.rs
+expression: "lines.join(\"\\n\")"
+---
+@peir/@bevel: error: no datablock is called `@peir` [fix: @pier/@bevel]
+@pier/@bevle: error: `@pier` has no sub-object `@bevle`: it has @array, @bevel, @track [fix: @pier/@bevel]
+@pier/@tarck: error: `@pier` has no sub-object `@tarck`: it has @array, @bevel, @track [fix: @pier/@track]
+@weathered-oak/@bsfd.roughness: error: `@weathered-oak` has no sub-object `@bsfd`: it has @bsdf, @out [fix: @weathered-oak/@bsdf.roughness]
+@weathered-oak/@bsdf.rougness: error: a principled-bsdf node has no socket `rougness`: it has base-color, metallic, roughness, ior, alpha, thin-wall, normal, weight and 27 more [fix: @weathered-oak/@bsdf.roughness]
+@bsdf.metalic (in @weathered-oak): error: a principled-bsdf node has no socket `metalic`: it has base-color, metallic, roughness, ior, alpha, thin-wall, normal, weight and 27 more [fix: @bsdf.metallic]
+@rig/@spine-002/@lk: error: `@spine-002` has no sub-object `@lk`: it has @ik [fix: @rig/@spine-002/@ik]
+@rig/@spine-02/@ik: error: `@rig` has no sub-object `@spine-02`: it has @spine-002 [fix: @rig/@spine-002/@ik]
+@pier/@bevel.width: error: `@pier/@bevel.width` ends with a socket, which only a node has: `@owner/@node.width`
+@pier/@nothing: error: `@pier` has no sub-object `@nothing`: it has @array, @bevel, @track
+@cam/@x: error: `@cam` has no sub-object `@x`: it has none
+@plank.7: error: `@plank.7` names copy 7 of a pattern; patterns are not read yet (task 1d-03)
+@cosmosis-materials:oak: error: `@cosmosis-materials:oak` names a datablock of the package `cosmosis-materials`; packages are not read yet (task 1d-04)
+@pier//@bevel: error: `@pier//@bevel` has an empty step: each `/` is followed by a handle
