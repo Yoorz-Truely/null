@@ -49,7 +49,7 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 | Compiled or interpreted? | Loaded: parsed, checked and applied to Blender's model incrementally on every save | Applying only what changed is what makes reload fast. Rendering is the build. |
 | Typed? | Statically and strongly, by the schema generated from RNA, with units as part of each type | Every mistake is caught before it reaches the scene. Units stop a length being used as an angle. |
 | High-level or low-level? | Both, by levels (section 9): intent (a cube with a bevel) down to exact vertex arrays | People and AI edit intent; exactness is never lost. |
-| Turing-complete? | No, on purpose. Geometry nodes and drivers are data that Blender evaluates, not Null code | Every file always finishes loading, means one thing, and can be diffed and written back. |
+| Turing-complete? | No, on purpose: total (Sau's decision S38). Patterns applied any number of times in one line, loops over counts and lists, conditions, arithmetic, parameters, and recursion that counts down to an end. Unbounded computation belongs to geometry nodes, drivers and generators | Every file always finishes loading, means one thing, and can be diffed and written back. Abstraction keeps files short. |
 | Garbage-collected? | No. The toolchain is Rust and the engine Blender's C++ | Nothing pauses the viewport. |
 
 ## 4. A first look
@@ -235,7 +235,7 @@ The formatter prints one form: canonical order of attributes (the RNA definition
 
 Changes are live in both directions, all the time, the way every query in a Convex app updates the moment its data or code changes (Sau's roadmap, design decision 9). Each change, from any source, is one checked, atomic transaction with a revision number, and every view (viewport, editors, code views, the language server's clients and the gateway's subscribers) follows the same revision.
 
-There is no run step and no separate save step (the user, November 6, 2026: changes "with hot reload open and autosave, rather than making scripts"). Sau's own code editor applies an edit as soon as the text parses, a fraction of a second after typing stops, and writes it to disk. Saving a file in any other editor, an AI's edit or a `git checkout` makes Sau, while it is open:
+There is no run step and no separate save step (the user, November 6, 2026: changes "with hot reload open and autosave, rather than making scripts"). VS Code is the editor (Sau's decision S44): Sau's extension sends each change of the open buffer to Sau through the language server, and Sau applies it as soon as it is valid, without a save, at a pace the scene can take. Saving a file in any other editor, an AI's edit or a `git checkout` makes Sau, while it is open:
 
 1. read and parse the changed files off the main thread;
 2. check them against the schema; on any error, keep the last good state, show the diagnostics in the code view and the status bar, and stop;
