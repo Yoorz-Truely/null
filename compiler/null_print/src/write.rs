@@ -185,6 +185,17 @@ fn printed(words: &[Word], unit: Option<Unit>) -> String {
     }
 }
 
+/// The file's line ending: CRLF if most of its line feeds follow a carriage return.
+fn line_ending(text: &str) -> &'static str {
+    let feeds = text.matches('\n').count();
+    let crlf = text.matches("\r\n").count();
+    if feeds > 0 && crlf * 2 > feeds {
+        "\r\n"
+    } else {
+        "\n"
+    }
+}
+
 /// The leading whitespace of the line `at` is on.
 fn indent_at(text: &str, at: usize) -> &str {
     let start = text[..at].rfind('\n').map_or(0, |i| i + 1);
@@ -210,6 +221,7 @@ fn insert(
         };
     };
     let line = format!("{attr} {value}");
+    let nl = line_ending(text);
     let children: Vec<_> = node.children().collect();
     let inner = format!("{}  ", indent_at(text, node.span().start));
     match children.last() {
@@ -219,7 +231,7 @@ fn insert(
                 // The last child ends its own line: a new line after it, indented as it is.
                 Edit {
                     span: Span::empty(end),
-                    replacement: format!("{}{line}\n", indent_at(text, last.span().start)),
+                    replacement: format!("{}{line}{nl}", indent_at(text, last.span().start)),
                 }
             } else {
                 // The last child shares its line (`{ a; b }`): one more after a `;`.
@@ -231,10 +243,12 @@ fn insert(
         }
         None => {
             let open = block.span().start + 1;
-            if text[block.span().range()].contains('\n') {
+            if let Some(feed) = text[block.span().range()].find('\n') {
+                // At the start of the line after `{`, so a comment on the brace's line stays
+                // the brace's (the 1a-07 review).
                 Edit {
-                    span: Span::empty(open),
-                    replacement: format!("\n{inner}{line}"),
+                    span: Span::empty(block.span().start + feed + 1),
+                    replacement: format!("{inner}{line}{nl}"),
                 }
             } else {
                 Edit {

@@ -258,7 +258,8 @@ The layout is fixed (settled November 7, 2026, task 1a-07):
 - two spaces of indentation per open block and per open list, with a closing `}` or `]` that starts a line one level less;
 - one space between entries, none just inside `[ ]`, one on each side inside a `{ }` that stays on one line, none before `;` and one after it;
 - whitespace around `=` as written, since it can change what parses;
-- no trailing whitespace, a comment's included;
+- no trailing whitespace, a comment's included, and lines that end in LF (a CRLF file's become LF);
+- a line a `\` continues indented one level deeper than its attribute;
 - at most one blank line in a row, none at the start of the file, and one line feed at its end.
 
 Formatting keeps every comment and every other token as written.
@@ -284,7 +285,7 @@ Every edit in Sau's interface (a drag, a slider, an operator, a node link) ends 
 - a value that still reads back to the same bits is left exactly as written;
 - a changed value is rewritten in the unit its word already uses, whenever a decimal in that unit reads back to the new bits, and bare in the internal unit otherwise (S21);
 - a list of another length is replaced whole;
-- an attribute the datablock does not have yet is added as one new line in its block, in the project's display unit, or as `name=value` on its line when it has no block. The file is written atomically. Edit mode and sculpt mode write their data when the mode is left, and while inside, after a short pause. A file changed outside while an edit is pending is merged three-way, like an editor's reload prompt; if both sides changed the same value, Sau asks.
+- an attribute the datablock does not have yet is added as one new line in its block, in the project's display unit, or as `name=value` on its line when it has no block; a new line goes after a comment on the block's opening line, and ends as the file's lines end (LF or CRLF). The file is written atomically. Edit mode and sculpt mode write their data when the mode is left, and while inside, after a short pause. A file changed outside while an edit is pending is merged three-way, like an editor's reload prompt; if both sides changed the same value, Sau asks.
 
 ## 18. Diagnostics
 

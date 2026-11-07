@@ -5,6 +5,9 @@
 //!   edits that make the file say so. Only the words whose values changed are
 //!   rewritten, each in the unit it was already written in (Sau's decision S21);
 //!   comments, layout and every other character stay as they are.
+//! - [`write_transform`] is the same across a project's files, for an object's transform,
+//!   with plain data in and out (paths, texts, byte ranges), for Sau to call through its
+//!   Rust core (task 1a-14a).
 //! - [`format`] is the formatter's layout pass (spec, section 15): two-space
 //!   indentation by depth, single spaces between entries, no space inside list
 //!   brackets, no trailing whitespace, at most one blank line, one line feed at the
@@ -30,7 +33,9 @@
 //! ```
 
 mod format;
+mod project;
 mod write;
 
 pub use format::format;
+pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};
 pub use write::{Edit, Values, WriteError, write};
