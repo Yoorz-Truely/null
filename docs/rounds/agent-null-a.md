@@ -941,6 +941,62 @@ Constraints, bones, bone collections, vertex groups, attributes and UV maps, vie
 - Data from files saved before the field gets a derived ID, not a random one: a hash of the type, the name and the library's path. An unchanged old file, or an old library linked in, then gives the same IDs every time it opens, as Blender's own `BKE_modifiers_persistent_uid_init` does for modifiers.
 - Evaluated copies carry no ID of their own.
 
+## 1b-02c: the checker resolves sub-object paths
+
+Null `50bb332`. `null_check::paths` holds four pieces:
+
+- **`Path::parse`** reads `@owner/@sub/@sub.socket`, a pattern copy (`.7`) and a package (`pkg:`).
+- **`Index::build`** indexes every datablock's sub-object lines (section 7's kinds) and node trees.
+- **`Index::resolve`** walks a path:
+  - a socket is checked against the schema's node sockets;
+  - inside its owner's block a path may leave the owner out;
+  - a misspelt owner, sub-object or socket gives the path written right.
+- **`check()`** reports a handle that two sub-objects of one owner share, whatever their kinds.
+
+**Measured.** `tests/paths.rs` has 4 tests:
+
+- every form of section 7 resolves: modifier, constraint, node and socket, bone, a bone's constraint, vertex group, shape key, view layer, relative paths;
+- 14 wrong paths give their errors and fixes (a snapshot);
+- paths parse as the spec writes them;
+- a shared handle is an error.
+
+`just check` and `just verify` pass.
+
+**Unverified, by design.** The slice has no property that takes a path yet. Drivers, constraint targets and the like will call `Index::resolve` when their forms land (1d-07). Pattern copies and package paths parse and name their tasks (1d-03, 1d-04).
+
+## 1c-01b: every unit read exactly and printed back
+
+Null `2c66b92`.
+
+**What changed.**
+
+- `null_value`'s units are per-dimension tables of section 6's words. Each word converts by one of four rules:
+  - a decimal shift;
+  - an exact ratio (inches, pounds, mph, km/h);
+  - an offset and ratio (°C, °F);
+  - π/180.
+- Ratios and offsets round once from exact integers, and `print_in` finds the shortest decimal in any word.
+- The checker maps RNA's unit names to the new dimensions.
+
+**Measured.** Three property tests per unit, each of 3,000 cases in release and 256 in `just check`:
+
+- every f32 and f64 printed in the unit reads back bit for bit;
+- every read is the exact rational rounded once, checked against its neighbours' midpoints, independently of the reader;
+- a short value typed in the unit prints back exactly as typed.
+
+The table's examples also read exactly: `1lb`, `36km/h`, `20C`, `-40F`, and `-273.15C`, which is +0.
+
+**Changed in a snapshot.** A lens now also takes `m`, `cm` and `um`, so the checker's case `lens 35m` became `lens 35deg`.
+
+## 1c-02a: every RNA type's written form
+
+Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enums, flag sets, strings, pointers, collections, arrays, multi-dimensional arrays and matrices, each with examples.
+
+- Matrices are written row by row (S61 (5)); RNA's flat element for row `i`, column `j` is `j × rows + i`.
+- An empty pointer is `none`, and a string too long for its field is an error.
+
+**Found.** Scowr's lexer refuses any `\x` escape ("unknown escape"). So S61's `\xNN` for bytes outside UTF-8 needs a change to Scowr's shared syntax, which needs the user's agreement (S15). Until then 1c-02b cannot read such strings. The spec says so.
+
 ## Next
 
 - **1a-12a and 1a-13a** (as agent/sau-g, report `docs/rounds/agent-sau-g.md` on Sau's `agent/sau-g`): the review's fixes are in `ddd7662`, synced at `9da78cd`. `just verify` passed, and both are back in review.
