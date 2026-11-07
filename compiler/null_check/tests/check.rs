@@ -82,7 +82,7 @@ mesh @tri \"Tri\" {
 }
 
 camera @lens \"Lens\" {
-  lens 35m
+  lens 35deg
   clip-start 0
   type perspective
 }
