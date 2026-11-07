@@ -1068,6 +1068,11 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **0-10** is in review at Sau `b38fde8d`, after the second fix. `just verify` passed, with all 802 of Blender's tests.
 - **1c-01h**: approved, the review in agent/cos-units-null `8912c09`.
 - **Next:** 1a-10b, once 1a-10 is merged.
+- **1b-02c**, fixed after review (Null `f563f87`): inside its block, a path starts at the owner's own sub-objects, the owner given as kind and handle.
+- **1c-01c**, in review (Null `1cda890`). Seconds on float frames are read through the scene's `fps` and `fps-base`, a new scene form; integer frames stay bare; write-back keeps seconds.
+- **1c-01d**, in review (Null `1b45e94`). The unit scale applies as section 6 now says: a scene's own inside its block, the project's outside, none with the system `none`.
+- **0-11**, the integrate lock (Sau agent/lock `21411c4b`). Its verify is running; the report is `docs/rounds/agent-lock.md` on that branch.
+- **Spec fix** (Null `7737164`): Blender's turn unit is in `#if 0`, so Blender does not offer it.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.
