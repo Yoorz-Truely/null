@@ -24,7 +24,7 @@ Done, November 7, 2026.
 
 ## 1a-04: exact numbers and units
 
-Done, November 7, 2026 (code in `95f836b`).
+Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went to the user.
 
 **What works.** A new crate, `compiler/null_value`, reads a word as a value of a dimension (none, length, angle) stored as `f32` or `f64`, and prints a stored value back:
 
@@ -120,7 +120,7 @@ Reviewed Null `0edf8f4` against the row on Sau's board.
 
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
-In review, November 7, 2026.
+Done, November 7, 2026 (`0edf8f4`, approved).
 
 **What works.**
 
