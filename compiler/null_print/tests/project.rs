@@ -264,3 +264,120 @@ fn a_continued_line_is_indented_one_level_deeper() {
     // And a CRLF file formats to LF lines (spec, section 15).
     assert_eq!(format("a 1\r\nb 2\r\n"), "a 1\nb 2\n");
 }
+
+// The 1a-14a review's fixes.
+
+#[test]
+fn an_object_defined_twice_in_one_file_is_refused() {
+    let one = vec![(
+        "a.noll".to_string(),
+        "object @cube \"A\" {\n  location [0m 0m 0m]\n}\nobject @cube \"B\" {\n  location [1m 1m 1m]\n}\n".to_string(),
+    )];
+    assert_eq!(
+        write_transform(&refs(&one), "@cube", Transform::Location, [2.0; 3]),
+        Err(WriteBackError::DefinedTwice)
+    );
+    // A handle written in one and made from the name in the other is the same object.
+    let named = vec![(
+        "a.noll".to_string(),
+        "object @big-rock \"Rock\"\nobject \"Big Rock\"\n".to_string(),
+    )];
+    assert_eq!(
+        write_transform(&refs(&named), "@big-rock", Transform::Scale, [1.0; 3]),
+        Err(WriteBackError::DefinedTwice)
+    );
+    // A `/-` copy is a comment, not a definition.
+    let commented = vec![(
+        "a.noll".to_string(),
+        "object @cube \"A\"\n/- object @cube \"B\"\n".to_string(),
+    )];
+    assert!(write_transform(&refs(&commented), "@cube", Transform::Scale, [2.0; 3]).is_ok());
+}
+
+#[test]
+fn values_that_are_not_finite_are_refused() {
+    let files = corpus();
+    for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        assert_eq!(
+            write_transform(&refs(&files), "@pier", Transform::Location, [bad, 2.0, 3.0]),
+            Err(WriteBackError::NotFinite),
+            "{bad}"
+        );
+    }
+}
+
+#[test]
+fn the_display_unit_comes_from_any_form_of_units() {
+    let object = "object @a \"A\" {\n}\n";
+    for (units, location, rotation) in [
+        (
+            "project \"P\" { units metric length=cm rotation=deg }",
+            "location [150cm 200cm 300cm]",
+            "rotation-euler [0deg 0deg 45deg]",
+        ),
+        (
+            "project \"P\" { units metric length=centimeters rotation=degrees }",
+            "location [150cm 200cm 300cm]",
+            "rotation-euler [0deg 0deg 45deg]",
+        ),
+        (
+            "project \"P\" {\n  units {\n    length-unit millimeters\n    system-rotation radians\n  }\n}",
+            "location [1500mm 2000mm 3000mm]",
+            "rotation-euler [0rad 0rad 0.7853982rad]",
+        ),
+        (
+            "scene @s \"S\" { units metric length=m rotation=deg }",
+            "location [1.5m 2m 3m]",
+            "rotation-euler [0deg 0deg 45deg]",
+        ),
+        (
+            "project \"P\"",
+            "location [1.5 2 3]",
+            "rotation-euler [0 0 0.7853982]",
+        ),
+    ] {
+        let files = vec![
+            ("project.noll".to_string(), format!("{units}\n")),
+            ("a.noll".to_string(), object.to_string()),
+        ];
+        let edits =
+            write_transform(&refs(&files), "@a", Transform::Location, [1.5, 2.0, 3.0]).unwrap();
+        assert!(
+            edits[0].replacement.contains(location),
+            "{units}: {edits:?}"
+        );
+        let edits = write_transform(
+            &refs(&files),
+            "@a",
+            Transform::RotationEuler,
+            [0.0, 0.0, std::f32::consts::FRAC_PI_4],
+        )
+        .unwrap();
+        assert!(
+            edits[0].replacement.contains(rotation),
+            "{units}: {edits:?}"
+        );
+    }
+}
+
+#[test]
+fn several_edits_to_one_file_apply_from_the_last() {
+    // Three changed values: three edits, ranges in the original text, none overlapping.
+    let files = vec![(
+        "a.noll".to_string(),
+        "object @a \"A\" {\n  location [1m 2m 3m] // here\n}\n".to_string(),
+    )];
+    let mut edits =
+        write_transform(&refs(&files), "@a", Transform::Location, [4.0, 5.0, 6.0]).unwrap();
+    assert_eq!(edits.len(), 3);
+    edits.sort_by_key(|e| e.start);
+    assert!(edits.windows(2).all(|w| w[0].end <= w[1].start));
+    let mut text = files[0].1.clone();
+    for e in edits.iter().rev() {
+        text.replace_range(e.start..e.end, &e.replacement);
+    }
+    assert_eq!(
+        text,
+        "object @a \"A\" {\n  location [4m 5m 6m] // here\n}\n"
+    );
+}

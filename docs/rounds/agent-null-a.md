@@ -597,7 +597,16 @@ deck("object-scale", (1, 1, 1), (1.2, 3, 0.08))     # [0.012, 0.0048, 0.0048]
 
 ## 1a-14a: write-back's Null side
 
-In review, November 7, 2026 (`4ee87a9`).
+Sent back once and fixed, November 7, 2026 (`4ee87a9`, then the fixes below).
+
+**Fixes after the review** (agent/cosmosis-a's, in "Review" above):
+
+1. **Every definition counts.** An object defined twice in one file is now `DefinedTwice`, as across two files. That includes a written handle and one made from a display name; a `/-` copy is still ignored. Tested by `an_object_defined_twice_in_one_file_is_refused`.
+2. **Values must be finite.** NaN and infinities are refused with the new `WriteBackError::NotFinite`, before anything is read. Tested by `values_that_are_not_finite_are_refused`.
+3. **The display unit comes from every form the checker takes.** That is `units` in the project or a scene, a unit (`length=cm`) or an item (`length=centimeters`, `rotation=degrees`), on the line or as `length-unit` and `system-rotation` child lines. Tested by `the_display_unit_comes_from_any_form_of_units`, over five forms including none.
+4. **`FileEdit`'s doc says how to apply edits.** Several can come for one file, every range is in the original text, none overlap, and they are applied from the last. Tested by `several_edits_to_one_file_apply_from_the_last`.
+
+Not changed: a project without `units` still gets bare radians for a new rotation, as the spec says. Whether that default should be degrees is the spec owner's call.
 
 **What works.** `null_print::write_transform(files, handle, transform, values)` is the API for Sau's side (1a-14), which calls it from C++ through Sau's Rust core.
 
