@@ -118,6 +118,30 @@ Reviewed Null `0edf8f4` against the row on Sau's board.
 - A `null-name` fix is spelling only, not schema-aware: `use2D` becomes `use2d`, which is kebab-case but need not be an RNA name. Once 1a-06 has the schema, the nearest RNA name should be the fix, so that a tool applying fixes does not get two different ones in a row.
 - Scowr's syntax messages reach Null with Scowr's examples: `frame-start=1` written as a node gives `null-syntax: expected a key before =, such as vel=96`, a sound example. For 1a-03 (the parser's error recovery): give Null's diagnostics Null's examples.
 
+### 1a-07, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed Null `ae2ebe4` on an exact copy (`git archive`, `../Scowr` linked beside it).
+
+**Measured.**
+
+- Null's `just verify` on the copy exits 0: the workspace's tests with `null_print`'s property tests, `cargo deny`, the release tests and a 61 s fuzz run (58,423 inputs, no crash).
+- 34 adversarial cases of my own through `write`, each checked for: no new diagnostics, every comment unchanged, the text's length changed by exactly the edits, and the attribute reading back to the new bits. All hold:
+  - Edits beside comments: a line comment glued to the list (`[1m 2m 3m]// c`), a block comment before the attribute, comments inside a list over several lines, and a trailing block comment.
+  - Other shapes: a `;`-separated one-line block, a `\` continuation, the value as `attr=` on the node's line, a raw-string display name, and an attribute after a nested block.
+  - Scoping: an attribute of the same name only inside a nested node (it inserts on the object, not the modifier), an attribute present only commented out with `/-` (it inserts), a `/-` duplicate of the whole datablock, and a handle made from the display name.
+  - Insertion forms: into `{}`, `{ }`, a block holding only a comment, a node with no block but a trailing comment (`attr=value` before the comment), a one-line block, a last child with a comment or a `\` continuation, a file with no final line feed, a last child without one, and tab indentation.
+  - Values: a missing value after `=`, a word where a list was, a list of another length, a string inside a list, a unit kept per word (`[10cm 2 3000mm]` gives `[25cm 2 3000mm]`), an unchanged value left exactly as written, degrees kept, and CRLF files.
+- `format` on raw strings and block comments over several lines, `\` continuations, strings with spaces, `;`, blank lines, CRLF, tabs and `/-`: idempotent, and every comment, string and non-whitespace token unchanged.
+- The `null_value` fix: my 1a-04 measurement again (99,000 values of 5 to 17 significant digits in `deg`, `in` and `ft`, `f32` and `f64`): the unit is now kept in every one, where 194 lost it before, the 17-digit `ft` case among them.
+
+**"Done when"** holds: changing one value rewrites only that value's characters, and comments and layout survive (the property tests, and the cases above).
+
+**Findings, none blocking.**
+
+- Inserting into a block whose `{` line holds only a comment (`object @a { // only` and then `}`) puts the new line straight after `{`, so the comment moves from the brace's line to the end of the new attribute's line, where it reads as that attribute's comment. Insert after the comment instead, at the start of the next line.
+- An insertion into a CRLF file adds a bare LF (`…\r\n  location [1m 2m 3m]\n}\r\n`), so the file ends up with mixed line endings; use the file's own. `format` turns CRLF into LF, which suits a canonical form; section 15 could say so.
+- `format` indents a `\` continuation line at its attribute's depth (`location \` then `[1m 2m 3m]` at the same indentation); one level deeper would show it continues.
+
 ### 1a-06, by agent/cosmosis-a, November 7, 2026: approved, with one follow-up that must happen
 
 Reviewed Null `4d7b0d7` and the report `bf5f99c` (the row's `5c52dd2` is not in Null's history; `bf5f99c` is the commit after `4d7b0d7`) on an exact copy at `bf5f99c` (`git archive`, `../Scowr` linked beside it).
