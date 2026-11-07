@@ -1,0 +1,15 @@
+[package]
+name = "null_syntax"
+description = "Null's syntax: Scowr's shared lexer and lossless tree, with Null's diagnostic codes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+scowr_errors.workspace = true
+scowr_syntax.workspace = true
+
+[lints]
+workspace = true

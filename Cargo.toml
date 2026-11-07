@@ -9,6 +9,13 @@ license = "MIT"
 publish = false
 rust-version = "1.99"
 
+# The front end Null shares with Scowr, by path (Sau's decision S15). Only `null_syntax` names
+# these; every other Null crate goes through it. The boundary is in AGENTS.md.
+[workspace.dependencies]
+null_syntax = { path = "compiler/null_syntax" }
+scowr_errors = { path = "../Scowr/compiler/scowr_errors" }
+scowr_syntax = { path = "../Scowr/compiler/scowr_syntax" }
+
 [workspace.lints.rust]
 missing_docs = "warn"
 unsafe_code = "deny"

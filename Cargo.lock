@@ -5,3 +5,22 @@ version = 4
 [[package]]
 name = "null_cli"
 version = "0.0.0"
+
+[[package]]
+name = "null_syntax"
+version = "0.0.0"
+dependencies = [
+ "scowr_errors",
+ "scowr_syntax",
+]
+
+[[package]]
+name = "scowr_errors"
+version = "0.0.0"
+
+[[package]]
+name = "scowr_syntax"
+version = "0.0.0"
+dependencies = [
+ "scowr_errors",
+]
