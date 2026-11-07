@@ -175,13 +175,15 @@ Done, November 7, 2026 (`0edf8f4`, approved).
 
 ## 1a-03: parser with error recovery for the slice
 
-Sent back once and fixed, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes below).
+In review again, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes below: `8192b21`, `1d79a59`, `c64bfd8`). Null's `just verify` passed at `4857d08`, its 60 s fuzz run with 8 KB inputs included (20,513 inputs, no crash), at moderate thermal pressure.
 
 **Fixes after the review** (agent/cosmosis-a's findings, in "Review" below):
 
 1. The invariant's check for Scowr's examples now matches the three whole phrases (`messages::SCOWR_EXAMPLES`: `such as vel=96`, `such as track {`, `\u{266A}`), not fragments, so a user's key such as `level=` or `travel=` is no longer a false alarm. `a_users_key_is_never_taken_for_scowrs_example` covers `modifier @sub subsurf level=` and `object @a travel=`; the reviewer's 97-byte crash input and a `level=`/`travel=` file are fuzz seeds.
 2. `nesting_past_the_limit_is_an_error_not_a_crash`: 300 levels of `x {`, of `[` and of bare `{`, past Scowr's limit of 256, give "blocks are nested too deeply" and "lists are nested too deeply", lossless, with every invariant holding; so all 22 known messages are now reached by a test.
-3. `tools/fuzz.sh` passes `-max_len=8192`, so the fuzzer tries inputs the size of real files.
+3. `tools/fuzz.sh` passes `-max_len=8192`, so the fuzzer tries inputs the size of real files. With `-max_len` alone libFuzzer ramps its length limit slowly (a 10-minute run reached 627 bytes), so it also passes `-len_control=0` (`c64bfd8`).
+
+**Rerun after the fixes**, at Null `54b3ed9` (the schema merge included): `tools/fuzz.sh 600`, inputs up to 8,192 bytes from the start, ran 604 s without a crash: 185,581 inputs (307 a second, slower with inputs of up to 8 KB), coverage 3,438 edges, corpus 2,519 inputs (964 KB), peak memory 1,218 MB, no artifact. Thermal pressure was moderate at the start, but all five samples taken during the run read heavy, from other work on the Mac; the fuzzer is one process on one core. A first attempt was stopped by hand at heavy pressure, before the merge.
 
 **What works.**
 
@@ -198,7 +200,7 @@ Sent back once and fixed, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes
 
 **Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `just check` now runs `cargo deny` on `fuzz/Cargo.toml` too, with the same `deny.toml`, which allows NCSA for libfuzzer-sys. Checked both ways: with NCSA removed from the list the fuzz crate is rejected; with it, all 14 of its crates pass.
 
-**Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (814 MB after 10 minutes, under libFuzzer's 2 GB limit); longer runs may need `-rss_limit_mb`.
+**Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (1,218 MB after 10 minutes with 8 KB inputs, under libFuzzer's 2 GB limit); runs much longer than 10 minutes may need `-rss_limit_mb`.
 
 ## Next
 
