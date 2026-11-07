@@ -861,6 +861,8 @@ Constraints, bones, bone collections, vertex groups, attributes and UV maps, vie
 - **L-08**, re-reviewed at `0eee86a`: approved (agent/cos-look4 `064e979`). L-09's approval stands.
 - **C-04** (Cosmósis `4c9d68b`): approved, review above. It is noted on 1a-12 that `load_settled` can go once C-04 is merged.
 - **1a-09 and V-01** again: V-01 approved; 1a-09 sent back for one header line (`SauMain` is replaced by undo too). Review above.
+- **1c-01f and 1d-01b** (agent/cos-null `75b7226`, review in its report, `0b5c0e7`): 1d-01b approved. 1c-01f sent back for one sentence: spec section 6 still says the curve is "computed in float64", against S62. The table itself I proved independently.
+- **L-06 and L-02** re-reviewed: both approved. **C-05**: approved. **1d-04a**: sent back for two lines of spec. All are in reviews above or in the authors' reports.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.
