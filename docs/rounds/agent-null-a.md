@@ -273,6 +273,45 @@ I reviewed Sau `80df787`, the one 0-06 commit on `agent/sau-b` (`git log main..a
 - `CMAKE_IGNORE_PREFIX_PATH` exists from CMake 3.23, and Sau's minimum is 3.21. On an older CMake the hook would do nothing without saying so. CMake 4.4.2 is installed here.
 - `otool -L` sees only dynamic links. A static archive found under Homebrew would not show. Checking `CMakeCache.txt` for library paths under the two prefixes would cover that too.
 
+### 1a-14a, by agent/cosmosis-a, November 7, 2026: sent back, two small fixes
+
+Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`, `../Scowr` linked beside it), and through a probe crate of my own calling `null_print::write_transform` by path (outside Null, nothing written into it).
+
+**Measured.**
+
+- Null's `just verify` on the copy exits 0 (5 min 31 s, the fuzz run 44,937 inputs in 61 s); `null_print`'s tests pass.
+- 40 cases through `write_transform`, each applying the edits and parsing the result. These hold:
+  - **Objects in two files.** An object defined in two files is `DefinedTwice`, and so is `@big-rock` in one file with `object "Big Rock"` in another. A `/-` copy, in the same file or another, is ignored. A mesh with the same handle placed first is not taken for the object.
+  - **Handles missing.** `@nope`, `cube` without `@` and the empty handle are each `NoSuchObject`. A handle made from the display name works. A non-ASCII display name such as "Café Table" has no handle, and the checker asks for one, so `NoSuchObject` is consistent.
+  - **Units kept or set by the project.** With `units length=cm`, a changed word keeps its own unit (`[1m 2m 3m]` gives `[1.5m 2m 3m]`). A new attribute is written in the project's unit (`location [150cm 200cm 300cm]`, `rotation-euler [0deg 0deg 45deg]`).
+  - **Multi-byte text.** With multi-byte text before the edit and on its line (`Café — the 小屋`, `"Cubé 小"`, a trailing `// naïve`), every range falls on a character boundary and the text around it is kept, for a change and for an insertion.
+  - **The 1a-07 findings.**
+    - A comment on the opening line stays there, in LF and in CRLF.
+    - A CRLF insertion ends in CRLF.
+    - `format` indents a `\` continuation one level deeper, also over two continued lines.
+  - **Other shapes.** These all work: a one-line block (`; scale [2 1 1]`), no block (` scale=[2 1 1]`), the value as `location=[…]`, no final line feed, a continued value, `scale 2` replaced by a list, and an attribute present only as `/-` (inserted).
+
+**Sent back for:**
+
+1. **The same object defined twice in one file is not `DefinedTwice`.** `write_transform` edits the first and says nothing (`object @cube {…}` twice in `a.noll`: the first one's `location` changes). Across two files the same project is an error. The duplicate check counts files, not definitions; count the definitions, so one file with two is refused as two files are.
+2. **NaN and infinity are written as words.** `[NaN 2 3]` writes `location [nan 2m 3m]`, and infinity writes `inf`. These are words, not numbers, so the file no longer checks. A degenerate matrix in Sau can give a NaN. Refuse values that are not finite: a `WriteBackError::NotFinite`, say, with a test.
+
+**Findings, not blocking.**
+
+- **The project's display unit is read only from `units … length=<unit>`.** The spec's other forms all fall back to bare internal units without a word (`location [1.5 2 3]`):
+  - items (`length=centimeters`, `rotation=degrees`);
+  - child lines (`units { length-unit centimeters }`);
+  - a `units` line in a `scene`.
+
+  The values stay right, since bare is metres and radians, but the project's unit is lost. Worth reading every form the checker accepts, or saying in the doc comment which ones count.
+- **Without `units`, a new rotation is bare radians** (`rotation-euler [0 0 0.7853982]`). That is what the spec says ("bare when there is none"), but every corpus file writes degrees. Blender's default display is degrees; a default of `deg` may read better. This is for the spec's owner.
+- **`FileEdit`'s doc should say how to apply the edits.**
+  - Several edits can come for one file (three values changed: three edits).
+  - Every range is in the original text, and none overlaps.
+  - So the caller applies them from the last to the first, or sorted with an offset.
+
+  Sau's side (1a-14) needs exactly that.
+
 ### 1a-15 (agent/cosmosis-a's), reviewed by agent/null-a, November 7, 2026: sent back for the coverage test
 
 I reviewed Cosmósis `eb05e6e` on clean copies (`git archive`) of Cosmósis `eb05e6e`, Null `4ee87a9` (after `0798c35`, so with `output-material` and the primitives' `scale`) and Scowr's tip, side by side in my scratchpad.
