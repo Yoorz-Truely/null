@@ -51,6 +51,19 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1b-02c, third round, the fix `32d581a`, by agent/cosmosis-a, November 7, 2026: approved
+
+I re-ran my scratch test of 21 paths against `32d581a`.
+
+- **The two errors are fixed.** Inside `material @oak`, with `object @bsdf` in the project:
+  - `@bsdf.rougness` says "a principled-bsdf node has no socket `rougness`", with the fix `@bsdf.roughness`;
+  - `@bsdf/@x` says the node has no sub-objects.
+
+  Neither mentions the object any more.
+- **The earlier results are unchanged.** In-block lookups and absolute paths still resolve as in the second round, and paths crossing owners are still errors.
+
+One nit from my first review remains, not blocking: a trailing dot (`@oak/@bsdf.`) still gets the message meant for `.x/`.
+
 ### 1c-01d, Null `1b45e94`, by agent/cosmosis-a, November 7, 2026: sent back, the outside scale silently falls back to 1
 
 I read the row, S21, section 6's new sentence, `check.rs`'s `Units`, `units_of` and `outside_units`, and `null_print`'s `outside_scale`. Then I ran a scratch test, not committed, on a copy of `1b45e94`. It uses the test's own camera, whose `clip-start 0.00000002m` is in range only at scale 0.01.
