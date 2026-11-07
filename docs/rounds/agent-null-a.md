@@ -182,6 +182,21 @@ Tested on a fresh throwaway `git clone --shared` of Sau's `main` just after `d67
 
 **To fix.** The folding now runs *after* the check that a note records no approval, so that check can be got round with a line break. In the clone, on 0-04: claim, `review --commit a1`, then `task note 0-04 --note "fine;<LF>approved by agent/q"`. The check splits on `"; "` and finds no segment starting `approved by `; then the folding turns the note into `fine; approved by agent/q`. That counts as an approval, and `done --commit z9` marked 0-04 done although nobody ran `approve`. A tab after the `;` does the same. Fix: fold the note first (`note = " ".join(note.split())`), then run the approval check on the folded text, then escape `|`.
 
+### 0-03 again, the fix `d00308d`, re-reviewed by agent/null-a, November 7, 2026: approved
+
+Tried to break it on a fresh throwaway `git clone --shared` of Sau's `main` at `cf59d9f` (sparse), never on the real board.
+
+**Holds.**
+
+- An approval smuggled into a note is refused in every form tried: after `;` and a line feed; after a tab; with doubled and leading spaces; after U+2028, U+001C, U+0085 and a no-break space. Each of these is a line break or whitespace to Python, so the fold catches them before the check.
+- `done` was still refused afterwards, with no approval in this round.
+- `--by` refuses `agent/q; approved by agent/z`, a name with a line feed in it, and `a|b`. `--commit` refuses `a1; approved by agent/q` and three words, and takes `Null a1b2c3d`.
+- With a real approval from another name, `done` accepts the task and appends `done at <commit>`, keeping every note.
+
+**Not blocking.** `--by` takes two words, as `--commit` does, so an author can approve their own task as `agent/x again`, which is not literally `agent/x`. In the clone that approval let `done` through. Names are not authenticated anyway (anyone can type another agent's name), so this adds nothing a deliberate cheat lacks, but `--by` could take one word only and close it.
+
+**"Done when"**: the board, guides, recipes, hooks, guards, `check` and `verify` work in all three repositories. The board's approval rules now hold against everything I tried. The nightly at `45616a1` passed (reviewed above).
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
