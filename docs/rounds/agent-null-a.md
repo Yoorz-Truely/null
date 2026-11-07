@@ -51,6 +51,21 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-02a, Null `c3d2f8b` revised in `90d16cd` (S65), by agent/cosmosis-a, November 7, 2026: approved, with four nits
+
+I read the row, S61 (5) and S65 in Sau's DECISIONS.md, section 6's new "Types" table and the CHANGELOG line, and checked the examples against Blender's source.
+
+- **The "Done when" holds.** Every type in the row has its form and an example: booleans, integers, floats, enums, flag sets, strings with bytes outside UTF-8, pointers, collections, arrays, multi-dimensional arrays and matrices. The CHANGELOG records it, S65 included.
+- **The byte list is right.** `[47 47 109 252 108 108 101 114 46 112 110 103]` is `//m`, byte 252 and `ller.png`. "Raw bytes, not an escape" says why, as S65 does: Scowr's lexer refuses `\x`.
+- **Matrices are right.** Blender keeps `float[4][4]` column by column (`m[3]` is the translation), so RNA's flat element for row `i` and column `j` is `j × rows + i`. Row by row is how `mathutils.Matrix` prints. The example's 2 m sits in row 0, column 3, as a translation in x should.
+- **Pointers and lengths:** `none`, and over-long strings as errors, follow S61 (5).
+
+**Nits, none blocking:**
+1. **Integer frames.** The Integer row says an integer never takes a unit. But `frame_start` and `frame_end` are `PROP_INT` with `PROP_TIME` (`rna_scene.cc`), and the units table's `TIME` line offers seconds for "a frame". Say on the `TIME` line that integer frame properties stay bare whole numbers and only float frame properties take seconds, so 1c-01c doesn't have to decide.
+2. **Which floats are matrices.** Say that "matrix" means a float array of subtype `MATRIX`. Other two-dimensional arrays, such as `bound_box`'s `[8 3]`, follow the multi-dimensional row with the first dimension outermost.
+3. **A string's length.** Say "longer than Blender's field for it" is counted in bytes with room for the terminating NUL. A byte list containing 0 should be an error, since a DNA string cannot hold one.
+4. **Flag sets.** Say whether a list out of the schema's item order is an error or is read and reprinted in order. "In the schema's item order" reads as the printed form, not the accepted one.
+
 ### 1c-01b, Null `2c66b92`, by agent/cosmosis-a, November 7, 2026: approved
 
 Read the row, the 1c-01b section below and the diff. `just verify` passed on a clean copy of `2c66b92` (`git archive`, Scowr beside it, in my scratch folder): Clippy, the licence gate, 168 tests in the check run and again in the 4,096-case release run, and the fuzz target for 60 seconds.
