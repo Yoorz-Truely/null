@@ -7,10 +7,12 @@
 
 use std::fmt;
 
-use null_syntax::parse;
-use null_value::{Dimension, Scene, Unit, read};
+use null_syntax::{Parse, parse};
+use null_value::{Dimension, Scene, Unit};
 
-use crate::write::{Values, WriteError, write_in};
+use null_check::units::{self, Outside, Units};
+
+use crate::write::{Values, WriteError, write_at};
 
 /// One file of the project: its path, as the caller names it, and its whole text.
 #[derive(Clone, Copy, Debug)]
@@ -143,12 +145,18 @@ pub fn write_transform(
         return Err(WriteBackError::DefinedTwice);
     }
     let (i, file) = found.ok_or(WriteBackError::NoSuchObject)?;
-    let display = display_unit(files, transform);
-    let scene = Scene {
-        scale_length: outside_scale(files),
-        ..Scene::default()
+    let parses: Vec<_> = files.iter().map(|f| parse(f.text)).collect();
+    let display = display_unit(&parses, transform);
+    // Outside every scene: the project's scale, or the one the scenes agree on (spec, section
+    // 6, "Scene scale"); where they disagree, scaled values are written bare.
+    let scene = match units::outside(&parses) {
+        Outside::Scale(scale_length) => Some(Scene {
+            scale_length,
+            ..Scene::default()
+        }),
+        Outside::Disagree(_) => None,
     };
-    let edits = write_in(
+    let edits = write_at(
         &file,
         "object",
         handle,
@@ -156,7 +164,7 @@ pub fn write_transform(
         Values::F32(&values),
         transform.dimension(),
         display,
-        &scene,
+        scene,
     )
     .map_err(|e| match e {
         WriteError::NoSuchNode => WriteBackError::NoSuchObject,
@@ -171,57 +179,6 @@ pub fn write_transform(
             replacement: e.replacement,
         })
         .collect())
-}
-
-/// The unit scale values outside a scene are read at (spec, section 6, "Scene scale"): the
-/// project's `units` `scale-length`, or, with no `units` in the project, the one scene's that
-/// sets one; 1 when the system is `none` or nothing says.
-fn outside_scale(files: &[ProjectFile<'_>]) -> f32 {
-    let settings = |holder: null_syntax::ast::Node<'_>| -> Option<(Option<String>, Option<f32>)> {
-        let units = holder.children().find(|c| c.name() == "units")?;
-        let mut system = units
-            .args()
-            .next()
-            .and_then(|v| v.as_word())
-            .map(str::to_string);
-        let mut scale = None;
-        let mut take = |key: &str, word: &str| match key {
-            "system" => system = Some(word.to_string()),
-            "scale" | "scale-length" => scale = read::<f32>(word, Dimension::None).ok(),
-            _ => {}
-        };
-        for entry in units.entries() {
-            if let null_syntax::ast::Entry::Prop { key, value } = entry
-                && let Some(w) = value.as_word()
-            {
-                take(key.text, w);
-            }
-        }
-        for line in units.children() {
-            if let Some(w) = line.args().next().and_then(|v| v.as_word()) {
-                take(&line.name(), w);
-            }
-        }
-        Some((system, scale))
-    };
-    let mut project = None;
-    let mut scenes = Vec::new();
-    for f in files {
-        let file = parse(f.text);
-        for node in file.document().nodes() {
-            match node.name().as_ref() {
-                "project" => project = project.or(settings(node)),
-                "scene" => scenes.extend(settings(node)),
-                _ => {}
-            }
-        }
-    }
-    let chosen = project.or_else(|| (scenes.len() == 1).then(|| scenes.remove(0)));
-    match chosen {
-        Some((system, _)) if system.as_deref() == Some("none") => 1.0,
-        Some((_, Some(scale))) if scale > 0.0 && scale.is_finite() => scale,
-        _ => 1.0,
-    }
 }
 
 /// Whether the object node defines `handle`: written, or made from its display name (S18).
@@ -239,57 +196,31 @@ fn defines(node: null_syntax::ast::Node<'_>, handle: &str) -> bool {
 }
 
 /// The project's display unit for `transform`: `units length=…` for a location,
-/// `rotation=…` for a rotation (spec, section 8), from the `project` node of any file.
-fn display_unit(files: &[ProjectFile<'_>], transform: Transform) -> Option<Unit> {
-    // The short name and the full one, and the enum items each unit may be written as.
-    let (short, full, items): (&str, &str, &[(&str, Unit)]) = match transform {
-        Transform::Location => (
-            "length",
-            "length-unit",
-            &[
-                ("meters", Unit::M),
-                ("centimeters", Unit::Cm),
-                ("millimeters", Unit::Mm),
-                ("kilometers", Unit::Km),
-                ("inches", Unit::In),
-                ("feet", Unit::Ft),
-            ],
-        ),
-        Transform::RotationEuler => (
-            "rotation",
-            "system-rotation",
-            &[("degrees", Unit::Deg), ("radians", Unit::Rad)],
-        ),
+/// `rotation=…` for a rotation (spec, section 8), the project's, else the first scene's that
+/// gives one, read by the checker's `units` reader.
+fn display_unit(parses: &[Parse], transform: Transform) -> Option<Unit> {
+    // The enum items each unit may be written as, besides its word.
+    let items: &[(&str, Unit)] = match transform {
+        Transform::Location => &[
+            ("meters", Unit::M),
+            ("centimeters", Unit::Cm),
+            ("millimeters", Unit::Mm),
+            ("kilometers", Unit::Km),
+            ("inches", Unit::In),
+            ("feet", Unit::Ft),
+        ],
+        Transform::RotationEuler => &[("degrees", Unit::Deg), ("radians", Unit::Rad)],
         Transform::Scale => return None,
     };
-    let unit = |word: &str| {
-        Unit::from_suffix(word, transform.dimension())
-            .filter(|u| u.dimension() == transform.dimension())
-            .or_else(|| items.iter().find(|(w, _)| *w == word).map(|(_, u)| *u))
+    let pick = |u: &Units| match transform {
+        Transform::Location => u.length.clone(),
+        _ => u.rotation.clone(),
     };
-    for f in files {
-        let file = parse(f.text);
-        // `units` in the project, or in a scene, as `key=value` on its line or as a child line.
-        let holders = file
-            .document()
-            .nodes()
-            .filter(|n| n.name() == "project" || n.name() == "scene");
-        for holder in holders {
-            for units in holder.children().filter(|c| c.name() == "units") {
-                for entry in units.entries() {
-                    if let null_syntax::ast::Entry::Prop { key, value } = entry
-                        && (key.text == short || key.text == full)
-                    {
-                        return value.as_word().and_then(unit);
-                    }
-                }
-                for line in units.children() {
-                    if line.name() == short || line.name() == full {
-                        return line.args().next().and_then(|v| v.as_word()).and_then(unit);
-                    }
-                }
-            }
-        }
-    }
-    None
+    let word = units::project(parses)
+        .as_ref()
+        .and_then(pick)
+        .or_else(|| units::scenes(parses).iter().find_map(|(_, u)| pick(u)))?;
+    Unit::from_suffix(&word, transform.dimension())
+        .filter(|u| u.dimension() == transform.dimension())
+        .or_else(|| items.iter().find(|(w, _)| *w == word).map(|(_, u)| *u))
 }

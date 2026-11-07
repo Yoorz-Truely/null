@@ -16,6 +16,9 @@ pub(crate) struct Out<'o> {
     pub scene: Option<Scene>,
     /// The unit scale a value written with a unit is divided by (task 1c-01d).
     pub scale: f32,
+    /// Outside every scene, where the scenes' scales disagree: the message for the first value
+    /// written with a scaled unit, taken when it is reported.
+    pub disagreement: &'o mut Option<String>,
 }
 
 impl Out<'_> {
@@ -164,6 +167,14 @@ pub(crate) fn check_float(
             format!("`{name}` is in frames here: seconds need a scene's frame rate, and this is not inside a scene"),
         );
         return;
+    }
+    // Outside every scene, a scaled unit needs the one scale the scenes agree on.
+    if out.scene.is_none()
+        && dimension.scale_power() > 0
+        && unit_of(word, dimension).is_some()
+        && let Some(message) = out.disagreement.take()
+    {
+        out.error(codes::UNIT, value.span(), message);
     }
     let scene = Scene {
         scale_length: out.scale,

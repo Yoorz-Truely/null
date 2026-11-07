@@ -9,6 +9,7 @@ use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, closest};
 use crate::codes;
 use crate::forms;
 use crate::schema::{Property, Schema};
+use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_int, dimension, list,
 };
@@ -23,10 +24,15 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         out: Vec::new(),
         scene: None,
         scale: 1.0,
-        outside: Units::default(),
+        project: Units::default(),
+        outside: Outside::Scale(1.0),
+        disagreement: None,
     };
-    cx.outside = outside_units(files);
+    let parses = files.iter().map(|(_, p)| *p);
+    cx.project = units::project(parses.clone()).unwrap_or_default();
+    cx.outside = units::outside(parses);
     cx.scale = cx.outside.scale();
+    cx.disagreement = disagreement(&cx.outside);
     for (file, parse) in files {
         for node in parse.document().nodes() {
             cx.collect(*file, node, true);
@@ -71,8 +77,13 @@ struct Checker<'s> {
     /// The unit scale values are read at: the project's outside a scene, the scene's inside
     /// one (task 1c-01d).
     scale: f32,
-    /// The units outside any scene: the project's, or the one scene's that sets any.
-    outside: Units,
+    /// The project's `units`, which a scene's own are read over.
+    project: Units,
+    /// The unit scale outside any scene: the project's, or the one the scenes agree on.
+    outside: Outside,
+    /// Where the scenes disagree and the project sets no `units`: the message for the first
+    /// value written with a scaled unit outside a scene, until it is reported.
+    disagreement: Option<String>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -149,6 +160,7 @@ impl<'s> Checker<'s> {
             list: &mut self.out,
             scene: self.scene,
             scale: self.scale,
+            disagreement: &mut self.disagreement,
         }
     }
 
@@ -223,7 +235,10 @@ impl<'s> Checker<'s> {
         self.header_check(file, node, &kind);
         if kind == "scene" {
             let mut rate = frame_rate(node);
-            self.scale = units_of(node).over(&self.outside).scale();
+            self.scale = Units::of(node)
+                .unwrap_or_default()
+                .over(&self.project)
+                .scale();
             rate.scale_length = self.scale;
             self.scene = Some(rate);
         }
@@ -268,7 +283,16 @@ impl<'s> Checker<'s> {
 
     fn project(&mut self, file: FileId, node: Node<'_>) {
         let names = ["units", "scene"];
+        let mut seen = HashSet::new();
         for a in attrs(node) {
+            if a.name == "units" && !seen.insert(a.name.clone()) {
+                self.out(file).error(
+                    codes::REPEATED,
+                    a.name_span,
+                    "`units` is given twice; a project has one",
+                );
+                continue;
+            }
             match a.name.as_str() {
                 "units" => self.units(file, &a),
                 "scene" => self.reference(file, &a, "scene"),
@@ -713,11 +737,20 @@ impl<'s> Checker<'s> {
         }
         let mut names: Vec<&str> = forms::UNITS_SHORT.iter().map(|(s, _)| *s).collect();
         names.extend(props.iter().map(|p| p.name.as_str()));
+        let mut seen = HashSet::new();
         for (key, span, v) in entries {
             let full = forms::UNITS_SHORT
                 .iter()
                 .find(|(s, _)| *s == key)
                 .map_or(key.as_str(), |(_, f)| *f);
+            if !seen.insert(full.to_string()) {
+                self.out(file).error(
+                    codes::REPEATED,
+                    span,
+                    format!("`{full}` is given twice in `units`; only the first counts"),
+                );
+                continue;
+            }
             let Some(p) = find(full) else {
                 let pseudo = Attr {
                     name: key.clone(),
@@ -1120,100 +1153,21 @@ fn defines(node: Node<'_>) -> bool {
     node.block().is_some() || header(node).name.is_some()
 }
 
-/// What a `units` line says about reading values (task 1c-01d): its system (`metric`,
-/// `imperial`, `none`) and `scale-length`, where it says them.
-#[derive(Clone, Debug, Default, PartialEq)]
-struct Units {
-    system: Option<String>,
-    scale: Option<f32>,
-}
-
-impl Units {
-    /// These settings, with `other`'s where these say nothing.
-    fn over(self, other: &Units) -> Units {
-        Units {
-            system: self.system.or_else(|| other.system.clone()),
-            scale: self.scale.or(other.scale),
-        }
-    }
-
-    /// The unit scale values are divided by: `scale-length`, 1 when unset, and 1 whatever it is
-    /// when the system is `none`, as in Blender (spec, section 6, "Scene scale"). A new
-    /// scene's system is `metric`.
-    fn scale(&self) -> f32 {
-        if self.system.as_deref() == Some("none") {
-            return 1.0;
-        }
-        self.scale
-            .filter(|s| *s > 0.0 && s.is_finite())
-            .unwrap_or(1.0)
-    }
-}
-
-/// The `units` line of a project or scene node: `units metric scale=0.01`, `scale-length=`, or
-/// `system` and `scale`/`scale-length` lines in its block. Errors are the `units` check's.
-fn units_of(holder: Node<'_>) -> Units {
-    let mut out = Units::default();
-    for units in holder.children().filter(|c| c.name() == "units") {
-        let a = attrs_with_line(units);
-        if let Some(w) = args_of(units).first().and_then(|v| v.as_word()) {
-            out.system = Some(w.to_string());
-        }
-        for (name, word) in a {
-            match name.as_str() {
-                "system" => out.system = Some(word),
-                "scale" | "scale-length" => {
-                    out.scale = null_value::read::<f32>(&word, null_value::Dimension::None).ok();
-                }
-                _ => {}
-            }
-        }
-    }
-    out
-}
-
-/// A node's `key=value`s and its child lines' first words, by name.
-fn attrs_with_line(node: Node<'_>) -> Vec<(String, String)> {
-    let mut out: Vec<(String, String)> = props_of(node)
-        .into_iter()
-        .filter_map(|(k, v)| Some((k.text.to_string(), v.as_word()?.to_string())))
+/// The message for a value written with a scaled unit outside a scene when the scenes' scales
+/// disagree and the project sets no `units` (spec, section 6, "Scene scale").
+fn disagreement(outside: &Outside) -> Option<String> {
+    let Outside::Disagree(scenes) = outside else {
+        return None;
+    };
+    let each: Vec<String> = scenes
+        .iter()
+        .map(|(name, scale)| format!("{name} {}", null_value::print_bare(*scale)))
         .collect();
-    for c in node.children() {
-        if let Some(w) = args_of(c).first().and_then(|v| v.as_word()) {
-            out.push((c.name().into_owned(), w.to_string()));
-        }
-    }
-    out
-}
-
-/// The units for values outside any scene: the project's `units`, or, with none, those of the
-/// one scene that sets any (spec, section 6, "Scene scale").
-fn outside_units(files: &[(FileId, &Parse)]) -> Units {
-    let mut scenes = Vec::new();
-    for (_, parse) in files {
-        for node in parse.document().nodes() {
-            match node.name().as_ref() {
-                forms::PROJECT => {
-                    let u = units_of(node);
-                    if u != Units::default() {
-                        return u;
-                    }
-                }
-                "scene" => {
-                    let u = units_of(node);
-                    if u != Units::default() {
-                        scenes.push(u);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-    if scenes.len() == 1 {
-        scenes.remove(0)
-    } else {
-        Units::default()
-    }
+    Some(format!(
+        "this value is outside every scene, and the scenes' unit scales differ ({}); give the \
+         project a `units` line to say which scale holds outside them, or write a bare number",
+        each.join(", ")
+    ))
 }
 
 /// A scene's frame rate from its `fps` and `fps-base` lines, a new scene's (24 and 1) where one
