@@ -42,9 +42,9 @@ pub fn check(text: &str, start: usize, end: usize, replacement: &str) {
                 assert_span(text, edit.span);
             }
         }
-        for word in ["vel=", "track {", "266A"] {
+        for example in messages::SCOWR_EXAMPLES {
             assert!(
-                !d.message.contains(word),
+                !d.message.contains(example),
                 "Scowr's example in {}",
                 d.message
             );
