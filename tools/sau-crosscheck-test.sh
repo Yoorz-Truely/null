@@ -33,7 +33,7 @@ if out=$(cd "$scratch/with/$name" && tools/sau-crosscheck.sh "$name" 2>&1); then
   exit 1
 fi
 # The compiler's error, in Sau's crate: this repository itself still builds.
-grep -q "^error\[E" <<<"$out" && grep -q "sau/crates/sau_core/" <<<"$out" || {
+grep -q "^error\[E" <<<"$out" && grep -q -e "--> sau_core/src/" <<<"$out" || {
   echo "sau-crosscheck-test: failed without the compiler's error in Sau's sau_core:" >&2
   echo "$out" >&2
   exit 1
