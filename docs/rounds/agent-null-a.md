@@ -51,6 +51,81 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01b, Null `2c66b92`, by agent/cosmosis-a, November 7, 2026: approved
+
+Read the row, the 1c-01b section below and the diff. `just verify` passed on a clean copy of `2c66b92` (`git archive`, Scowr beside it, in my scratch folder): Clippy, the licence gate, 168 tests in the check run and again in the 4,096-case release run, and the fuzz target for 60 seconds.
+
+- **The "Done when" holds.** The three property tests run for every unit but degrees, which have their own. I checked the reader a second way too: a scratch test, not committed, built each value's exact rational from the spec's own factors, wrote it to 130 significant digits and let the standard library round it, an oracle independent of `round_ratio` and of the midpoint test. Every unit agreed, f32 and f64, in 4,096 cases with up to 17 digits and exponents from -30 to 30.
+- **The words are the spec's.** Each dimension's table matches section 6's line, word for word and factor for factor, including `-273.15C` and `-459.67F` as +0 and `F`'s exact 5/9.
+- **The limits are right.** Past a leading power of 10^±400, a value times any ratio or offset factor in the table (from thou³, about 1.6 × 10^-14, to mi³, about 4.2 × 10^9) leaves every float's range, or falls below half the least subnormal. So `ratio` and `affine` may short-cut there. Decimal shifts, down to pm³'s 10^-36, go through `shifted` and need no limit.
+- **Frames.** RNA's `time` still maps to a bare number, as the comment in `values.rs` says. Reading seconds as frames is the arithmetic of 1c-01h (agent/cos-units-null). The checker's side is 1c-01c, and through the unit scale 1c-01d. Until then a project at another unit scale stores its lengths as at scale 1. Section 6 says how it should be, and the rows track it.
+
+**Nit, not blocking.** `in_unit`'s doc comment still says it divides exactly "for inches (0.0254 m) and feet (0.3048 m)". It now serves every ratio and offset unit.
+
+### 1c-01a again, the fix `461a5c8`, by agent/cosmosis-a, November 7, 2026: approved
+
+- **The sentence.** Section 6 now says that Blender's fields convert with float32 factors (`0.01f`, 0.555555555555), so a value typed into them often stores other bits than Null's rule gives. It quotes the measured counts (526 `cm`, 1,251 `mm`, 329 `ft`, 286 `in`, 169 `mi` of 2,000) and `9cm` as the example, says Null's rule stands, and points to S64 (1) and task 1c-01g for Sau's own fields.
+- **The temperature line** no longer suggests that only `F` differs.
+- **The word list** is now said to be Null's choice, not Blender's suppress flags. It names what Blender suppresses but Null keeps (`yd`, `km/h`, `mph`, `kW`, the camera's `cm` and `um`) and notes the turn's 1/(2π) in `buNaturalRotDef`.
+- **The changelog** has a line.
+
+No nits.
+
+### 1c-01a, Null `04aad62`, by agent/cosmosis-a, November 7, 2026: sent back, one sentence
+
+I checked section 6's units table against Sau's tree (Blender 5.3) and measured Blender's own parsing in Sau, through `just sandbox` with a private sandbox.
+
+**Holds.**
+
+- **All 16 kinds are there.** They match `PROP_UNIT_*` in `makesrna/RNA_types.hh`, `NONE` to `FREQUENCY`.
+- **Every factor matches `blenkernel/intern/unit.cc`'s tables** as an exact decimal: lengths `km` to `pm` and `mi` to `thou`, mass `t` to `mg` and `tn`, `cwt`, `st`, `lb`, `oz` (the `UN_SC_*` values), time `d` to `µs`, camera `m` to `µm` in millimetres, power `GW` to `nW`, wavelength `mm` to `pm` in nanometres, `Hz` and `kHz`, and `K`. Temperature's offsets are right (273.15, 459.67, `UN_SC_FAH`).
+- **Scene scaling is `BKE_unit_value_scale` exactly.**
+  - Length, velocity and acceleration go by s; area and power by s²; volume and mass by s³.
+  - Camera and wavelength are never scaled.
+  - Nothing is scaled when the system is `NONE`.
+- **Time.** Blender's interface really does not convert `PROP_UNIT_TIME`: `ui_but_is_unit` returns false for it ("for now disable time unit conversion", `interface.cc`).
+- **Where the kinds are used.** `AREA`, `VOLUME`, `POWER` and `TEMPERATURE` appear in no RNA definition, only in `makesrna.cc`'s own tables. `MASS`, `FREQUENCY`, `WAVELENGTH`, `COLOR_TEMPERATURE`, `VELOCITY`, `ACCELERATION` and `TIME_ABSOLUTE` are used where the section says.
+
+**To fix: Blender's typed values differ for most words, not only `F`.** The section says "Null's `F` uses 5/9 itself where Blender's interface uses 0.555555555555, so a typed `F` value may differ". Read on its own, that says every other word gives Blender's bits.
+
+It does not. Every factor in `unit.cc` is a float32 literal (`UN_SC_CM 0.01f` is 0.009999999776…), and Blender multiplies by that. I typed 1 to 2000 of a word into `bpy.utils.units.to_value` and compared the float32 with Null's exact rule:
+
+| Word | Typed values that store other bits |
+| --- | --- |
+| `cm` | 526 of 2000 (`9cm`: Blender 0.089999996, exact 0.090000004) |
+| `mm` | 1251 of 2000 |
+| `ft` | 329 of 2000 |
+| `in` | 286 of 2000 |
+| `mi` | 169 of 2000 |
+
+S59 chose the exact rule, so Null is right. The sentence should say that Blender's interface converts with float32 factors, so a value typed into Blender may store other bits than the same word in Null, for most words, `F` among them.
+
+**Nits, not blocking.**
+
+- **The words left out.** They are said to be those "Blender marks as rarely used", which is not quite Blender's marking (`B_UNIT_DEF_SUPPRESS`):
+  - Blender also suppresses `yd`, `km/h`, `mph`, `kW`, and the camera's `cm` and `µm`, which the table keeps;
+  - Blender does not suppress the turn (`t`), which the table leaves out.
+
+  Null's own list is fine; the sentence should say it is Null's choice.
+- **The turn's factor.** Blender's turn has the factor `1.0 / (M_PI * 2.0)`, which would make a turn 1/(2π) radian. That is likely the upstream bug the author noted, and one more reason to leave turns out.
+
+### 1b-02a, Null `f0b3faa` and `2e7b1c8`, by agent/cosmosis-a, November 7, 2026: approved
+
+I checked section 7's sub-object handle rules and its table of 15 kinds against Sau's tree (Blender 5.3).
+
+- **The six identities Blender keeps all exist as described.**
+  - `ModifierData::persistent_uid` is an `int`, made by `BKE_modifiers_persistent_uid_init` (`modifier.cc:1082`) from a hash of the name, and the library path when linked, as the section says.
+  - `bNode::identifier` is an `int32_t`, assigned by `node_unique_id` from a random generator seeded per tree.
+  - `bNodeSocket::identifier` is `char[64]`.
+  - A group interface socket has `char *identifier`, and a panel `int identifier`.
+  - `KeyBlock::uid` is an `int`, from `Key::uidgen`.
+  - `ActionSlot::handle` is an `int32_t`.
+- **The name-only kinds have no such field:** constraints, bones (`bPoseChannel::session_uid` is per session, as written), vertex groups and attributes (`CustomDataLayer::uid` exists but is not stable for attributes).
+- **The rules agree with S61:** made from the name, unique within the owner across kinds, `/` for paths, `.` for sockets and pattern copies, and `.sau/ids.noll` where Blender has only the name.
+- **The table covers every kind the row names, and more:** modifiers, nodes, sockets, constraints, bones, shape keys, vertex groups, UV maps, attributes, view layers and action slots, plus group sockets and panels, bone collections, NLA, markers and Grease Pencil layers.
+
+No nits.
+
 ### 1a-01, by agent/cosmosis-a, November 7, 2026: approved
 
 Reviewed Null `34cf222` (the task's only commit) against its row on Sau's board.
@@ -335,6 +410,28 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
   - So the caller applies them from the last to the first, or sorted with an offset.
 
   Sau's side (1a-14) needs exactly that.
+
+### 1d-04a again, Cosmósis `883d07b` (report `979fb69`), re-reviewed by agent/null-a, November 7, 2026: approved
+
+**The two spec lines.** Section 4 now says three things:
+
+- `cosmosis.noll` is a Null file first. Its syntax errors and non-kebab-case node names are Null's own (`null-syntax`, `null-name`), reported before the fields are read, so `Trees "^1"` is `null-name`.
+- `version`, `sau` and `null-format` have no leading zeros, as semantic versioning writes them.
+- An empty `path=""` is an error.
+
+The cases now follow the spec's words.
+
+**The nits, checked on a clean copy of Cosmósis main with a scratch probe.**
+
+- `trees path=../Trees` now suggests `path="../Trees"`, keeping its case.
+- A 20-digit `null-format` is `newer-format`.
+- `path=""` is the new `cosmosis-manifest-empty-path`.
+- `null-format 01`, `+2` and `version 01.2.3` stay refused.
+- Cosmósis's tests pass: 48 across its suites.
+
+**C-05's follow-up.** macOS's save folder is now matched by its shape, a name wholly in parentheses, since its words are localised. No kebab-case name has parentheses, so no project file can match.
+
+**Not blocking.** The help for a leading zero still says only "whole numbers"; it could add "without leading zeros", as the spec now does.
 
 ### 1d-04a (agent/cosmosis-a's), Cosmósis `bea7dab` (report `5bae962`), reviewed by agent/null-a, November 7, 2026: sent back, two lines of spec
 
@@ -855,14 +952,81 @@ Constraints, bones, bone collections, vertex groups, attributes and UV maps, vie
 - Data from files saved before the field gets a derived ID, not a random one: a hash of the type, the name and the library's path. An unchanged old file, or an old library linked in, then gives the same IDs every time it opens, as Blender's own `BKE_modifiers_persistent_uid_init` does for modifiers.
 - Evaluated copies carry no ID of their own.
 
+## 1b-02c: the checker resolves sub-object paths
+
+Null `50bb332`. `null_check::paths` holds four pieces:
+
+- **`Path::parse`** reads `@owner/@sub/@sub.socket`, a pattern copy (`.7`) and a package (`pkg:`).
+- **`Index::build`** indexes every datablock's sub-object lines (section 7's kinds) and node trees.
+- **`Index::resolve`** walks a path:
+  - a socket is checked against the schema's node sockets;
+  - inside its owner's block a path may leave the owner out;
+  - a misspelt owner, sub-object or socket gives the path written right.
+- **`check()`** reports a handle that two sub-objects of one owner share, whatever their kinds.
+
+**Measured.** `tests/paths.rs` has 4 tests:
+
+- every form of section 7 resolves: modifier, constraint, node and socket, bone, a bone's constraint, vertex group, shape key, view layer, relative paths;
+- 14 wrong paths give their errors and fixes (a snapshot);
+- paths parse as the spec writes them;
+- a shared handle is an error.
+
+`just check` and `just verify` pass.
+
+**Unverified, by design.** The slice has no property that takes a path yet. Drivers, constraint targets and the like will call `Index::resolve` when their forms land (1d-07). Pattern copies and package paths parse and name their tasks (1d-03, 1d-04).
+
+## 1c-01b: every unit read exactly and printed back
+
+Null `2c66b92`.
+
+**What changed.**
+
+- `null_value`'s units are per-dimension tables of section 6's words. Each word converts by one of four rules:
+  - a decimal shift;
+  - an exact ratio (inches, pounds, mph, km/h);
+  - an offset and ratio (°C, °F);
+  - π/180.
+- Ratios and offsets round once from exact integers, and `print_in` finds the shortest decimal in any word.
+- The checker maps RNA's unit names to the new dimensions.
+
+**Measured.** Three property tests per unit, each of 3,000 cases in release and 256 in `just check`:
+
+- every f32 and f64 printed in the unit reads back bit for bit;
+- every read is the exact rational rounded once, checked against its neighbours' midpoints, independently of the reader;
+- a short value typed in the unit prints back exactly as typed.
+
+The table's examples also read exactly: `1lb`, `36km/h`, `20C`, `-40F`, and `-273.15C`, which is +0.
+
+**Changed in a snapshot.** A lens now also takes `m`, `cm` and `um`, so the checker's case `lens 35m` became `lens 35deg`.
+
+## 1c-02a: every RNA type's written form
+
+Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enums, flag sets, strings, pointers, collections, arrays, multi-dimensional arrays and matrices, each with examples.
+
+- Matrices are written row by row (S61 (5)); RNA's flat element for row `i`, column `j` is `j × rows + i`.
+- An empty pointer is `none`, and a string too long for its field is an error.
+
+**Found.** Scowr's lexer refuses any `\x` escape ("unknown escape"). So S61's `\xNN` for bytes outside UTF-8 needs a change to Scowr's shared syntax, which needs the user's agreement (S15). Until then 1c-02b cannot read such strings. The spec says so.
+
 ## Next
 
 - **1a-12a and 1a-13a** (as agent/sau-g, report `docs/rounds/agent-sau-g.md` on Sau's `agent/sau-g`): the review's fixes are in `ddd7662`, synced at `9da78cd`. `just verify` passed, and both are back in review.
 - **L-08**, re-reviewed at `0eee86a`: approved (agent/cos-look4 `064e979`). L-09's approval stands.
 - **C-04** (Cosmósis `4c9d68b`): approved, review above. It is noted on 1a-12 that `load_settled` can go once C-04 is merged.
 - **1a-09 and V-01** again: V-01 approved; 1a-09 sent back for one header line (`SauMain` is replaced by undo too). Review above.
+- **Re-reviews and reviews.**
+  - 1d-04a again: approved.
+  - 1c-01f again: approved, the review in agent/cos-null `7dc40cf`.
+  - 1b-03a: approved, the review in agent/cos-schema `ecbc1e2`. All 14,940 float values of RNA's 2,581 float properties match the running app, and the gate fails on a one-byte change.
+- **1c-01a fixed** (Null `461a5c8`). Section 6 says Blender's float32 unit factors differ from Null's exact rule for many typed values, and points to S64 and 1c-01g. The word list is now called Null's choice.
+- **1b-01a fixed.** Null `997de6a` (section 7: identity by library and ID, resync, the type in derived IDs) and Sau agent/null-sau `b9eecce` (the resync row, uniqueness per S64, the ways in named).
+- **0-10, the check record**, in review on agent/hooks (Sau `77b41a7`, Null `f076992`, Cosmósis `15f9b62`). The report is `docs/rounds/agent-hooks.md` on Sau's branch.
 - **1c-01f and 1d-01b** (agent/cos-null `75b7226`, review in its report, `0b5c0e7`): 1d-01b approved. 1c-01f sent back for one sentence: spec section 6 still says the curve is "computed in float64", against S62. The table itself I proved independently.
 - **L-06 and L-02** re-reviewed: both approved. **C-05**: approved. **1d-04a**: sent back for two lines of spec. All are in reviews above or in the authors' reports.
+- **1c-02a** now writes bytes outside UTF-8 as a list of byte values (S65; Null `90d16cd`).
+- **0-10** is in review at Sau `b38fde8d`, after the second fix. `just verify` passed, with all 802 of Blender's tests.
+- **1c-01h**: approved, the review in agent/cos-units-null `8912c09`.
+- **Next:** 1a-10b, once 1a-10 is merged.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.

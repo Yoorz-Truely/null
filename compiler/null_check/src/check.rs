@@ -33,6 +33,8 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         }
     }
     let mut out = cx.out;
+    // Sub-object handles are unique within their owner, whatever their kinds (section 7).
+    out.extend(crate::paths::Index::build(files).duplicates());
     out.sort_by_key(|d| (d.primary.file.0, d.primary.span.start, d.primary.span.end));
     out
 }

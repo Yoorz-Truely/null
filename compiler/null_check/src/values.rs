@@ -39,10 +39,23 @@ pub(crate) fn dimension(p: &Property, power: bool) -> Dimension {
     if power {
         return Dimension::Power;
     }
+    // RNA's unit names, kebab-case (spec, section 6, "Units"). Frames (`time`) are bare
+    // numbers until their seconds are read through the scene's frame rate (task 1c-01c).
     match p.unit.as_deref() {
         Some("length") => Dimension::Length,
+        Some("area") => Dimension::Area,
+        Some("volume") => Dimension::Volume,
+        Some("mass") => Dimension::Mass,
         Some("rotation") => Dimension::Angle,
+        Some("time-absolute") => Dimension::Seconds,
+        Some("velocity") => Dimension::Velocity,
+        Some("acceleration") => Dimension::Acceleration,
         Some("camera") => Dimension::Lens,
+        Some("power") => Dimension::Power,
+        Some("temperature") => Dimension::Temperature,
+        Some("wavelength") => Dimension::Wavelength,
+        Some("color-temperature") => Dimension::ColorTemperature,
+        Some("frequency") => Dimension::Frequency,
         _ => Dimension::None,
     }
 }
@@ -52,9 +65,19 @@ fn describe(dimension: Dimension) -> &'static str {
     match dimension {
         Dimension::None => "a number, such as 0.5",
         Dimension::Length => "a length, such as 1m",
+        Dimension::Area => "an area, such as 1m2",
+        Dimension::Volume => "a volume, such as 1m3",
+        Dimension::Mass => "a mass, such as 1kg",
         Dimension::Angle => "an angle, such as 90deg",
+        Dimension::Seconds => "a time, such as 1.5s",
+        Dimension::Velocity => "a velocity, such as 1m/s",
+        Dimension::Acceleration => "an acceleration, such as 9.81m/s2",
         Dimension::Lens => "a focal length, such as 50mm",
         Dimension::Power => "a power, such as 800W",
+        Dimension::Temperature => "a temperature, such as 293.15K",
+        Dimension::Wavelength => "a wavelength, such as 550nm",
+        Dimension::ColorTemperature => "a colour temperature, such as 6500K",
+        Dimension::Frequency => "a frequency, such as 50Hz",
     }
 }
 
@@ -62,9 +85,19 @@ fn plural(dimension: Dimension) -> &'static str {
     match dimension {
         Dimension::None => "numbers",
         Dimension::Length => "lengths",
+        Dimension::Area => "areas",
+        Dimension::Volume => "volumes",
+        Dimension::Mass => "masses",
         Dimension::Angle => "angles",
+        Dimension::Seconds => "times",
+        Dimension::Velocity => "velocities",
+        Dimension::Acceleration => "accelerations",
         Dimension::Lens => "focal lengths",
         Dimension::Power => "powers",
+        Dimension::Temperature => "temperatures",
+        Dimension::Wavelength => "wavelengths",
+        Dimension::ColorTemperature => "colour temperatures",
+        Dimension::Frequency => "frequencies",
     }
 }
 
@@ -72,9 +105,19 @@ fn zero(dimension: Dimension) -> &'static str {
     match dimension {
         Dimension::None => "0",
         Dimension::Length => "0m",
+        Dimension::Area => "0m2",
+        Dimension::Volume => "0m3",
+        Dimension::Mass => "0kg",
         Dimension::Angle => "0deg",
+        Dimension::Seconds => "0s",
+        Dimension::Velocity => "0m/s",
+        Dimension::Acceleration => "0m/s2",
         Dimension::Lens => "50mm",
         Dimension::Power => "0W",
+        Dimension::Temperature => "0K",
+        Dimension::Wavelength => "550nm",
+        Dimension::ColorTemperature => "6500K",
+        Dimension::Frequency => "0Hz",
     }
 }
 
