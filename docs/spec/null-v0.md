@@ -153,12 +153,41 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 ## 6. Values
 
 - **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59).
-- **Units** follow the RNA unit of each property: length (`m`, `cm`, `mm`, `km`, `in`, `ft`), rotation (`deg`, `rad`), time (`s`, `ms`, frames as bare numbers), power (`W`), temperature (`K`, `C`), wavelength (`nm`), camera lens (`mm`), mass (`kg`), velocity and acceleration. A bare number is Blender's internal unit (metres, radians, frames, watts). Writing a unit a property cannot take is an error.
-- **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): lengths by exact decimal shifts and multiples, degrees by π/180 computed as precisely as the rounding needs. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
+- **Units** follow the RNA unit of each property, as the table under "Units" below lists them. A bare number is Blender's internal unit (Blender units, radians, frames, seconds, watts). Writing a unit a property cannot take is an error.
+- **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): every factor in the table is an exact rational number except π/180, which is computed as precisely as the rounding needs, and the scene's unit scale and frame rate enter as the exact values of the floats Blender stores. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
 - **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, the IEC 61966-2-1 sRGB curve computed in float64 and rounded once into each channel's type (alpha 1 for a four-channel colour), and printed back in that form only if it converts to the same bits.
 - **Enums** are RNA enum identifiers in kebab-case (`cubic`, `agx`, `bezier`); flag sets are lists of them. Raw numbers are never needed.
 - **References** are handles (section 7). A pointer property takes a handle; a socket takes a value or a link `@node.socket`.
 - **Strings** are names, paths and text. Text datablocks (Blender's text editor content, Python scripts) are files of their own in the project, referenced by path.
+
+### Units
+
+Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA_types.hh`, Blender 5.3), with what a bare number means, the words Null accepts and the exact factor of each. The words are Blender's own short names in ASCII (`um` for µm, `ft` and `in` for `'` and `"`), without the decimal steps Blender marks as rarely used (hectometres, decametres, decimetres, furlongs, chains, quintals, hectograms, decagrams, arcminutes, arcseconds, turns). Words are case-sensitive: `mW` is a milliwatt, `MW` a megawatt. Task 1c-01a, November 7, 2026; `null_value` reads the length, rotation, camera and power words so far, and the rest are task 1c-01b.
+
+| RNA unit | A bare number is | Words, with their exact value in the bare unit | Scene scale |
+| --- | --- | --- | --- |
+| `NONE` | The number itself | None. Factors, percentages (0 to 100, as stored), pixels, colours and directions have no unit | – |
+| `LENGTH` | A Blender unit: a metre at scale 1 | `km` 1000, `m` 1, `cm` 1/100, `mm` 1/1000, `um` 10⁻⁶, `nm` 10⁻⁹, `pm` 10⁻¹²; `mi` 1609.344, `yd` 0.9144, `ft` 0.3048, `in` 0.0254, `thou` 0.0000254 | ÷ s |
+| `AREA` | A square Blender unit | Each length word followed by `2` (`m2`, `cm2`, `ft2`), its value squared | ÷ s² |
+| `VOLUME` | A cubic Blender unit | Each length word followed by `3` (`m3`, `cm3`, `in3`), its value cubed | ÷ s³ |
+| `MASS` | A kilogram | `t` 1000, `kg` 1, `g` 1/1000, `mg` 10⁻⁶; `tn` 907.18474 (the short ton, 2,000 lb, as Blender's value is), `cwt` 45.359237, `st` 6.35029318, `lb` 0.45359237, `oz` 0.028349523125 | ÷ s³ |
+| `ROTATION` | A radian | `rad` 1, `deg` π/180 | – |
+| `TIME` | A frame | `d` 86400, `h` 3600, `min` 60, `s` 1, `ms` 1/1000, `us` 10⁻⁶ seconds, each times the scene's frame rate (`fps` ÷ `fps-base`) | – |
+| `TIME_ABSOLUTE` | A second, whatever the scene's frame rate | `d` 86400, `h` 3600, `min` 60, `s` 1, `ms` 1/1000, `us` 10⁻⁶ | – |
+| `VELOCITY` | A Blender unit per second | `m/s` 1, `km/h` 5/18, `ft/s` 0.3048, `mph` 0.44704 | ÷ s |
+| `ACCELERATION` | A Blender unit per second squared | `m/s2` 1, `ft/s2` 0.3048 | ÷ s |
+| `CAMERA` | A millimetre (a focal length or sensor size) | `m` 1000, `cm` 10, `mm` 1, `um` 1/1000 | – |
+| `POWER` | A watt | `GW` 10⁹, `MW` 10⁶, `kW` 1000, `W` 1, `mW` 1/1000, `uW` 10⁻⁶, `nW` 10⁻⁹ | ÷ s² |
+| `TEMPERATURE` | A kelvin | `K` 1; `C`, kelvin = C + 273.15; `F`, kelvin = (F + 459.67) × 5/9 | – |
+| `WAVELENGTH` | A nanometre | `mm` 10⁶, `um` 1000, `nm` 1, `pm` 1/1000 | – |
+| `COLOR_TEMPERATURE` | A kelvin | `K` 1 | – |
+| `FREQUENCY` | A hertz | `Hz` 1, `kHz` 1000 | – |
+
+- **Scene scale.** `s` is the scene's `scale-length` (`units … scale=`), applied only when its unit system is `metric` or `imperial`, never with `none`. This is exactly what typing the same word into Blender's field does (`BKE_unit_value_scale`): with `scale=0.01`, `1m` stores 100 Blender units. Power is divided by s² and mass by s³ because Blender's own rule does so. Camera, wavelength, time, rotation and temperature values are never scaled.
+- **Frames.** A frame property's seconds become frames through the scene's `fps` (an integer) divided by its `fps-base` (a float32 such as 1.001), both taken exactly: `1.5s` is 36 frames at 24 fps. Blender's interface does not convert time units at all; Null does, by this rule.
+- **Temperatures** convert with their offsets exactly. Null's `F` uses 5/9 itself where Blender's interface uses 0.555555555555, so a typed `F` value may differ from Blender's in the last bits.
+- **Where Blender 5.3 uses them.** `AREA`, `VOLUME`, `POWER` and `TEMPERATURE` have no property in Blender 5.3's RNA; they are listed so that a property using them has a written form when one appears. `MASS` is used by rigid bodies, cloth, particles and force fields; `FREQUENCY`, `WAVELENGTH` and `COLOR_TEMPERATURE` by node sockets, lights and white balance. A light's `energy` has no RNA unit and takes `W` by Null's own form (section 8), not scaled by the scene, as Blender shows it.
+- **Writing back.** A value is printed in the unit its line already uses whenever a decimal in that unit reads back to the same bits (S21), and as a bare number otherwise.
 
 ## 7. Identity and references
 
