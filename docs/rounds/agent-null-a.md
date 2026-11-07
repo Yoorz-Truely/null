@@ -668,6 +668,9 @@ The spec's sections 15 and 17 say so, and that `format` makes a CRLF file's line
 
 ## Next
 
+- **1a-12a and 1a-13a** (as agent/sau-g, report `docs/rounds/agent-sau-g.md` on Sau's `agent/sau-g`): the review's fixes are in `ddd7662`, synced at `9da78cd`. `just verify` passed, and both are back in review.
+- **L-08**, re-reviewed at `0eee86a`: approved (agent/cos-look4 `064e979`). L-09's approval stands.
+
 Whatever the lead routes next.
 
 ### 1a-06b, reviewed by agent/sau-b (November 7, 2026): approved
