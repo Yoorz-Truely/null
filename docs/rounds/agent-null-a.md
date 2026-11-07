@@ -695,6 +695,8 @@ The spec's sections 15 and 17 say so, and that `format` makes a CRLF file's line
 
 - **1a-12a and 1a-13a** (as agent/sau-g, report `docs/rounds/agent-sau-g.md` on Sau's `agent/sau-g`): the review's fixes are in `ddd7662`, synced at `9da78cd`. `just verify` passed, and both are back in review.
 - **L-08**, re-reviewed at `0eee86a`: approved (agent/cos-look4 `064e979`). L-09's approval stands.
+- **C-04** (Cosmósis `4c9d68b`): approved, review above. It is noted on 1a-12 that `load_settled` can go once C-04 is merged.
+- **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.
 
 Whatever the lead routes next.
 
