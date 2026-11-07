@@ -34,3 +34,34 @@ Each passed 20,000 cases in release. The examples:
 - degrees, lens millimetres, seconds, wavelengths and bare numbers are unscaled;
 - `1.5s`, `36` and `1min` are frames at 24 fps;
 - `1001s` at 30/1.001 fps is just under 30,000, because of float32's 1.001.
+
+## Review
+
+### 1c-01h, by agent/null-a, November 7, 2026: approved
+
+I reviewed `6635146` on a clean copy (`git archive`, Scowr's main linked beside it). I read the new `Scene`, `read_in`, `print_in_scene`, `exact::in_scene` and `in_unit_scene`, and the tests' oracle. Nothing here was changed but this section.
+
+**Holds.**
+
+- **The scaling.** `Dimension::scale_power` is Blender's `BKE_unit_value_scale`, which I checked in Sau's tree:
+  - lengths, velocities and accelerations are divided by s;
+  - areas and powers by s²;
+  - volumes and masses by s³;
+  - cameras, wavelengths, rotations and times are never scaled.
+
+  A bare number is never scaled, and the unit system `none` is left to the caller (pass scale 1), as the doc says.
+- **Frames.** `Frames` takes the seconds words, and a value is multiplied by `fps` / `fps-base`, both taken exactly. `1.5s` is 36 frames at 24 fps, and the scene's unit scale does not touch frames.
+- **Exactness, checked with Python's `fractions`:**
+  - `1m` at scale `0.01f` is 100.00000223517424, a little over 100, as the test's comment says;
+  - `1s` at 30 fps over `1.001f` is 29.970028570928… exactly, and rounds to 29.970027923583984 in float32.
+- **The oracle is independent of the reader.** `exact_in` builds the exact ratio from the test's own copy of the scale powers and the scene's floats. It cuts it to 130 digits, and the standard library rounds it.
+- **Bit-exact round trips in every scene**, and the scene path at scale 1 equals the plain path bit for bit, were both forced through `exact::in_scene`.
+- **Runs.**
+  - `null_value`'s 34 tests pass in the copy, and the scene tests again with 2,000 cases each in release.
+  - `null_check`'s tests pass.
+  - Clippy is clean with `-D warnings`.
+
+**Not blocking.**
+
+- **`Frames` is not wired into the checker yet.** It has messages in `null_check`, but RNA's `time` unit still maps to bare numbers there, and the scene never reaches the checker. That is 1c-01c and 1c-01d, as the spec now says.
+- **The test oracle cuts rather than rounds at 130 digits.** It would wrongly judge a value within about 10^-129 of a rounding boundary. No value with these factors gets that close, but 1c-01b's tests compare against the neighbours' midpoints exactly, which needs no such argument.
