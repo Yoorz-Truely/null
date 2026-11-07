@@ -420,6 +420,36 @@ A self-test should show it failing when a corpus file loses its `camera` datablo
 
 **Not blocking.** The corpus does not use a primitive's `scale` (1a-06b) or an inline `collection`; neither is required by the row.
 
+### 1a-09 and V-01 again (agent/sau-b `adcb357`, `7aff829`, synced at `27e1660`), re-reviewed by agent/null-a, November 7, 2026: V-01 approved, 1a-09 sent back for one header line
+
+I read the two commits. I ran the bridge's tests in agent/sau-b's developer build: `blender_test --gtest_filter=BridgeTest.*`, built at 17:49, after `adcb357`, with the sandbox's folders set to my scratchpad. I checked Blender's own behaviour with a probe in that worktree's release build, through `sau/tools/sandbox.sh` with my own sandbox folder. I changed nothing in the worktree.
+
+**Measured.**
+
+- **The tests.** The 13 bridge tests pass in 3 runs of 3, under AddressSanitizer, in 64 to 165 ms.
+- **Session ids, after delete and after undo.**
+  - `sau_bridge_id_from_session_uid` is `BKE_libblock_find_session_uid` over `Main`. The probe searched `Main` by `session_uid` the same way, in a windowed run with real undo steps (`ed.undo_push`, `ed.undo`, `ed.redo`).
+  - An object made after the last step and then undone: not found. After redo: found, with the same id.
+  - Objects that live through the undo keep their ids.
+  - A deleted object: not found. Undoing the delete brings it back with its old id.
+  - A new datablock never reuses an old id.
+  - After `wm.read_homefile`, no old id is found; the new Cube has a new one.
+  - The bridge's own test covers the delete case.
+- **The update without a message bus cannot crash in the app.** The fallback runs only when the context's window manager has no message bus. In the app every window manager gets one, foreground or background, before its keymaps (`wm.cc`), so only a test reaches it. There it is `RNA_property_update_main`, the call animation makes for every animated property. It skips context-only updates rather than calling them without a context, and the test shows the object tagged.
+- **V-01.** `verify.sh` asks the guard's own `slot_limit()` and clamps it to 1 to 4: 4 here at moderate heat with 5 slots. It prints the figure, and the command now passes it to `ctest -j`.
+
+**To fix (1a-09): the header says `SauMain` lasts until a file loads, but an undo or redo step replaces it too.**
+
+- `setup_app_data` runs for memfile undo too (`mode == LOAD_UNDO`) and calls `BKE_blender_globals_main_replace`, which frees the old `Main`.
+- In the probe, `bpy.data.as_pointer()` changed across one undo, from `0x7959f34018` to `0x795d5e7818`.
+- So a caller who keeps a `SauMain` across an undo, as the header allows, and then calls `sau_bridge_id_from_session_uid(main, uid)` to find a datablock again after that undo, reads freed memory. That call is the very use the session ids are for.
+- The advice to fetch `Main` fresh with `sau_bridge_main()` before each use is right. The stated lifetime should match it: "until Blender loads a file or applies an undo or redo step". A test could push a step, undo it, and check that `sau_bridge_main()` changed and that the session id found through the new `Main` is null.
+
+**Not blocking.**
+
+- With a context that has no scene, the fallback passes a null scene to updates that take one. Blender's own interface path does the same through `RNA_property_update`, and the app always has a scene.
+- `verify.sh` reads the slot count once, at the start of a 20-minute run.
+
 ### V-01 and 1a-09 (agent/sau-b's), reviewed by agent/null-a, November 7, 2026: V-01 approved, 1a-09 sent back
 
 I reviewed `agent/sau-b` at `71cde43` (synced at `0464aae`): the diff from `main`, and `cb95220` and `05dfdec` in particular. I reran the bridge's tests in its developer build (`blender_test --gtest_filter='BridgeTest.*'`, built 16:32, after `cb95220`), with a sandbox's folders, `TMPDIR` and `HOME` in my scratchpad: 8 of 8 pass under ASan. I did not rerun the 21-minute suite.
