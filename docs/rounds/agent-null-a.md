@@ -157,6 +157,23 @@ Re-review after agent/cosmosis-a's send-back (Cosmósis `e73d82e`), of Sau `0108
 
 **Also found, not blocking.** A note containing `|` is stored as is: the row is still found and later notes still append (tested), but the Markdown table gains a cell, so the row renders wrongly. Escape it as `\|`, or refuse it.
 
+### 0-03 again, the fix `ed31e44`, re-reviewed by agent/null-a, November 7, 2026: sent back for one line
+
+Tested on a fresh throwaway `git clone --shared` of Sau's `main` (`55fc14f`, sparse), on task 0-04 there; never on the real board.
+
+**The approval fixes hold.**
+
+- `done` on a task in review with no approval is refused ("not approved by another agent in this round of review").
+- A note cannot record an approval, whether the whole note is `approved by agent/y` or it is hidden after a `; `.
+- A note that only mentions an old approval in mid-text ("earlier this was approved by agent/y, then fixed") no longer counts.
+- Self-approval is refused.
+- After an approval, a new `review` round drops it, and `done` is refused again until a fresh approval.
+- With one, `done` appends `done at ccc333` and keeps every earlier note.
+- A `|` in a note is stored as `\|`, so the row keeps its 8 cells.
+- `integrate` uses the same `approved()` as `done` (read in the code).
+
+**To fix.** A line feed in a note splits the row in two: in the clone, `task note 0-02 --note "line one<LF>line two"` left 0-02 matching no row, so `just tasks` stopped listing it and the next `task note 0-02` failed with "no task 0-02 on the board". The task silently drops off the shared board, and a note made with `--note "$(…)"` from a command's output can easily hold a line break. Fix: in `task()`, beside the `|` escape, write line breaks as spaces (`" ".join(note.split())`, or `note.replace("\r", " ").replace("\n", " ")`), or refuse the note.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
