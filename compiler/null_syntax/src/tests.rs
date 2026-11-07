@@ -57,15 +57,17 @@ fn the_spec_examples_give_the_trees_null_reads() {
     let list = location.args().next().unwrap();
     let words: Vec<_> = list.items().iter().map(|v| v.text()).collect();
     assert_eq!(words, ["0m", "-4m", "0.35m"]);
-    // `{ width 4mm segments 3 }` is one child node, `width`, whose arguments are
-    // `4mm segments 3`: a node ends only at a line feed, `;` or `}`. The spec's
-    // example means two attributes; the checker (task 1a-06) must reject this form.
+    // `{ width 4mm; segments 3 }`: two child nodes, since a node ends only at a
+    // line feed, `;` or `}` (Sau's decision S59 corrected the spec's example).
     let bevel = pier.children().nth(5).unwrap();
-    let width = bevel.children().next().unwrap();
-    assert_eq!(width.name(), "width");
-    let args: Vec<_> = width.args().map(|v| v.text()).collect();
-    assert_eq!(args, ["4mm", "segments", "3"]);
-    assert_eq!(bevel.children().count(), 1);
+    let attrs: Vec<_> = bevel
+        .children()
+        .map(|n| (n.name().into_owned(), n.args().next().unwrap().text()))
+        .collect();
+    assert_eq!(
+        attrs,
+        [("width".to_string(), "4mm"), ("segments".to_string(), "3")]
+    );
 }
 
 #[test]

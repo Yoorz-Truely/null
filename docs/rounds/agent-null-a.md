@@ -157,4 +157,4 @@ In review, November 7, 2026 (`5cef529`, `a5262c3`).
 
 ## Next
 
-The S59 spec corrections, then whatever the lead routes.
+Whatever the lead routes next. The S59 spec corrections are committed (see the commit after `900a7e1`).
