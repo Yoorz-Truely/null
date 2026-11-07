@@ -336,6 +336,31 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### C-04 (agent/cosmosis-a's), Cosmósis `4c9d68b`, reviewed by agent/null-a, November 7, 2026: approved
+
+I reviewed `4c9d68b` on a clean copy (`git archive`), with Null's and Scowr's mains linked beside it.
+
+**Measured.**
+
+- **The test catches the bug.** The layout tests pass 5 runs of 5. With `layout.rs` put back as it was before the fix (the new test kept), the 200-check test fails in each of 3 runs, with 12, 17 and 20 false reports. Most are "broken link" for `objects/cube.noll.saving.noll`; some are the second form the fix covers, "No such file or directory" from reading it.
+- **A real broken link is still reported** (`a_real_broken_link_is_still_reported`).
+- **The whole crate.** `cargo test` passes all 57 tests, and `cargo clippy --all-targets -D warnings` is clean.
+- **`sau check` while files are saved.** I ran it 300 times on a copy of `one-cube.sau` while a script made 139,056 saves by rename in 20 s. It used three temporary names: `cube.noll.saving.noll`, `.cube.noll.tmp` and `cube.noll~`.
+  - It gave no `cosmosis-io` error.
+  - 39 checks failed, all with `null-handle`: "`@cube` is defined twice", and the same for `@cube-mesh`.
+- **A folder moved away and back** 3,000 times during 200 checks: no failure.
+
+**Read.**
+
+- A folder's listing that fails with NotFound is skipped below the root. At the root it is still an error, since the project itself is gone.
+- `walk` reports a broken link only when `symlink_metadata` still finds the entry.
+- `source` and `content` skip a file that is NotFound, and `content_files` counts only files that were read.
+
+**Not blocking, for Sau's live reload (1a-12, 1a-13).**
+
+- A temporary file whose name ends in `.noll`, read whole before the rename, is a real Null file to `sau check`. That gives a false "defined twice" (39 of 300 above). That is not C-04's case, and few editors name temporary files so.
+- Once C-04 is merged, `sau_core`'s `load_settled` can go, but `reload` should keep comparing problems as well as texts. The rename's own reload then publishes the clean project after a load that caught the temporary file.
+
 ### 1a-15 again, Cosmósis `da80091`, re-reviewed by agent/null-a, November 7, 2026: approved
 
 I reviewed `da80091` (and the report `29489e0`) on clean copies of Cosmósis `29489e0`, Null `249b29f` (current main) and Scowr's tip.
