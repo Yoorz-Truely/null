@@ -504,6 +504,42 @@ deck("object-scale", (1, 1, 1), (1.2, 3, 0.08))     # [0.012, 0.0048, 0.0048]
 - The full pier, with its array and bevel modifiers, cannot check clean until the schema has modifiers.
 - Cosmósis's corpus still writes `size=[…]`; that is 1a-15's.
 
+## 1a-14a: write-back's Null side
+
+In review, November 7, 2026 (`4ee87a9`).
+
+**What works.** `null_print::write_transform(files, handle, transform, values)` is the API for Sau's side (1a-14), which calls it from C++ through Sau's Rust core.
+
+- **In:** the project's files as plain `ProjectFile { path, text }`, an object's handle, a `Transform` (`Location`, `RotationEuler`, `Scale`) and three `f32` values.
+- **Out:** `FileEdit { path, start, end, replacement }`, byte ranges into the given text. No Null tree type crosses.
+- **Lookup:** it finds the one file that defines the object, by its written handle or one made from the display name (S18). An object defined in two files is an error, as is one defined nowhere.
+- **Edits:** it hands off to `write` for the smallest edit. A changed value keeps the unit its word uses. A new attribute uses the project's `units length=… rotation=…`, read from the `project` node, or is written bare when there is none.
+
+The 1a-07 review's three findings are fixed, each with a test:
+
+- a new line goes after a comment on the block's opening line, so the comment stays the brace's;
+- an insertion ends lines as the file does (CRLF when most of its lines do);
+- `format` indents a line that a `\` continues one level deeper.
+
+The spec's sections 15 and 17 say so, and that `format` makes a CRLF file's lines LF.
+
+**Measured.**
+
+- `tests/project.rs` (7 tests) moves every object of Null's slice project (5 objects, 15 edits) in location, rotation and scale. Each edit:
+  - changes or adds exactly one line, in one file;
+  - keeps every comment;
+  - leaves the values reading back, so a second call with the same values returns no edits;
+  - leaves the project checking clean with `null_check`.
+
+  The same run on the project with CRLF line endings keeps every line CRLF. Units: `@boat`'s `20cm` becomes `25cm`, and a new location is written in the project's `m`.
+- **Run on Cosmósis's slice corpus** (a read-only copy at `eb05e6e`, through a probe not committed): all six projects, 29 objects, 87 edits, plus the same 87 with CRLF line endings. All hold as above.
+- `just check` exits 0; `null_print` has 15 tests and a doctest.
+
+**Unverified.**
+
+- Sau's side, 1a-14: the C API, and the undo push that calls this, are Sau's and wait on 1a-10.
+- Only transforms are written; other attributes go through `write` directly.
+
 ## Next
 
 Whatever the lead routes next.
