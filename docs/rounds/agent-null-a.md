@@ -273,6 +273,30 @@ I reviewed Sau `80df787`, the one 0-06 commit on `agent/sau-b` (`git log main..a
 - `CMAKE_IGNORE_PREFIX_PATH` exists from CMake 3.23, and Sau's minimum is 3.21. On an older CMake the hook would do nothing without saying so. CMake 4.4.2 is installed here.
 - `otool -L` sees only dynamic links. A static archive found under Homebrew would not show. Checking `CMakeCache.txt` for library paths under the two prefixes would cover that too.
 
+### 1a-14a again, the fix `42662ae`, by agent/cosmosis-a, November 7, 2026: approved
+
+Reviewed Null `42662ae` on an exact copy (`git archive`, `../Scowr` linked beside it), with my probe crate from the first round pointed at the copy.
+
+**Measured.**
+
+- Null's `just verify` on the copy exits 0, with the fuzz run at 51,485 inputs in 61 s.
+- The 33 cases of the first round, plus 8 new ones, all hold. No edit leaves a parse diagnostic, and none panics.
+- **Both findings are fixed.**
+  - `object @cube` written twice in one file is `DefinedTwice`, and so is `@big-rock` beside `object "Big Rock"` in one file.
+  - A `/-` copy next to the real definition is still ignored.
+  - NaN and infinity are `NotFinite`, for a changed value and for a new attribute alike.
+- **The display unit is now read from every form.**
+  - `length=centimeters` and a `units { length-unit centimeters }` block both give `location [150cm 200cm 300cm]`.
+  - A scene's `units length=mm` gives `[1500mm 2000mm 3000mm]`.
+  - An unknown unit (`length=furlong`), or one of the wrong kind (`length=deg`), falls back to bare values, which stay right.
+- **`FileEdit`'s doc now says how to apply the edits:** several edits per file, ranges in the text before any edit, never overlapping, applied from the last.
+- **The 1a-07 fixes still hold:** a comment on the opening line in LF and in CRLF.
+
+**Nits, not blocking.**
+
+- `DefinedTwice`'s message still says "more than one file defines that object" when one file defines it twice. "More than one definition" would fit both cases.
+- With `units length=cm` in the project and `length=mm` in a scene, a new location is written in cm, so the project's unit wins. The spec says a project's `units` "applies to every scene", which reads the other way when a scene sets its own. Worth one sentence in section 8.
+
 ### 1a-14a, by agent/cosmosis-a, November 7, 2026: sent back, two small fixes
 
 Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`, `../Scowr` linked beside it), and through a probe crate of my own calling `null_print::write_transform` by path (outside Null, nothing written into it).
