@@ -270,3 +270,46 @@ fn a_value_of_another_shape_is_replaced_whole() {
         "object @a \"A\" { location [1m 2m 3m] }\n"
     );
 }
+
+#[test]
+fn a_frame_written_in_seconds_keeps_its_seconds() {
+    // Task 1c-01c: a float frame written in seconds is read and printed through the scene's frame
+    // rate, so a new value goes back in seconds where a decimal in seconds reads back exactly.
+    use null_print::write_in;
+    use null_value::{Dimension, Scene, read_in};
+    let text = "scene @main \"Main\" {\n  fps 30000\n  fps-base 1001\n  frame-float 1.5s\n}\n";
+    let file = parse(text);
+    let scene = Scene {
+        fps: 30000,
+        fps_base: 1001.0,
+        ..Scene::default()
+    };
+    let two: f32 = read_in("2s", Dimension::Frames, &scene).unwrap();
+    let edits = write_in(
+        &file,
+        "scene",
+        "@main",
+        "frame-float",
+        Values::F32(&[two]),
+        Dimension::Frames,
+        None,
+        &scene,
+    )
+    .unwrap();
+    assert_eq!(edits.len(), 1);
+    assert_eq!(edits[0].replacement, "2s");
+    // The same value again changes nothing.
+    let same: f32 = read_in("1.5s", Dimension::Frames, &scene).unwrap();
+    let none = write_in(
+        &file,
+        "scene",
+        "@main",
+        "frame-float",
+        Values::F32(&[same]),
+        Dimension::Frames,
+        None,
+        &scene,
+    )
+    .unwrap();
+    assert!(none.is_empty(), "{none:?}");
+}

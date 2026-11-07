@@ -38,4 +38,4 @@ mod write;
 
 pub use format::format;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};
-pub use write::{Edit, Values, WriteError, write};
+pub use write::{Edit, Values, WriteError, write, write_in};

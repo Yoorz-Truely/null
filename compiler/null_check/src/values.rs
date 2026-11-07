@@ -2,7 +2,7 @@
 
 use null_syntax::ast::Value;
 use null_syntax::{Diagnostic, FileId, Span, closest};
-use null_value::{Dimension, ReadError, read, read_int};
+use null_value::{Dimension, ReadError, Scene, read_in, read_int, unit_of};
 
 use crate::codes;
 use crate::schema::Property;
@@ -11,6 +11,9 @@ use crate::schema::Property;
 pub(crate) struct Out<'o> {
     pub file: FileId,
     pub list: &'o mut Vec<Diagnostic>,
+    /// The scene whose block is being checked: its frame rate, for seconds written on a frame
+    /// property (task 1c-01c). `None` outside a scene.
+    pub scene: Option<Scene>,
 }
 
 impl Out<'_> {
@@ -39,14 +42,16 @@ pub(crate) fn dimension(p: &Property, power: bool) -> Dimension {
     if power {
         return Dimension::Power;
     }
-    // RNA's unit names, kebab-case (spec, section 6, "Units"). Frames (`time`) are bare
-    // numbers until their seconds are read through the scene's frame rate (task 1c-01c).
+    // RNA's unit names, kebab-case (spec, section 6, "Units"). A float frame (`time`) also
+    // takes seconds, through its scene's frame rate (task 1c-01c); an integer frame is read by
+    // `check_int`, always bare.
     match p.unit.as_deref() {
         Some("length") => Dimension::Length,
         Some("area") => Dimension::Area,
         Some("volume") => Dimension::Volume,
         Some("mass") => Dimension::Mass,
         Some("rotation") => Dimension::Angle,
+        Some("time") => Dimension::Frames,
         Some("time-absolute") => Dimension::Seconds,
         Some("velocity") => Dimension::Velocity,
         Some("acceleration") => Dimension::Acceleration,
@@ -144,7 +149,22 @@ pub(crate) fn check_float(
         );
         return;
     };
-    match read::<f32>(word, dimension) {
+    // Seconds on a frame property become frames through the scene's frame rate (spec,
+    // section 6, "Frames"); outside a scene there is none to take.
+    if dimension == Dimension::Frames && out.scene.is_none() && unit_of(word, dimension).is_some() {
+        let at = Span::new(
+            value.span().start + word.trim_end_matches(char::is_alphabetic).len(),
+            value.span().end,
+        );
+        out.error(
+            codes::UNIT,
+            at,
+            format!("`{name}` is in frames here: seconds need a scene's frame rate, and this is not inside a scene"),
+        );
+        return;
+    }
+    let scene = out.scene.unwrap_or_default();
+    match read_in::<f32>(word, dimension, &scene) {
         Ok(x) => check_range(x as f64, word, value.span(), name, p, out),
         Err(e) => unit_error(e, word, value.span(), name, dimension, out),
     }

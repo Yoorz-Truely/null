@@ -21,6 +21,7 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         schema,
         defs: HashMap::new(),
         out: Vec::new(),
+        scene: None,
     };
     for (file, parse) in files {
         for node in parse.document().nodes() {
@@ -61,6 +62,8 @@ struct Checker<'s> {
     /// (kind, handle) to where it is defined.
     defs: HashMap<(String, String), (FileId, Span)>,
     out: Vec<Diagnostic>,
+    /// The scene whose block is being checked, with its frame rate (task 1c-01c).
+    scene: Option<null_value::Scene>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -135,6 +138,7 @@ impl<'s> Checker<'s> {
         Out {
             file,
             list: &mut self.out,
+            scene: self.scene,
         }
     }
 
@@ -207,10 +211,14 @@ impl<'s> Checker<'s> {
         };
         let rna = s.rna.clone();
         self.header_check(file, node, &kind);
+        if kind == "scene" {
+            self.scene = Some(frame_rate(node));
+        }
         match kind.as_str() {
             "light" => self.light(file, node),
             _ => self.body(file, node, &kind, &rna),
         }
+        self.scene = None;
     }
 
     /// The handle and display name on a datablock's line, and nothing else.
@@ -317,7 +325,7 @@ impl<'s> Checker<'s> {
         light_type: &str,
     ) {
         let forms: &[&str] = match kind {
-            "scene" => &["object", "collection", "units"],
+            "scene" => &["object", "collection", "units", "fps", "fps-base"],
             "collection" => &["object", "collection"],
             "object" => &["data", "material"],
             "mesh" => &["primitive", "vertices", "polygons"],
@@ -362,6 +370,8 @@ impl<'s> Checker<'s> {
                     }
                 }
                 ("scene", "units") => self.units(file, a),
+                ("scene", "fps") => self.frame_rate_part(file, a, true),
+                ("scene", "fps-base") => self.frame_rate_part(file, a, false),
                 ("object", "data") => self.data(file, a),
                 ("object", "material") => self.reference(file, a, "material"),
                 ("mesh", "primitive") => self.primitive(file, a),
@@ -513,6 +523,30 @@ impl<'s> Checker<'s> {
                 a.name_span,
                 format!("`{name}` is of a type Null does not write yet ({other})"),
             ),
+        }
+    }
+
+    /// A scene's `fps` (a whole number, 1 to 32767) or `fps-base` (a number from 0.00001 to
+    /// 1000000): its render settings' frame rate, written on the scene (spec, section 8).
+    fn frame_rate_part(&mut self, file: FileId, a: &Attr<'_>, fps: bool) {
+        let mut out = self.out(file);
+        let [value] = a.args.as_slice() else {
+            return out.error(
+                codes::TYPE,
+                a.span,
+                format!("`{}` takes one number", a.name),
+            );
+        };
+        let (lo, hi) = if fps {
+            forms::FPS_RANGE
+        } else {
+            forms::FPS_BASE_RANGE
+        };
+        let p = Property::ranged(if fps { "int" } else { "float32" }, lo, hi);
+        if fps {
+            check_int(value, &a.name, &p, &mut out);
+        } else {
+            check_float(value, &a.name, null_value::Dimension::None, &p, &mut out);
         }
     }
 
@@ -1070,6 +1104,34 @@ impl<'s> Checker<'s> {
 /// display name or a block) rather than naming one.
 fn defines(node: Node<'_>) -> bool {
     node.block().is_some() || header(node).name.is_some()
+}
+
+/// A scene's frame rate from its `fps` and `fps-base` lines, a new scene's (24 and 1) where one
+/// is missing or does not read; those lines' own errors are reported where they are checked.
+fn frame_rate(scene: Node<'_>) -> null_value::Scene {
+    let mut rate = null_value::Scene::default();
+    for a in attrs(scene) {
+        let Some(word) = a.args.first().and_then(|v| v.as_word()) else {
+            continue;
+        };
+        match a.name.as_str() {
+            "fps" => {
+                if let Ok(n) = null_value::read_int(word).map(u32::try_from) {
+                    rate.fps = n.unwrap_or(rate.fps).max(1);
+                }
+            }
+            "fps-base" => {
+                if let Ok(x) = null_value::read::<f32>(word, null_value::Dimension::None)
+                    && x > 0.0
+                    && x.is_finite()
+                {
+                    rate.fps_base = x;
+                }
+            }
+            _ => {}
+        }
+    }
+    rate
 }
 
 /// The handles of a node tree's nodes and their kinds.

@@ -53,3 +53,9 @@ pub const LENGTH_UNITS: [(&str, &str); 6] = [
 
 /// Rotation units as `units rotation=…` takes them: (unit, `system-rotation` item).
 pub const ROTATION_UNITS: [(&str, &str); 2] = [("deg", "degrees"), ("rad", "radians")];
+
+/// A scene's `fps`, Null's form on the scene for its render settings' `fps`: RNA's range.
+pub const FPS_RANGE: (f64, f64) = (1.0, 32767.0);
+
+/// A scene's `fps-base`, for its render settings' `fps-base`: RNA's range.
+pub const FPS_BASE_RANGE: (f64, f64) = (1e-5, 1e6);
