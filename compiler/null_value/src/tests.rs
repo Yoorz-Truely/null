@@ -830,3 +830,49 @@ fn a_time_in_frames_reads_through_the_frame_rate() {
     };
     assert_eq!(read_in::<f32>("1.5s", Dimension::Frames, &scaled), Ok(36.0));
 }
+
+#[test]
+fn a_scene_that_cannot_convert_is_an_error_not_a_panic() {
+    // A `.blend` file can hold a unit scale of 0 (Blender's RNA refuses it; DNA does not), and
+    // Sau's typed fields read through `read_in` behind `extern "C"`, where a panic aborts. Found
+    // reviewing 1c-01g.
+    let m = Unit::from_suffix("m", Dimension::Length).unwrap();
+    for scale_length in [
+        0.0f32,
+        -0.0,
+        -1.0,
+        f32::NAN,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+    ] {
+        let s = Scene {
+            scale_length,
+            ..Scene::default()
+        };
+        assert_eq!(
+            read_in::<f32>("1m", Dimension::Length, &s),
+            Err(ReadError::BadScene),
+            "{scale_length}"
+        );
+        assert_eq!(print_in_scene(1.0f32, m, &s), None, "{scale_length}");
+        // What the scale never touches still reads: a bare number, an angle.
+        assert_eq!(read_in::<f32>("3", Dimension::Length, &s), Ok(3.0));
+        assert_eq!(
+            read_in::<f64>("90deg", Dimension::Angle, &s),
+            Ok(std::f64::consts::FRAC_PI_2)
+        );
+    }
+    for (fps, fps_base) in [(0, 1.0f32), (24, 0.0), (24, -1.0), (24, f32::NAN)] {
+        let s = Scene {
+            fps,
+            fps_base,
+            ..Scene::default()
+        };
+        assert_eq!(
+            read_in::<f32>("1s", Dimension::Frames, &s),
+            Err(ReadError::BadScene),
+            "{fps} {fps_base}"
+        );
+        assert_eq!(read_in::<f32>("1m", Dimension::Length, &s), Ok(1.0));
+    }
+}
