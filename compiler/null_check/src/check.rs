@@ -11,7 +11,8 @@ use crate::forms;
 use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
-    Out, check_bool, check_enum, check_float, check_float_array, check_int, dimension, list,
+    Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
+    dimension, list,
 };
 
 /// Checks every file of a project together, since handles are visible project-wide
@@ -520,9 +521,12 @@ impl<'s> Checker<'s> {
         };
         let dim = dimension(p, power);
         match p.ty.as_str() {
-            "float32" | "float64" => match p.fixed_len() {
-                Some(len) => check_float_array(value, len, name, dim, p, &mut out),
-                None => check_float(value, name, dim, p, &mut out),
+            "float32" | "float64" => match p.dimensions().as_slice() {
+                [] => check_float(value, name, dim, p, &mut out),
+                [len] => check_float_array(value, *len, name, dim, p, &mut out),
+                [rows, columns, ..] => {
+                    check_float_matrix(value, *rows, *columns, name, dim, p, &mut out);
+                }
             },
             "int" => match p.fixed_len() {
                 None if !p.is_dynamic() => {

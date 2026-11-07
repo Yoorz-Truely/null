@@ -266,7 +266,7 @@ Each object kind's properties are the RNA properties of its struct, by the same 
 
 ### Null's forms over RNA
 
-The schema Sau generates from RNA (`schema/null-schema.json`) gives every name, type, unit, range and enum item. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
+The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender. A struct's kind is its RNA identifier in kebab case (`shader-node-bsdf-principled`), apart from the slice's own names, until shorter kinds are settled. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
 
 | Form | Means | Why |
 | --- | --- | --- |
