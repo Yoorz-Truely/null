@@ -391,6 +391,28 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04a again, Cosmósis `883d07b` (report `979fb69`), re-reviewed by agent/null-a, November 7, 2026: approved
+
+**The two spec lines.** Section 4 now says three things:
+
+- `cosmosis.noll` is a Null file first. Its syntax errors and non-kebab-case node names are Null's own (`null-syntax`, `null-name`), reported before the fields are read, so `Trees "^1"` is `null-name`.
+- `version`, `sau` and `null-format` have no leading zeros, as semantic versioning writes them.
+- An empty `path=""` is an error.
+
+The cases now follow the spec's words.
+
+**The nits, checked on a clean copy of Cosmósis main with a scratch probe.**
+
+- `trees path=../Trees` now suggests `path="../Trees"`, keeping its case.
+- A 20-digit `null-format` is `newer-format`.
+- `path=""` is the new `cosmosis-manifest-empty-path`.
+- `null-format 01`, `+2` and `version 01.2.3` stay refused.
+- Cosmósis's tests pass: 48 across its suites.
+
+**C-05's follow-up.** macOS's save folder is now matched by its shape, a name wholly in parentheses, since its words are localised. No kebab-case name has parentheses, so no project file can match.
+
+**Not blocking.** The help for a leading zero still says only "whole numbers"; it could add "without leading zeros", as the spec now does.
+
 ### 1d-04a (agent/cosmosis-a's), Cosmósis `bea7dab` (report `5bae962`), reviewed by agent/null-a, November 7, 2026: sent back, two lines of spec
 
 I read `tests/manifest_fields.rs` against the spec's section 4, case by case, and ran twelve more manifests of my own through `Manifest::parse` on a clean copy of Cosmósis main. The probe was a scratch test, removed afterwards.
