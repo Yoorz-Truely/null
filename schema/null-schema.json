@@ -7524,6 +7524,67 @@
      "type": "shader"
     }
    ]
+  },
+  {
+   "kind": "output-material",
+   "rna": "ShaderNodeOutputMaterial",
+   "label": "Material Output",
+   "inputs": [
+    {
+     "name": "surface",
+     "socket": "Surface",
+     "class": "NodeSocketShader",
+     "type": "shader"
+    },
+    {
+     "name": "volume",
+     "socket": "Volume",
+     "class": "NodeSocketShader",
+     "type": "shader"
+    },
+    {
+     "name": "displacement",
+     "socket": "Displacement",
+     "class": "NodeSocketVector",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "thickness",
+     "socket": "Thickness",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 0.0
+    }
+   ],
+   "outputs": []
   }
  ],
  "primitives": [
@@ -7554,6 +7615,32 @@
      "rna": "calc_uvs",
      "type": "bool",
      "default": true
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -1000000000000.0,
+       1000000000000.0
+      ],
+      "soft": [
+       -1000.0,
+       1000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applies-to": "mesh"
     }
    ]
   },
@@ -7780,6 +7867,32 @@
      "rna": "calc_uvs",
      "type": "bool",
      "default": true
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -1000000000000.0,
+       1000000000000.0
+      ],
+      "soft": [
+       -1000.0,
+       1000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applies-to": "mesh"
     }
    ]
   },
@@ -7826,6 +7939,32 @@
      "rna": "calc_uvs",
      "type": "bool",
      "default": true
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -1000000000000.0,
+       1000000000000.0
+      ],
+      "soft": [
+       -1000.0,
+       1000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applies-to": "mesh"
     }
    ]
   },
@@ -7916,6 +8055,32 @@
      "rna": "calc_uvs",
      "type": "bool",
      "default": true
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -1000000000000.0,
+       1000000000000.0
+      ],
+      "soft": [
+       -1000.0,
+       1000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applies-to": "mesh"
     }
    ]
   },
@@ -8024,6 +8189,32 @@
      "rna": "calc_uvs",
      "type": "bool",
      "default": true
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -1000000000000.0,
+       1000000000000.0
+      ],
+      "soft": [
+       -1000.0,
+       1000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applies-to": "mesh"
     }
    ]
   },
@@ -8271,6 +8462,9 @@
   "principled-bsdf": [
    "Base Color",
    "Roughness"
+  ],
+  "output-material": [
+   "Surface"
   ]
  }
 }
