@@ -302,23 +302,10 @@ pub(crate) fn check_float_array(
     }
 }
 
-/// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve in f64, each
-/// channel then rounded once into float32.
+/// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve, exactly rounded once into
+/// float32 from the fixed table in `null_value` (spec, section 6; Sau's decision S62).
 pub fn srgb(word: &str) -> Option<[f32; 3]> {
-    let hex = word.strip_prefix('#')?;
-    if hex.len() != 6 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return None;
-    }
-    let channel = |i: usize| {
-        let c = u8::from_str_radix(&hex[i..i + 2], 16).ok()? as f64 / 255.0;
-        let linear = if c <= 0.04045 {
-            c / 12.92
-        } else {
-            ((c + 0.055) / 1.055).powf(2.4)
-        };
-        Some(linear as f32)
-    };
-    Some([channel(0)?, channel(2)?, channel(4)?])
+    null_value::read_srgb(word)
 }
 
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
