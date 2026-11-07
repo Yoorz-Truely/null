@@ -218,3 +218,46 @@ fn mutated_slice_files_keep_every_invariant() {
         "only {broken} of 3000 mutations broke the syntax"
     );
 }
+
+#[test]
+fn a_users_key_is_never_taken_for_scowrs_example() {
+    // From the 1a-03 review: keys ending in `vel` once tripped the invariant.
+    for text in [
+        "modifier @sub subsurf level=\n",
+        "object @a travel=\n",
+        "modifier @sub subsurf level= {\n  levels 2\n}\n",
+    ] {
+        let found = diagnostics(&parse(text), FileId(0));
+        assert!(
+            found
+                .iter()
+                .any(|d| d.message.starts_with("expected a value after")),
+            "{text:?}: {found:?}"
+        );
+        invariants::check(text, 0, text.len(), "");
+    }
+}
+
+#[test]
+fn nesting_past_the_limit_is_an_error_not_a_crash() {
+    // Scowr's parser stops descending at 256 levels; Null pins both messages.
+    let cases = [
+        ("x {\n".repeat(300), "blocks are nested too deeply"),
+        (
+            format!("x {}", "[".repeat(300)),
+            "lists are nested too deeply",
+        ),
+        ("{".repeat(300), "blocks are nested too deeply"),
+    ];
+    for (text, message) in cases {
+        let file = parse(&text);
+        assert_eq!(file.print(), text);
+        let found = diagnostics(&file, FileId(0));
+        assert!(
+            found.iter().any(|d| d.message == message),
+            "{message}: {:?}",
+            found.iter().map(|d| &d.message).take(3).collect::<Vec<_>>()
+        );
+        invariants::check(&text, 10, 20, "]}");
+    }
+}

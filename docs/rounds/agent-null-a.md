@@ -118,6 +118,26 @@ Reviewed Null `0edf8f4` against the row on Sau's board.
 - A `null-name` fix is spelling only, not schema-aware: `use2D` becomes `use2d`, which is kebab-case but need not be an RNA name. Once 1a-06 has the schema, the nearest RNA name should be the fix, so that a tool applying fixes does not get two different ones in a row.
 - Scowr's syntax messages reach Null with Scowr's examples: `frame-start=1` written as a node gives `null-syntax: expected a key before =, such as vel=96`, a sound example. For 1a-03 (the parser's error recovery): give Null's diagnostics Null's examples.
 
+### 1a-03, by agent/cosmosis-a, November 7, 2026: sent back
+
+Reviewed Null `5cef529`, `a5262c3` and `900a7e1` against the row on Sau's board, and `59061db`, the spec edit, against S59. Exact copies of Null at `59061db` (`git archive`, `../Scowr` linked beside it) in my scratchpad; Null itself untouched but this section.
+
+**Measured.**
+
+- The fuzz target, rerun from the committed seeds at `nice 10`, thermal pressure heavy: 301 s, 288,898 inputs, coverage 3,284, peak 915 MB, no crash. libFuzzer's input limit stayed at 583 bytes, the largest seed, as in the author's run.
+- **A second run, from that corpus with `-max_len=16384`, crashed after 13,547 inputs** (`invariants.rs:46`, "Scowr's example in expected a value after level="). The input is 97 bytes, under the 583-byte cap, so the default run can find it too. It is not a parser fault but a false alarm in the invariant: it bans the bare substring `vel=` from every message, and the shared parser echoes the user's key (`expected a value after level=`). Minimal reproductions through `invariants::check`: `modifier @sub subsurf level=` and `object @a travel=` panic; `object @a speed=` passes. As it stands, `just verify`'s fuzz run and the nightly can fail at random on a key that ends in `vel` (`level`, `travel`, `bevel`'s neighbours).
+- A wholly new Scowr message is caught only when some test input produces it. Removing each of the 22 `KNOWN` entries in turn (standing in for a message Null has not read) fails Null's tests for 20; for `blocks are nested too deeply` and `lists are nested too deeply` every test passes, since no test nests past Scowr's limit of 256. Deep nesting itself is safe: up to 1,000,000 levels of `[`, `{` and `x {`, `invariants::check` holds, edits included, with no stack overflow and only known messages (about 257 or 513 diagnostics, then no more).
+- Null's `diagnostics` is built as Scowr's own `Parse::diagnostics` is (message, span, fix), with Null's wording: nothing of Scowr's is lost.
+- `59061db` matches S59: section 6 says "converted exactly and rounded once" and how NaN is written, section 4's bevel is `{ width 4mm; segments 3 }`, the CHANGELOG says so, and the test now expects two attributes. S59's items 3 to 5 are Cosmósis's and match its spec, section 4.
+
+**To fix.**
+
+1. The invariant's check for Scowr's examples: match the whole example phrases (`such as vel=96`, `such as track {`, `\u{266A}`), not `vel=`, `track {` and `266A` anywhere; add the crash input, or `modifier @sub subsurf level=`, as a test and a seed.
+2. A deep-nesting case in `tests/recovery.rs` (more than 256 levels of `{` and of `[`), so both depth messages are pinned like the other 20, and the depth guard against stack overflow is tested in Null.
+3. `tools/fuzz.sh`: pass a `-max_len` larger than the seeds (8 KB or so), so the fuzzer tries inputs the size of real files.
+
+The pending `cargo deny` commit for the fuzz crate (NCSA) was not yet on the row when this was written; I will check it with the fixes.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
@@ -136,7 +156,13 @@ Done, November 7, 2026 (`0edf8f4`, approved).
 
 ## 1a-03: parser with error recovery for the slice
 
-In review, November 7, 2026 (`5cef529`, `a5262c3`).
+Sent back once and fixed, November 7, 2026 (`5cef529`, `a5262c3`, then the fixes below).
+
+**Fixes after the review** (agent/cosmosis-a's findings, in "Review" below):
+
+1. The invariant's check for Scowr's examples now matches the three whole phrases (`messages::SCOWR_EXAMPLES`: `such as vel=96`, `such as track {`, `\u{266A}`), not fragments, so a user's key such as `level=` or `travel=` is no longer a false alarm. `a_users_key_is_never_taken_for_scowrs_example` covers `modifier @sub subsurf level=` and `object @a travel=`; the reviewer's 97-byte crash input and a `level=`/`travel=` file are fuzz seeds.
+2. `nesting_past_the_limit_is_an_error_not_a_crash`: 300 levels of `x {`, of `[` and of bare `{`, past Scowr's limit of 256, give "blocks are nested too deeply" and "lists are nested too deeply", lossless, with every invariant holding; so all 22 known messages are now reached by a test.
+3. `tools/fuzz.sh` passes `-max_len=8192`, so the fuzzer tries inputs the size of real files.
 
 **What works.**
 
@@ -151,10 +177,10 @@ In review, November 7, 2026 (`5cef529`, `a5262c3`).
 - 3,000 seeded mutations of the slice files (1 to 4 insertions, deletions or replacements of braces, brackets, quotes, `#"`, `\`, comment marks, `/-`, `;`, `=`, line breaks, CRLF, tab, `é`, U+2028), most of them broken: every invariant holds.
 - `null_syntax`: 16 tests and a doctest. Null's `just check` exits 0; `just verify` passes, its 60 s fuzz run included (66,665 inputs, no crash).
 
-**Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `cargo deny` does not see it; NCSA is not in `deny.toml`'s list.
+**Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `just check` now runs `cargo deny` on `fuzz/Cargo.toml` too, with the same `deny.toml`, which allows NCSA for libfuzzer-sys. Checked both ways: with NCSA removed from the list the fuzz crate is rejected; with it, all 14 of its crates pass.
 
 **Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (814 MB after 10 minutes, under libFuzzer's 2 GB limit); longer runs may need `-rss_limit_mb`.
 
 ## Next
 
-The S59 spec corrections, then whatever the lead routes.
+Whatever the lead routes next. The S59 spec corrections are committed (see the commit after `900a7e1`).

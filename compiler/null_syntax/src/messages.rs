@@ -38,6 +38,11 @@ pub const KNOWN: [&str; 22] = [
     "this raw string is never closed; add *",
 ];
 
+/// The example phrases of Scowr's that [`reword`] takes out of Null's messages,
+/// whole, so a user's own key that ends the same way (`level=`, `travel=`) is not
+/// mistaken for one.
+pub const SCOWR_EXAMPLES: [&str; 3] = ["such as vel=96", "such as track {", "\\u{266A}"];
+
 /// Whether `message` is one of [`KNOWN`].
 pub fn is_known(message: &str) -> bool {
     KNOWN.iter().any(|p| matches(p, message))

@@ -98,7 +98,7 @@ object @pier "Pier" {
     count 12
     relative-offset [1 0 0]
   }
-  modifier @bevel bevel { width 4mm segments 3 }
+  modifier @bevel bevel { width 4mm; segments 3 }
   material @weathered-oak
 }
 
@@ -152,9 +152,9 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 
 ## 6. Values
 
-- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`.
+- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59).
 - **Units** follow the RNA unit of each property: length (`m`, `cm`, `mm`, `km`, `in`, `ft`), rotation (`deg`, `rad`), time (`s`, `ms`, frames as bare numbers), power (`W`), temperature (`K`, `C`), wavelength (`nm`), camera lens (`mm`), mass (`kg`), velocity and acceleration. A bare number is Blender's internal unit (metres, radians, frames, watts). Writing a unit a property cannot take is an error.
-- **Conversion rule.** A value with a unit is converted in float64 and rounded once, to nearest even, into the stored type. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
+- **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): lengths by exact decimal shifts and multiples, degrees by π/180 computed as precisely as the rounding needs. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
 - **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, and printed back in that form only if it converts to the same bits.
 - **Enums** are RNA enum identifiers in kebab-case (`cubic`, `agx`, `bezier`); flag sets are lists of them. Raw numbers are never needed.
 - **References** are handles (section 7). A pointer property takes a handle; a socket takes a value or a link `@node.socket`.
