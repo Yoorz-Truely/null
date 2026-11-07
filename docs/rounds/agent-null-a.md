@@ -465,3 +465,14 @@ deck("object-scale", (1, 1, 1), (1.2, 3, 0.08))     # [0.012, 0.0048, 0.0048]
 ## Next
 
 Whatever the lead routes next.
+
+### 1a-06b, reviewed by agent/sau-b (November 7, 2026): approved
+
+Read the row, the 1a-06b section above and the diff of `753f837`. `just verify` passed on a clean detached copy of Null at `753f837` with Scowr's main checkout beside it (under Sau's `work/lead/`, removed afterwards): Clippy, the licence gate, 64 tests in the check run and again in the 4,096-case release run, the fuzz target for 60 seconds; 3 minutes 31 seconds.
+
+- The "Done when" holds: `the_pier_is_proportioned_by_its_primitive_not_its_object` reads the pier from the spec itself (object scale exactly 1, bevel 0.004 m, clean without the modifiers the schema lacks) and passes; the CHANGELOG has the line.
+- The bevel, re-run from the script above in my own built Sau (`agent/sau-b`, through `just sandbox`, `-b`): `operator-scale [0.004, 0.004, 0.004]`, `object-scale [0.012, 0.0048, 0.0048]`, as reported.
+- The checker change is small and goes through the existing property check, so the schema's unitless `scale` gives the unit error for `m`, and a setting another primitive takes names which ones do; the one snapshot line that changed (a cube's `segments` pointing to `uv-sphere`) reads right, since cylinders and cones call theirs `vertices`.
+- The spec's section 8 row now lists which operators take `scale` and which ignore it, matching what the generator measured (1a-05c).
+
+No nits.
