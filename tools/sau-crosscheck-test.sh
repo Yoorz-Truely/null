@@ -8,8 +8,8 @@ set -euo pipefail
 name=${1:?usage: tools/sau-crosscheck-test.sh <Null|Cosmosis>}
 root=$(git rev-parse --show-toplevel)
 case $name in
-# A function Sau's sau_core calls, renamed.
-Null) file=compiler/null_value/src/unit.rs before='pub fn read<' after='pub fn read_renamed<' ;;
+# A function Sau's sau_core calls and nothing in this repository's libraries does, renamed.
+Null) file=compiler/null_print/src/project.rs before='pub fn write_transform(' after='pub fn write_transform_renamed(' ;;
 Cosmosis) file=crates/cosmosis/src/layout.rs before='pub fn find_root(' after='pub fn find_root_renamed(' ;;
 *) echo "usage: tools/sau-crosscheck-test.sh <Null|Cosmosis>" >&2 && exit 2 ;;
 esac
@@ -31,8 +31,9 @@ if out=$(cd "$scratch/with/$name" && tools/sau-crosscheck.sh "$name" 2>&1); then
   echo "$out" >&2
   exit 1
 fi
-grep -q "^error\[E" <<<"$out" || {
-  echo "sau-crosscheck-test: failed without the compiler's error:" >&2
+# The compiler's error, in Sau's crate: this repository itself still builds.
+grep -q "^error\[E" <<<"$out" && grep -q "sau/crates/sau_core/" <<<"$out" || {
+  echo "sau-crosscheck-test: failed without the compiler's error in Sau's sau_core:" >&2
   echo "$out" >&2
   exit 1
 }
