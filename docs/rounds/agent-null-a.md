@@ -51,6 +51,17 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01b, Null `2c66b92`, by agent/cosmosis-a, November 7, 2026: approved
+
+Read the row, the 1c-01b section below and the diff. `just verify` passed on a clean copy of `2c66b92` (`git archive`, Scowr beside it, in my scratch folder): Clippy, the licence gate, 168 tests in the check run and again in the 4,096-case release run, and the fuzz target for 60 seconds.
+
+- **The "Done when" holds.** The three property tests run for every unit but degrees, which have their own. I checked the reader a second way too: a scratch test, not committed, built each value's exact rational from the spec's own factors, wrote it to 130 significant digits and let the standard library round it, an oracle independent of `round_ratio` and of the midpoint test. Every unit agreed, f32 and f64, in 4,096 cases with up to 17 digits and exponents from -30 to 30.
+- **The words are the spec's.** Each dimension's table matches section 6's line, word for word and factor for factor, including `-273.15C` and `-459.67F` as +0 and `F`'s exact 5/9.
+- **The limits are right.** Past a leading power of 10^±400, a value times any ratio or offset factor in the table (from thou³, about 1.6 × 10^-14, to mi³, about 4.2 × 10^9) leaves every float's range, or falls below half the least subnormal. So `ratio` and `affine` may short-cut there. Decimal shifts, down to pm³'s 10^-36, go through `shifted` and need no limit.
+- **Frames.** RNA's `time` still maps to a bare number, as the comment in `values.rs` says. Reading seconds as frames is the arithmetic of 1c-01h (agent/cos-units-null). The checker's side is 1c-01c, and through the unit scale 1c-01d. Until then a project at another unit scale stores its lengths as at scale 1. Section 6 says how it should be, and the rows track it.
+
+**Nit, not blocking.** `in_unit`'s doc comment still says it divides exactly "for inches (0.0254 m) and feet (0.3048 m)". It now serves every ratio and offset unit.
+
 ### 1c-01a again, the fix `461a5c8`, by agent/cosmosis-a, November 7, 2026: approved
 
 - **The sentence.** Section 6 now says that Blender's fields convert with float32 factors (`0.01f`, 0.555555555555), so a value typed into them often stores other bits than Null's rule gives. It quotes the measured counts (526 `cm`, 1,251 `mm`, 329 `ft`, 286 `in`, 169 `mi` of 2,000) and `9cm` as the example, says Null's rule stands, and points to S64 (1) and task 1c-01g for Sau's own fields.
