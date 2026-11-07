@@ -1,0 +1,31 @@
+---
+source: compiler/null_syntax/tests/recovery.rs
+expression: rendered
+---
+unclosed-block.noll:1:13 error[null-syntax]: this { is never closed; add } at the end of its block
+  fix: add }} at the end of the file
+unclosed-block.noll:3:14 error[null-syntax]: this { is never closed; add } at the end of its block
+  fix: add } at the end of the file
+stray-brace.noll:4:1 error[null-syntax]: this } closes nothing; remove it or add the { it belongs to
+  fix: remove the }
+unclosed-list.noll:2:12 error[null-syntax]: this [ is never closed; add ] after the last value
+  fix: add ] after the last value
+stray-bracket.noll:1:31 error[null-syntax]: this ] closes no list
+  fix: remove the ]
+reserved-paren.noll:1:25 error[null-syntax]: `(` is reserved and cannot appear here
+  fix: remove the (
+reserved-paren.noll:1:32 error[null-syntax]: `)` is reserved and cannot appear here
+  fix: remove the )
+unclosed-string.noll:1:14 error[null-syntax]: this string is not closed on its line; add " or write a line break as \n
+  fix: add " at the end of the line
+unclosed-string.noll:3:1 error[null-syntax]: this } closes nothing; remove it or add the { it belongs to
+  fix: remove the }
+missing-value.noll:1:23 error[null-syntax]: expected a value after location=
+property-as-node.noll:2:14 error[null-syntax]: a child node is its name, a space and its value: `frame-start …`; `frame-start=…` goes on its owner's line
+  fix: write a space for the =
+missing-key.noll:1:14 error[null-syntax]: expected a key before =, such as frame-start=1
+block-without-name.noll:1:1 error[null-syntax]: expected a node name before this block, such as object { ... }
+text-after-block.noll:1:33 error[null-syntax]: a node ends after its block; start a new line for what follows
+bad-escape.noll:1:16 error[null-syntax]: unknown escape; the escapes are \" \\ \n \t and \u{...}
+  fix: write the backslash as \\
+bad-escape.noll:1:21 error[null-syntax]: expected a Unicode escape such as \u{e9}

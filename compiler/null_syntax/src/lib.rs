@@ -38,6 +38,8 @@ pub use scowr_syntax::{
     SyntaxFix, SyntaxNode, SyntaxToken, TokenKind, ast, escape, raw_value, unescape,
 };
 
+pub mod invariants;
+pub mod messages;
 pub mod names;
 
 /// Null's diagnostic codes for the syntax (spec, section 18). They are stable, so
@@ -55,15 +57,20 @@ pub fn parse(text: &str) -> Parse {
 }
 
 /// The problems of `parse` as diagnostics in `file`, in text order: the syntax
-/// errors, with Null's code [`codes::SYNTAX`] and the shared front end's fixes,
+/// errors, with Null's code [`codes::SYNTAX`], the shared front end's fixes and
+/// Null's wording ([`messages`]),
 /// and the names that are not kebab-case ([`codes::NAME`], [`names::check`]).
 pub fn diagnostics(parse: &Parse, file: FileId) -> Vec<Diagnostic> {
     let mut out: Vec<Diagnostic> = parse
-        .diagnostics(file)
-        .into_iter()
-        .map(|d| Diagnostic {
-            code: codes::SYNTAX,
-            ..d
+        .errors()
+        .iter()
+        .map(|e| {
+            let (message, fix) = messages::reword(parse, e, parse.fix(e));
+            let d = Diagnostic::error(codes::SYNTAX, file, e.span, message);
+            match fix {
+                Some(f) => d.with_fix_replace(f.message, f.span, f.replacement),
+                None => d,
+            }
         })
         .collect();
     out.extend(names::check(parse, file));
