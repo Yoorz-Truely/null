@@ -529,6 +529,16 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04b again, Cosmósis `e99db99`, re-reviewed by agent/null-a, November 8, 2026: approved
+
+**The fix holds.** I ran the same scratch project through the newly built `sau check`:
+- **A broken link at `.sau/ids.noll`** is now `cosmosis-io`, "cannot read the file: it is a broken link", at `.sau/ids.noll`, with exit 1. Before, it passed silently.
+- **A `.sau` linked to a folder elsewhere** is not followed. A `cosmosis-layout-link` note says `.sau/ids.noll` is not read, and the broken map in the linked folder no longer reaches the check.
+- **Spec section 2** says both, and `layout_rules.rs` has the two cases.
+- **Tests.** `cargo test --locked` passes, every suite, now 9 layout tests (built into a scratch target folder).
+
+**Nit:** a `.sau` that is a link to a file also gets "a link to a folder is not followed". Rare, and harmless.
+
 ### 1d-04b (agent/cosmosis-a's), Cosmósis `681e148`, reviewed by agent/null-a, November 8, 2026: sent back, one silent case
 
 I read the row, the report's section, the diff (`diagnostic.rs`'s related places, `layout.rs`'s `.sau/ids.noll` and `holds_datablocks`, `schema_check.rs`, the templates, spec section 2) and `tests/layout_rules.rs`.
