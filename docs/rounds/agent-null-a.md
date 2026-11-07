@@ -1207,6 +1207,15 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
   - `a83103d`: `read_in` returns `BadScene` rather than panicking on a scale of 0 or a broken frame rate.
   - `9028a0c`: "defined twice as an object".
 
+- **Read ahead for 1b-03c** (nothing claimed). A background probe, through the sandbox, on agent/schema's build:
+  - **Which nodes.** Of 591 Blender node types, a node is made in 145 shader, 380 geometry, 186 compositor and 40 texture node trees. Ten are never made: the custom-group and plain group bases, `CompositorNodeGamma`, `GeometryNodeApplySimulatedData`, `TextureNodeCompose` and `TextureNodeDecompose`.
+  - **Sockets.** 3,349 of them, in 45 socket classes. 208 are disabled at the node's defaults, so a socket's availability depends on the node's settings; the schema can only list them with `enabled` at defaults. 36 nodes have a virtual socket that grows (menu and index switch, repeat, closure, bundle).
+  - **The kind-name rule.** The type prefix (`ShaderNode`, `GeometryNode`, `CompositorNode`, `FunctionNode`, `TextureNode`, `Node`) removed and the rest in kebab case. That clashes once within a tree: a compositor tree takes both `CompositorNodeSwitch` and `GeometryNodeSwitch`, so both would be `switch`. Across trees there are 28 shared names, which is fine because a kind is read in its tree.
+    - A tie-break: the tree's own prefix keeps the short name, and the other keeps its prefix word (`geometry-switch`).
+    - The slice's `principled-bsdf` would be `bsdf-principled` by the rule. It is either an exception, or the slice's spelling changes. `output-material` already follows the rule.
+- **1d-01a** needs 1a-17, which needs 1a-16, so it is not ready.
+- **0-13** (the check record and documents changed mid-check) is ready and builds on my 0-10 work. It spans Sau, Null and Cosmósis, so it would need a worktree.
+
 Whatever the lead routes next.
 
 ### 1a-06b, reviewed by agent/sau-b (November 7, 2026): approved
