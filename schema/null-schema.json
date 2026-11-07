@@ -827,8 +827,7 @@
      "type": "pointer",
      "target": "NodeTree",
      "deprecated": {
-      "removed-in": "6.0.0",
-      "note": "Use compositor_effects instead."
+      "removed-in": "6.0.0"
      }
     },
     {
@@ -837,8 +836,7 @@
      "type": "bool",
      "default": false,
      "deprecated": {
-      "removed-in": "6.0.0",
-      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True. Use #scene.render.use_compositing to turn compositing to enable or disable compositing."
+      "removed-in": "6.0.0"
      },
      "new": true
     },
@@ -1589,6 +1587,276 @@
       }
      ],
      "new": "kelvin"
+    }
+   ]
+  },
+  {
+   "kind": "collection",
+   "rna": "Collection",
+   "label": "Collection",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "instance-offset",
+     "rna": "instance_offset",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "objects",
+     "rna": "objects",
+     "type": "collection",
+     "target": "Object",
+     "readonly": true
+    },
+    {
+     "name": "all-objects",
+     "rna": "all_objects",
+     "type": "collection",
+     "target": "Object",
+     "readonly": true
+    },
+    {
+     "name": "children",
+     "rna": "children",
+     "type": "collection",
+     "target": "Collection",
+     "readonly": true
+    },
+    {
+     "name": "collection-objects",
+     "rna": "collection_objects",
+     "type": "collection",
+     "target": "CollectionObject",
+     "readonly": true
+    },
+    {
+     "name": "collection-children",
+     "rna": "collection_children",
+     "type": "collection",
+     "target": "CollectionChild",
+     "readonly": true
+    },
+    {
+     "name": "importer",
+     "rna": "importer",
+     "type": "pointer",
+     "target": "CollectionImport",
+     "readonly": true
+    },
+    {
+     "name": "exporters",
+     "rna": "exporters",
+     "type": "collection",
+     "target": "CollectionExport",
+     "readonly": true
+    },
+    {
+     "name": "active-exporter-index",
+     "rna": "active_exporter_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "hide-select",
+     "rna": "hide_select",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-viewport",
+     "rna": "hide_viewport",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-render",
+     "rna": "hide_render",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "lineart-usage",
+     "rna": "lineart_usage",
+     "type": "enum",
+     "default": "include",
+     "items": [
+      {
+       "name": "include",
+       "rna": "INCLUDE",
+       "label": "Include",
+       "value": 0
+      },
+      {
+       "name": "occlusion-only",
+       "rna": "OCCLUSION_ONLY",
+       "label": "Occlusion Only",
+       "value": 1
+      },
+      {
+       "name": "exclude",
+       "rna": "EXCLUDE",
+       "label": "Exclude",
+       "value": 2
+      },
+      {
+       "name": "intersection-only",
+       "rna": "INTERSECTION_ONLY",
+       "label": "Intersection Only",
+       "value": 4
+      },
+      {
+       "name": "no-intersection",
+       "rna": "NO_INTERSECTION",
+       "label": "No Intersection",
+       "value": 8
+      },
+      {
+       "name": "force-intersection",
+       "rna": "FORCE_INTERSECTION",
+       "label": "Force Intersection",
+       "value": 16
+      }
+     ]
+    },
+    {
+     "name": "lineart-use-intersection-mask",
+     "rna": "lineart_use_intersection_mask",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "lineart-intersection-mask",
+     "rna": "lineart_intersection_mask",
+     "type": "bool",
+     "array": [
+      8
+     ],
+     "default": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "name": "lineart-intersection-priority",
+     "rna": "lineart_intersection_priority",
+     "type": "int",
+     "range": {
+      "hard": [
+       0,
+       255
+      ],
+      "soft": [
+       0,
+       255
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "use-lineart-intersection-priority",
+     "rna": "use_lineart_intersection_priority",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "color-tag",
+     "rna": "color_tag",
+     "type": "enum",
+     "default": "color-01",
+     "items": [
+      {
+       "name": "none",
+       "rna": "NONE",
+       "label": "None",
+       "value": -1
+      },
+      {
+       "name": "color-01",
+       "rna": "COLOR_01",
+       "label": "Color 01",
+       "value": 0
+      },
+      {
+       "name": "color-02",
+       "rna": "COLOR_02",
+       "label": "Color 02",
+       "value": 1
+      },
+      {
+       "name": "color-03",
+       "rna": "COLOR_03",
+       "label": "Color 03",
+       "value": 2
+      },
+      {
+       "name": "color-04",
+       "rna": "COLOR_04",
+       "label": "Color 04",
+       "value": 3
+      },
+      {
+       "name": "color-05",
+       "rna": "COLOR_05",
+       "label": "Color 05",
+       "value": 4
+      },
+      {
+       "name": "color-06",
+       "rna": "COLOR_06",
+       "label": "Color 06",
+       "value": 5
+      },
+      {
+       "name": "color-07",
+       "rna": "COLOR_07",
+       "label": "Color 07",
+       "value": 6
+      },
+      {
+       "name": "color-08",
+       "rna": "COLOR_08",
+       "label": "Color 08",
+       "value": 7
+      }
+     ],
+     "new": "none"
     }
    ]
   },
@@ -4031,9 +4299,8 @@
      "name": "vertices",
      "rna": "vertices",
      "type": "int",
-     "array": [
-      3
-     ],
+     "array": "dynamic",
+     "min-length": 3,
      "subtype": "unsigned",
      "range": {
       "hard": [
@@ -4044,12 +4311,7 @@
        0,
        10000
       ]
-     },
-     "default": [
-      0,
-      0,
-      0
-     ]
+     }
     },
     {
      "name": "loop-start",
@@ -4533,8 +4795,7 @@
      "type": "bool",
      "default": false,
      "deprecated": {
-      "removed-in": "6.0.0",
-      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True."
+      "removed-in": "6.0.0"
      },
      "new": true
     },
@@ -5858,8 +6119,7 @@
      "type": "bool",
      "default": false,
      "deprecated": {
-      "removed-in": "6.0.0",
-      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True."
+      "removed-in": "6.0.0"
      },
      "new": true
     },
@@ -7942,7 +8202,12 @@
    "camera",
    "frame_start",
    "frame_end",
-   "unit_settings"
+   "unit_settings",
+   "collection"
+  ],
+  "Collection": [
+   "objects",
+   "children"
   ],
   "UnitSettings": [
    "system",
