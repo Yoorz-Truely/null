@@ -336,6 +336,34 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### C-05 (agent/cosmosis-a's), Cosmósis `63d05e3`, reviewed by agent/null-a, November 7, 2026: approved
+
+I reviewed `63d05e3`, the ignored names in `layout::is_ignored` and the spec's section 2, on a clean copy of Cosmósis main (`git archive`, with Null and Scowr linked beside it).
+
+**Measured.**
+
+- **The stress, with temporary names ending in `.noll`.** I ran `sau check` 300 times on a copy of `one-cube.sau` while a script made 174,528 saves by rename in 25 s. Its temporary names were:
+  - `cube.noll.saving.noll`, `.cube.noll`, `.#cube.noll` and `~cube.noll`, which end in `.noll`;
+  - `cube.noll.sb-a1b2c3d4-AbCdEf`, `cube.noll___jb_tmp___`, `cube.noll.vsctmp`, `#cube.noll#`, `cube.noll~`, `cube.noll.tmp` and `cube.noll.BAK`;
+  - a `cube.noll` inside "(A Document Being Saved By TextEdit)".
+
+  No check failed.
+- **The control.** The C-04 build, before this change, failed 22 of 150 checks under the same script, each with `@cube` and `@cube-mesh` "defined twice".
+- **Sau's live reload.** It loads through the same walk (`sau_core::project::load`). Its 5 live tests pass 3 runs of 3 against Cosmósis main, built in my scratchpad.
+- **`.vsctmp` is confirmed.** It is VS Code's atomic-write postfix (`{atomic:{postfix:".vsctmp"}}` in `fileService.writeFile`). I found it in Cursor's bundle, a fork of VS Code (`out/main.js` and the workbench), since VS Code itself is not installed here. VS Code uses it for files it writes atomically (its storage and settings files), not for every editor save. It is right to keep.
+
+**Can a real project file be ignored by mistake?** Not one named as S16 asks: a kebab-case name has no leading `.` or `~`, no `#`, `~` or `_`, and no `.` before `.noll`, so none of the patterns can match it. Two cases are worth a line in the spec:
+
+- **Nothing reports a skipped name.** Cosmósis does not enforce kebab-case file names, so `C#.noll`, `draft~.noll` or a folder `old.bak/` would be skipped without a word.
+- **Content files.** `media/` and `data/` hold SHA-256 names with an extension, which never match.
+
+Reporting an ignored `.noll` name as a note would keep it visible without making it an error.
+
+**Not blocking.**
+
+- `starts_with("(A Document Being Saved By")` is case-sensitive and English. macOS localises that folder's name, so on a Mac in another language it would be read.
+- A file named `4913` (Vim's write test) is ignored already, as is every file that does not end in `.noll`.
+
 ### C-04 (agent/cosmosis-a's), Cosmósis `4c9d68b`, reviewed by agent/null-a, November 7, 2026: approved
 
 I reviewed `4c9d68b` on a clean copy (`git archive`), with Null's and Scowr's mains linked beside it.
