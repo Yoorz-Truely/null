@@ -51,3 +51,33 @@ The lead chose the exactly rounded curve (Sau's decision S62): a file's `#808080
 ## Next
 
 `just verify` passes after merging main (`20e9f76`). 1c-01f and 1d-01b are in review.
+
+## Review
+
+### 1c-01f and 1d-01b, by agent/null-a, November 7, 2026: 1d-01b approved, 1c-01f sent back for one sentence of spec
+
+I reviewed `7e10f3f` and the report, synced at `75b7226`, on a clean copy (`git archive`, Scowr's main linked beside it). Nothing here was changed but this section.
+
+**1c-01f, the table: proven independently.**
+
+- **Every entry, not a few.** I checked all 256 entries without the author's method, in Python's `decimal` at 90 digits: the curve `((40i + 561) / 10761)^2.4` through `ln` and `exp`, and `i / (255 × 12.92)` on the linear part. Each entry lies strictly between the midpoints to its float32 neighbours.
+  - The curve's closest approach to a midpoint is channel 70, at 0.0041 ulp, far above the 90-digit arithmetic's error.
+  - Channels 1 to 10 also check exactly with `fractions.Fraction`.
+  - Entries 0 and 255 are 0 and 1, and the table is strictly increasing, so `print_srgb`'s lookup is unambiguous.
+  - On this Mac, `f64` `pow` rounded to float32 gives the same 256 values, as RFC 0001 says.
+- **The test catches a wrong entry.** In the copy, entry 128 one ulp up fails with "the curve is below the entry's lower midpoint", and one ulp down with "above the upper midpoint". Entry 5, on the linear part, one ulp up fails too. Restored, the 3 `srgb` tests pass.
+- **The derivation holds.** `(c + 0.055) / 1.055 = (40i + 561) / 10761`, since 51 × 211 = 10761, and `m^5 < r^12` decides `m < r^(12/5)` for positive values. The checker reads `#rrggbb` through `read_srgb`. A Blender picker value (0.21586056) prints as `0.21586056`, not hex (`a_picker_value_is_not_hex`).
+
+**To fix (1c-01f): section 6 still says the curve is "computed in float64 and rounded once".**
+
+- S62 says "exactly rounded once into the stored type, from a fixed 256-entry table … not Blender's OCIO conversion".
+- "Computed in float64, then rounded" describes two roundings, which is what S59 rules out for units. The bullet now says both, the old words with S62 in parentheses.
+- The sentence should read as S62 does: exactly rounded from the table, with no floating-point `pow`. It should also say S62's consequence for files: a colour set in Blender's picker is stored with OCIO's bits and prints back as a list, not as `#rrggbb`.
+- The CHANGELOG line already matches S62. RFC 0001's "the spec's words in section 6 stay" goes with this fix.
+
+**1d-01b, the RFC process: approved.**
+
+- **The README** follows Scowr's and points to it. It says when a proposal is needed and when not (wording, implementation, and properties arriving through the generated schema). Its steps are: a template, a row on the board, the decision by the user or by the lead under S59 with an S-number in Sau's register, then spec and CHANGELOG, code, and a raised `null-format` with a migration when a file's meaning changes.
+- **The template** has the fields that path needs: status, deciders, what is affected, the Null format.
+- **RFC 0001 went through the path.** It names S59 as the authority and S62 as the record, and S62 is in the register.
+- **Scowr is unchanged.** `../Scowr` in the worktree and Scowr's main are both at `a78ec26`, clean; that commit is from 17:53, before this work.
