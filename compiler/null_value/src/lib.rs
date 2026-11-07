@@ -39,9 +39,11 @@
 
 mod exact;
 mod number;
+mod srgb;
 mod unit;
 
 pub use number::Float;
+pub use srgb::{print_srgb, read_srgb, srgb_to_linear};
 pub use unit::{
     Dimension, ReadError, Scene, Unit, print, print_bare, print_in, print_in_scene, read, read_in,
     read_int, unit_of,
