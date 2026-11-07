@@ -664,6 +664,8 @@ The spec's sections 15 and 17 say so, and that `format` makes a CRLF file's line
 - Sau's side, 1a-14: the C API, and the undo push that calls this, are Sau's and wait on 1a-10.
 - Only transforms are written; other attributes go through `write` directly.
 
+**After the approval.** The review's nit is fixed: `DefinedTwice`'s message now says "that object is defined more than once", which fits one file defining it twice as well as two files. Nothing else changed.
+
 ## Next
 
 Whatever the lead routes next.

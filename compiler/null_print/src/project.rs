@@ -97,7 +97,7 @@ impl fmt::Display for WriteBackError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             WriteBackError::NoSuchObject => write!(f, "no file defines that object"),
-            WriteBackError::DefinedTwice => write!(f, "more than one file defines that object"),
+            WriteBackError::DefinedTwice => write!(f, "that object is defined more than once"),
             WriteBackError::NotThreeValues => write!(f, "a transform takes three values"),
             WriteBackError::NotFinite => write!(f, "a value is not a finite number"),
         }
