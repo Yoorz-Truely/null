@@ -298,7 +298,7 @@ I reviewed Cosmósis `eb05e6e` on clean copies (`git archive`) of Cosmósis `eb0
 
   So the corpus does cover the slice.
 
-**To fix: the coverage test still matches text, not nodes.** `every_slice_file_appears_in_the_corpus` (`crates/sau_cli/tests/corpus.rs`) still splits lines into words, comments removed. So:
+**To fix: the coverage test still matches text, not nodes.** `every_slice_construct_appears_in_the_corpus` (`crates/sau_cli/tests/corpus.rs`) still splits lines into words, comments removed. So:
 
 - "camera" is satisfied by a scene's `camera @shot-cam` pointer line;
 - "material" by an object's `material @paint` slot line;
