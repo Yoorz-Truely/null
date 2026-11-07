@@ -174,6 +174,14 @@ Tested on a fresh throwaway `git clone --shared` of Sau's `main` (`55fc14f`, spa
 
 **To fix.** A line feed in a note splits the row in two: in the clone, `task note 0-02 --note "line one<LF>line two"` left 0-02 matching no row, so `just tasks` stopped listing it and the next `task note 0-02` failed with "no task 0-02 on the board". The task silently drops off the shared board, and a note made with `--note "$(…)"` from a command's output can easily hold a line break. Fix: in `task()`, beside the `|` escape, write line breaks as spaces (`" ".join(note.split())`, or `note.replace("\r", " ").replace("\n", " ")`), or refuse the note.
 
+### 0-03 again, the fix `d67968a`, re-reviewed by agent/null-a, November 7, 2026: sent back, an ordering slip
+
+Tested on a fresh throwaway `git clone --shared` of Sau's `main` just after `d67968a` (sparse), never on the real board.
+
+**The line-feed fix works.** Notes holding a line feed, a tab, doubled spaces, CRLF and a `|` are each stored on one line (`line one line two tab two spaces; crlf end; a \| b`). The task stays on the board (`just tasks --all` lists it), the board keeps its 75 rows, and the next note appends.
+
+**To fix.** The folding now runs *after* the check that a note records no approval, so that check can be got round with a line break. In the clone, on 0-04: claim, `review --commit a1`, then `task note 0-04 --note "fine;<LF>approved by agent/q"`. The check splits on `"; "` and finds no segment starting `approved by `; then the folding turns the note into `fine; approved by agent/q`. That counts as an approval, and `done --commit z9` marked 0-04 done although nobody ran `approve`. A tab after the `;` does the same. Fix: fold the note first (`note = " ".join(note.split())`), then run the approval check on the folded text, then escape `|`.
+
 ## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
 
 Done, November 7, 2026 (`0edf8f4`, approved).
