@@ -111,6 +111,17 @@ impl Default for Scene {
 }
 
 impl Scene {
+    /// Whether this scene can convert a value of `dimension`: a positive, finite unit scale where
+    /// the dimension is scaled, and a frame rate of at least one frame over a positive, finite
+    /// base for frames. Blender's RNA keeps a scene's values so; a `.blend` file need not.
+    pub fn converts(&self, dimension: Dimension) -> bool {
+        let scale_ok = dimension.scale_power() == 0
+            || (self.scale_length.is_finite() && self.scale_length > 0.0);
+        let rate_ok = dimension != Dimension::Frames
+            || (self.fps >= 1 && self.fps_base.is_finite() && self.fps_base > 0.0);
+        scale_ok && rate_ok
+    }
+
     /// Whether a value of `dimension` written with a unit converts here exactly as at unit
     /// scale 1, so the plain conversions serve.
     fn is_plain_for(&self, dimension: Dimension) -> bool {
@@ -417,6 +428,9 @@ pub enum ReadError {
         /// What the property measures.
         dimension: Dimension,
     },
+    /// The scene cannot convert the unit: its unit scale, or its frame rate for frames, is zero,
+    /// negative or not finite ([`Scene::converts`]).
+    BadScene,
 }
 
 impl fmt::Display for ReadError {
@@ -444,6 +458,10 @@ impl fmt::Display for ReadError {
                 write!(f, "`{unit}` does not fit here: ")?;
                 takes(f, *dimension)
             }
+            ReadError::BadScene => write!(
+                f,
+                "the scene's unit scale or frame rate is zero, negative or not a number"
+            ),
         }
     }
 }
@@ -482,6 +500,7 @@ pub fn read_in<F: Float>(word: &str, dimension: Dimension, scene: &Scene) -> Res
         Number::Infinite { negative } => F::infinity(negative),
         Number::Finite(value) => match unit.map(Unit::conv) {
             None => value.round(),
+            Some(_) if !scene.converts(dimension) => return Err(ReadError::BadScene),
             Some(conv) if !scene.is_plain_for(dimension) => {
                 exact::in_scene(&value, conv, dimension, scene)
             }
@@ -601,7 +620,7 @@ pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
 
 /// [`print_in`] in `scene`, so that [`read_in`] in the same scene reads it back (task 1c-01h).
 pub fn print_in_scene<F: Float>(value: F, unit: Unit, scene: &Scene) -> Option<String> {
-    if value.is_nan() || value.is_infinite() {
+    if value.is_nan() || value.is_infinite() || !scene.converts(unit.dimension()) {
         return None;
     }
     let suffix = unit.suffix();

@@ -287,6 +287,13 @@ fn unit_error(
                 ),
             );
         }
+        // The checker passes only a positive unit scale and frame rate (`Units::scale`,
+        // `frame_rate`), so this is for completeness.
+        ReadError::BadScene => out.error(
+            codes::UNIT,
+            span,
+            format!("`{name}` cannot be read in this scene's unit scale or frame rate"),
+        ),
     }
 }
 
