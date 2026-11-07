@@ -309,13 +309,14 @@ impl Index {
         out
     }
 
-    /// What `word` names. `within` is the datablock whose block the word is written in, where a
-    /// path may leave its owner out (`@bsdf.roughness` inside `@weathered-oak`).
+    /// What `word` names. `within` is the datablock (kind and handle) whose block the word is
+    /// written in, where a path may leave its owner out (`@bsdf.roughness` inside
+    /// `material @weathered-oak`) and starts at the owner's own sub-objects first.
     pub fn resolve(
         &self,
         schema: &Schema,
         word: &str,
-        within: Option<&str>,
+        within: Option<(&str, &str)>,
     ) -> Result<Resolved, Unresolved> {
         let path = Path::parse(word).map_err(|m| Unresolved::new(m, None))?;
         if let Some(pkg) = &path.package {
@@ -338,19 +339,37 @@ impl Index {
             ));
         }
         let first = &path.segments[0].handle;
-        // Inside an owner's block, a path may start at one of its sub-objects.
-        if let Some(owner) = within
-            && !self.owners.contains_key(first)
+        // Inside an owner's block, a path may start at one of its own sub-objects, which come
+        // first: a datablock elsewhere with the same handle never shadows them, and the owner
+        // is the one datablock of that kind and handle, not every datablock so called.
+        if let Some((kind, handle)) = within
+            && let Some(owner) = self.owners(handle).iter().find(|o| o.kind == kind)
         {
-            let relative = format!("{owner}/{word}");
-            return self
-                .resolve(schema, &relative, None)
-                .map_err(|e| Unresolved {
-                    message: e.message,
-                    fix: e
-                        .fix
-                        .and_then(|f| f.strip_prefix(&format!("{owner}/")).map(str::to_string)),
-                });
+            let mut relative = path.clone();
+            relative.segments.insert(
+                0,
+                Segment {
+                    handle: handle.to_string(),
+                    copy: None,
+                },
+            );
+            let full = format!("{handle}/{word}");
+            match walk_path(schema, owner, &relative, &full) {
+                Ok(r) => return Ok(r),
+                // Not one of the owner's: a path that starts at a datablock is read as written,
+                // but only when the owner has no sub-object of that handle.
+                Err(_)
+                    if self.owners.contains_key(first)
+                        && !owner.subs.iter().any(|s| s.handle == *first) => {}
+                Err(e) => {
+                    return Err(Unresolved {
+                        message: e.message,
+                        fix: e.fix.and_then(|f| {
+                            f.strip_prefix(&format!("{handle}/")).map(str::to_string)
+                        }),
+                    });
+                }
+            }
         }
         let owners = self.owners(first);
         if owners.is_empty() {

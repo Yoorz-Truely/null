@@ -153,6 +153,16 @@ impl Property {
         }
     }
 
+    /// A single number of type `ty` within the hard range `lo` to `hi`: for Null's own forms
+    /// that carry an RNA property's type and range (a scene's `fps`).
+    pub(crate) fn ranged(ty: &str, lo: f64, hi: f64) -> Property {
+        Property {
+            ty: ty.into(),
+            range: Some(Range { hard: [lo, hi] }),
+            ..Property::any()
+        }
+    }
+
     /// The fixed length of the array, if it is one.
     pub fn fixed_len(&self) -> Option<usize> {
         match &self.array {

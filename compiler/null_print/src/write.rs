@@ -5,7 +5,7 @@ use std::fmt;
 use null_syntax::ast::{Entry, Node, Value};
 use null_syntax::names::to_kebab_case;
 use null_syntax::{Parse, Span};
-use null_value::{Dimension, Float, Unit, print_bare, print_in, read, unit_of};
+use null_value::{Dimension, Float, Scene, Unit, print_bare, print_in_scene, read_in, unit_of};
 
 /// One text edit: replace `span` with `replacement`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -63,9 +63,60 @@ pub fn write(
     dimension: Dimension,
     display: Option<Unit>,
 ) -> Result<Vec<Edit>, WriteError> {
+    write_in(
+        parse,
+        kind,
+        handle,
+        attr,
+        values,
+        dimension,
+        display,
+        &Scene::default(),
+    )
+}
+
+/// [`write`] in `scene`: a value is read and printed through its frame rate, so a frame
+/// written in seconds keeps its seconds (task 1c-01c), and through its unit scale.
+#[allow(clippy::too_many_arguments)]
+pub fn write_in(
+    parse: &Parse,
+    kind: &str,
+    handle: &str,
+    attr: &str,
+    values: Values<'_>,
+    dimension: Dimension,
+    display: Option<Unit>,
+    scene: &Scene,
+) -> Result<Vec<Edit>, WriteError> {
+    write_at(
+        parse,
+        kind,
+        handle,
+        attr,
+        values,
+        dimension,
+        display,
+        Some(*scene),
+    )
+}
+
+/// [`write_in`], where `None` is no one unit scale (the scenes' differ and the project says
+/// none, outside every scene): a value of a dimension the scale applies to is written bare,
+/// since a word in a unit would have no one value there.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn write_at(
+    parse: &Parse,
+    kind: &str,
+    handle: &str,
+    attr: &str,
+    values: Values<'_>,
+    dimension: Dimension,
+    display: Option<Unit>,
+    scene: Option<Scene>,
+) -> Result<Vec<Edit>, WriteError> {
     let words: Vec<Word> = match values {
-        Values::F32(v) => v.iter().map(|&x| Word::new(x)).collect(),
-        Values::F64(v) => v.iter().map(|&x| Word::new(x)).collect(),
+        Values::F32(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
+        Values::F64(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
     };
     if words.is_empty() {
         return Err(WriteError::NoValues);
@@ -95,11 +146,21 @@ struct Word {
 }
 
 impl Word {
-    fn new<F: Float>(x: F) -> Word {
+    fn new<F: Float>(x: F, scene: Option<Scene>) -> Word {
+        // With no one scale, a scaled unit never fits and never reads back.
+        let unscaled = move |d: Dimension| scene.is_some() || d.scale_power() == 0;
+        let scene = scene.unwrap_or_default();
         Word {
             bare: print_bare(x),
-            in_unit: Box::new(move |u| print_in(x, u)),
-            same: Box::new(move |w, d| read::<F>(w, d).is_ok_and(|y| y.bits() == x.bits())),
+            in_unit: Box::new(move |u| {
+                unscaled(u.dimension())
+                    .then(|| print_in_scene(x, u, &scene))
+                    .flatten()
+            }),
+            same: Box::new(move |w, d| {
+                (unscaled(d) || unit_of(w, d).is_none())
+                    && read_in::<F>(w, d, &scene).is_ok_and(|y| y.bits() == x.bits())
+            }),
         }
     }
 

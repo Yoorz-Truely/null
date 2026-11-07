@@ -22,6 +22,9 @@ pub enum Dimension {
     Angle,
     /// A time in seconds, whatever the scene's frame rate (RNA's absolute time).
     Seconds,
+    /// A time in frames (RNA's `TIME`): a bare number is frames, and a time written in seconds
+    /// (`1.5s`) becomes frames through the scene's frame rate, fps / fps-base (task 1c-01h).
+    Frames,
     /// A velocity, in Blender units per second.
     Velocity,
     /// An acceleration, in Blender units per second squared.
@@ -42,7 +45,7 @@ pub enum Dimension {
 
 impl Dimension {
     /// Every dimension.
-    pub const ALL: [Dimension; 15] = [
+    pub const ALL: [Dimension; 16] = [
         Dimension::None,
         Dimension::Length,
         Dimension::Area,
@@ -50,6 +53,7 @@ impl Dimension {
         Dimension::Mass,
         Dimension::Angle,
         Dimension::Seconds,
+        Dimension::Frames,
         Dimension::Velocity,
         Dimension::Acceleration,
         Dimension::Lens,
@@ -67,6 +71,50 @@ impl Dimension {
 
     fn defs(self) -> &'static [Def] {
         DEFS[self as usize]
+    }
+
+    /// The power of the scene's unit scale a value written with a unit is divided by: lengths,
+    /// velocities and accelerations by s, areas and powers by s², volumes and masses by s³, as
+    /// Blender's `BKE_unit_value_scale` does; nothing else is scaled (task 1c-01h).
+    pub fn scale_power(self) -> u32 {
+        match self {
+            Dimension::Length | Dimension::Velocity | Dimension::Acceleration => 1,
+            Dimension::Area | Dimension::Power => 2,
+            Dimension::Volume | Dimension::Mass => 3,
+            _ => 0,
+        }
+    }
+}
+
+/// What a value's conversion depends on beyond its word: the scene's unit scale and frame rate
+/// (task 1c-01h). The unit scale applies only with a metric or imperial unit system, as in
+/// Blender; pass 1 for a scene whose system is `none`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Scene {
+    /// `scale_length`: a value written with a unit is divided by it, or its square or cube.
+    pub scale_length: f32,
+    /// Frames per second, a whole number.
+    pub fps: u32,
+    /// The frame rate's divisor (1.001 for 29.97 fps).
+    pub fps_base: f32,
+}
+
+impl Default for Scene {
+    /// Unit scale 1 at 24 frames per second, a new scene's.
+    fn default() -> Scene {
+        Scene {
+            scale_length: 1.0,
+            fps: 24,
+            fps_base: 1.0,
+        }
+    }
+}
+
+impl Scene {
+    /// Whether a value of `dimension` written with a unit converts here exactly as at unit
+    /// scale 1, so the plain conversions serve.
+    fn is_plain_for(&self, dimension: Dimension) -> bool {
+        dimension != Dimension::Frames && (dimension.scale_power() == 0 || self.scale_length == 1.0)
     }
 }
 
@@ -219,13 +267,14 @@ const COLOR_TEMPERATURE: &[Def] = &[d("K", Shift(0))];
 const FREQUENCY: &[Def] = &[d("Hz", Shift(0)), d("kHz", Shift(3))];
 
 /// Each dimension's units, in the order of [`Dimension::ALL`].
-const DEFS: [&[Def]; 15] = [
+const DEFS: [&[Def]; 16] = [
     NONE,
     LENGTH,
     AREA,
     VOLUME,
     MASS,
     ANGLE,
+    SECONDS,
     SECONDS,
     VELOCITY,
     ACCELERATION,
@@ -237,7 +286,7 @@ const DEFS: [&[Def]; 15] = [
     FREQUENCY,
 ];
 
-static UNITS: std::sync::LazyLock<[Vec<Unit>; 15]> = std::sync::LazyLock::new(|| {
+static UNITS: std::sync::LazyLock<[Vec<Unit>; 16]> = std::sync::LazyLock::new(|| {
     Dimension::ALL.map(|dim| {
         (0..dim.defs().len())
             .map(|i| Unit {
@@ -406,6 +455,14 @@ impl std::error::Error for ReadError {}
 /// rounded once, to nearest even, into `F` (spec, section 6; Sau's decisions S21 and
 /// S22). Lengths are read at unit scale 1.
 pub fn read<F: Float>(word: &str, dimension: Dimension) -> Result<F, ReadError> {
+    read_in(word, dimension, &Scene::default())
+}
+
+/// [`read`] in `scene` (task 1c-01h): a value written with a unit is also divided by the
+/// scene's unit scale to the dimension's power, and a time in frames written in seconds is
+/// multiplied by its frame rate, all exactly before the one rounding. A bare number is
+/// already in the internal unit and is never scaled.
+pub fn read_in<F: Float>(word: &str, dimension: Dimension, scene: &Scene) -> Result<F, ReadError> {
     let (number, used) = scan(word).ok_or(ReadError::NotANumber)?;
     let suffix = &word[used..];
     let unit = if suffix.is_empty() {
@@ -425,6 +482,9 @@ pub fn read<F: Float>(word: &str, dimension: Dimension) -> Result<F, ReadError> 
         Number::Infinite { negative } => F::infinity(negative),
         Number::Finite(value) => match unit.map(Unit::conv) {
             None => value.round(),
+            Some(conv) if !scene.is_plain_for(dimension) => {
+                exact::in_scene(&value, conv, dimension, scene)
+            }
             Some(Shift(k)) => value.shifted(k).round(),
             Some(Pi) => exact::degrees(&value),
             Some(Ratio(n, d)) => exact::ratio(&value, n, d),
@@ -536,13 +596,21 @@ pub fn print_bare<F: Float>(value: F) -> String {
 /// decimal shift of the internal one (centimetres, watts) always succeeds for finite values;
 /// degrees, inches, feet and the rest may not. `None` for infinities and NaN.
 pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
+    print_in_scene(value, unit, &Scene::default())
+}
+
+/// [`print_in`] in `scene`, so that [`read_in`] in the same scene reads it back (task 1c-01h).
+pub fn print_in_scene<F: Float>(value: F, unit: Unit, scene: &Scene) -> Option<String> {
     if value.is_nan() || value.is_infinite() {
         return None;
     }
     let suffix = unit.suffix();
     let shortest = value.shortest();
     let conv = unit.conv();
-    if let Shift(k) = conv {
+    let plain = scene.is_plain_for(unit.dimension());
+    if let Shift(k) = conv
+        && plain
+    {
         return Some(format!("{}{suffix}", shortest.shifted(-k).layout()));
     }
     if shortest.is_zero() && !matches!(conv, Affine { .. }) {
@@ -550,13 +618,17 @@ pub fn print_in<F: Float>(value: F, unit: Unit) -> Option<String> {
     }
     let target = value.bits();
     let reads_back = |d: &Decimal| {
-        read::<F>(&format!("{}{suffix}", d.layout()), unit.dimension())
+        read_in::<F>(&format!("{}{suffix}", d.layout()), unit.dimension(), scene)
             .is_ok_and(|v| v.bits() == target)
     };
     // The value in this unit to about 40 digits, exactly derived, so rounding it to
     // each length finds the decimal that reads back (the 1a-04 review found an f64
     // estimate missing some at 16 and 17 digits).
-    let precise = exact::in_unit(value, conv)?;
+    let precise = if plain {
+        exact::in_unit(value, conv)?
+    } else {
+        exact::in_unit_scene(value, conv, unit.dimension(), scene)?
+    };
     for digits in 1..=17usize {
         let rounded = round_decimal(&precise, digits);
         let mantissa: u64 = rounded.digits.parse().unwrap_or(0);

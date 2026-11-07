@@ -51,6 +51,124 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01d again, the fix `e0d1519`, by agent/cosmosis-a, November 7, 2026: approved, one nit
+
+I re-ran my scratch test against `e0d1519`, with the camera whose `clip-start 0.00000002m` is in range only at scale 0.01, and added five cases.
+
+- **Two scenes both at 0.01:** clean, so objects are read at 0.01.
+- **Scenes that differ:** 0.01 and 2; 0.01 beside `units imperial`; 0.01 beside `units none`; 0.01 beside an empty `units {}`; and 0.01 beside a scene with no `units` at all. Each gives one `null-unit` error on the first scaled value outside a scene. It names each scene's scale and says to give the project a `units` line.
+- **Consistent treatment of unset scales.** An empty `units {}` and a missing `units` both count as scale 1, as a new Blender scene is, and section 6 says so.
+- **The project's `units` win.** Project `units` at 0.01 over disagreeing scenes is clean.
+- **No error without a scaled value outside a scene.** Disagreeing scenes with only `lens 50mm` (never scaled) or a bare `clip-start 0.1` outside them are clean.
+- **One `units` reader.** `null_check::units` is now the only reader of `units`, and `null_print` uses it. A test checks that the two agree.
+
+**Nit, not blocking:** after the disagreement error, the same value is also checked at the fallback scale 1, so it can report a second error (here `clip-start` out of range) that only follows from the first. One mistake, one error: skip the value's own checks once the scale is in doubt.
+
+### 1b-02c, third round, the fix `32d581a`, by agent/cosmosis-a, November 7, 2026: approved
+
+I re-ran my scratch test of 21 paths against `32d581a`.
+
+- **The two errors are fixed.** Inside `material @oak`, with `object @bsdf` in the project:
+  - `@bsdf.rougness` says "a principled-bsdf node has no socket `rougness`", with the fix `@bsdf.roughness`;
+  - `@bsdf/@x` says the node has no sub-objects.
+
+  Neither mentions the object any more.
+- **The earlier results are unchanged.** In-block lookups and absolute paths still resolve as in the second round, and paths crossing owners are still errors.
+
+One nit from my first review remains, not blocking: a trailing dot (`@oak/@bsdf.`) still gets the message meant for `.x/`.
+
+### 1c-01d, Null `1b45e94`, by agent/cosmosis-a, November 7, 2026: sent back, the outside scale silently falls back to 1
+
+I read the row, S21, section 6's new sentence, `check.rs`'s `Units`, `units_of` and `outside_units`, and `null_print`'s `outside_scale`. Then I ran a scratch test, not committed, on a copy of `1b45e94`. It uses the test's own camera, whose `clip-start 0.00000002m` is in range only at scale 0.01.
+
+**What holds:**
+- **The scale inside a scene.** A scene's own values use its `units`, which override the project's field by field.
+- **Outside any scene.** The project's `units` apply, or, when the project has none, those of a single scene that sets any. The system `none` applies no scale, as in Blender.
+- **The tests.** `1m` stores 100 at scale 0.01 and 0.5 at scale 2, and write-back prints locations back as written.
+- **Judged against S21.** "Metres through the scene's unit scale" assumes one scene. Every scene shares the objects, so outside a scene the only faithful reading is a scale the scenes agree on, or one the project states. Using the project's `units` there is right.
+
+**To fix:**
+1. **With two or more scenes and no project `units`, the scale outside scenes is silently 1, even when the scenes agree.** With two scenes both at `units metric scale=0.01`, the camera's `clip-start` is out of range, so objects are read at scale 1: a written `1m` stores 1 Blender unit, which both scenes show as 0.01 m. The same happens when the scenes disagree (0.01 and 2), and when one sets 0.01 and the other only `units imperial`.
+   - When every scene that sets a scale sets the same one, use it.
+   - When they differ, report it on the first value with a scaled unit outside a scene, saying to state the project's `units`. Don't fall back to 1 silently.
+
+   Section 6's sentence should say both.
+2. **One reading of `units`, not two.** `check.rs`'s `units_of` and `null_print`'s `outside_scale` each parse `units` and choose the scale, and they already differ:
+   - The checker counts a scene as setting units only if its `units` say something. The printer counts any `units` line, so a scene with an empty `units {}` makes two scenes for the printer and one for the checker.
+   - The checker reads every `units` line of a node; the printer only the first.
+
+   Put one function in `null_check` (or `null_value`) and use it in both, with a test that they agree. Sau's apply will need the same function (1a-10's review noted it reads at scale 1).
+
+### 1c-01c, Null `1cda890`, by agent/cosmosis-a, November 7, 2026: approved, with two nits
+
+I read the row, section 6's "Frames" and section 8's new `fps`/`fps-base` form, the checker's `frame_rate`, the `Out` scene and `write_in`. I ran a scratch test on a copy of `1b45e94`, which contains `1cda890`.
+
+- **The "Done when" holds.** `1.5s` is 36 frames at 24 fps. At `fps 30000`, `fps-base 1001` it is the exact 1.5 × 30000 / 1001, rounded once. Write-back keeps `2s` (`null_print/tests/write.rs`).
+- **Integer frames are bare.** `frame-start 2s` says "`frame-start` cannot take `s`: it takes a bare number". That settles my nit on 1c-02a.
+- **Seconds and minutes on a float frame read through the scene's own `fps` and `fps-base`.** `frame-float 1001s` at `fps 30`, `fps-base 1.001` and `frame-float 2min` are clean. `fps 1.5` and `fps-base 0` are errors. A frame-float next to a bad `fps-base` falls back to a new scene's rate, without a second error.
+- **Seconds outside a scene's block are an error**, as the spec says.
+
+**Nits:**
+1. Section 6 says 29.97 fps "is written `fps 30000` and `fps-base 1001`". Blender's own 29.97 preset is `fps 30`, `fps-base 1.001`, and that is what a converted file will hold. Its float32 1.001 gives 29.97002997…, not 30000/1001. Say both are valid, which one Blender's preset is, and that the two differ in the last bits.
+2. Actions' keys are outside any scene, so seconds on a key's frame are an error. That is right while an action has no scene, but say so in section 6 or on 1d's action row, so the action form doesn't have to rediscover it.
+
+### 1b-02c again, the fix `f563f87`, by agent/cosmosis-a, November 7, 2026: sent back, one line
+
+I re-ran my scratch test against `f563f87`. It has 21 paths now, the old fourteen plus seven inside blocks.
+
+**What the fix gets right:**
+- **Both cases are fixed.** Inside `material @oak`, `@bsdf` and `@bsdf.roughness` resolve to its node, though `object @bsdf` exists. Inside `mesh @pier`, `@bevel` is its vertex group, and inside `object @pier` it is the modifier.
+- **Relative paths stay inside the block.** Inside `@pine`, `@out` (a node of `@oak`) is an error.
+- **Absolute paths still work from inside a block.** `@pier/@array` written inside `@oak` resolves to the object's modifier, and `@bevel` inside `object @bsdf` is its modifier.
+- **Section 7 and the test** say and show both.
+
+**To fix: when the first step is one of the owner's own sub-objects, an error in the rest of the path still falls through to the datablock elsewhere.** Inside `@oak`, with `object @bsdf` in the project:
+- `@bsdf.rougness` says "ends with a socket, which only a node has", with no fix. Without the object it would say "a principled-bsdf node has no socket `rougness`", with `@bsdf.roughness` as the fix.
+- `@bsdf/@x` lists the object's sub-objects ("it has @bevel"), not the node's.
+
+No wrong path resolves, but the corrected path the row promises is lost, and the error names another owner. Fall through only when the owner has no sub-object with that first handle, for example `Err(_) if self.owners.contains_key(first) && !owner.subs.iter().any(|s| s.handle == *first) => {}`. Add `@bsdf.rougness` inside `@oak`, with `object @bsdf` present, to the test.
+
+### 1b-02c, Null `50bb332`, by agent/cosmosis-a, November 7, 2026: sent back, a path inside a block can cross owners
+
+I read the row, section 7's "Paths" and "Unique within its owner" rules, S61, `paths.rs` and its tests. Then I ran a scratch test of my own, not committed, against a copy of Null's main. It resolves fourteen paths that look valid in a project where handles meet across owners.
+
+**What holds:**
+- **Absolute paths** resolve, and they refuse to cross owners. `@oak/@mix` (`@mix` is another material's node) and `@pier/@weld` (`@weld` is another object's modifier) are errors that list the owner's real sub-objects.
+- **Parsing:** an empty step (`@oak//@bsdf`), two sockets, a socket on a modifier (`@pier/@bevel.width`), a step past a node (`@oak/@bsdf/@x`), and a pattern copy before a socket (`@bsdf.7.roughness`, which names task 1d-03) all give errors.
+- **Duplicates:** the per-owner duplicate check and the fix suggestions behave as the snapshot shows.
+
+**To fix: leaving the owner out, the feature section 7 adds, resolves against the wrong datablock when handles meet.**
+
+1. **A sub-object is shadowed by any datablock with the same handle.** `resolve` treats the first step as relative only when no datablock in the project is called that.
+   - Inside `material @oak`, whose tree has `node @bsdf`, a project that also has `object @bsdf` makes `@bsdf` resolve, with no error, to the object.
+   - `@bsdf.roughness` there fails with "ends with a socket, which only a node has", though `@oak` has exactly that node and socket.
+
+   Inside an owner's block, its own sub-objects should be looked up first. The spec's sentence ("inside the owner's own block the owner may be left out") says the path names the owner's sub-object. Say so explicitly, so a datablock handle never shadows it.
+2. **`within` is a handle, but a block is one datablock.** Handles are unique per kind, so `object @pier` and `mesh @pier` can both exist. Inside the mesh's block, `@bevel` (its vertex group) fails with "could start at the object or the mesh called `@pier`", though the writer is inside exactly one of them.
+
+   Pass the owner itself (kind and handle) as `within`, as the caller has it, and walk only that owner.
+
+Add both cases to `tests/paths.rs`.
+
+**Nits:**
+- A trailing dot (`@oak/@bsdf.`) says "a socket ends a path: `.` cannot be followed by `/`". That message is for `.x/`; here it should say the socket's name is missing.
+- An absolute `@pier/@bevel` where both an object and a mesh `@pier` have a `@bevel` is an error, rightly. Section 7 should say how to write it unambiguously, or that such a pair needs distinct sub-object handles.
+
+### 1c-02a, Null `c3d2f8b` revised in `90d16cd` (S65), by agent/cosmosis-a, November 7, 2026: approved, with four nits
+
+I read the row, S61 (5) and S65 in Sau's DECISIONS.md, section 6's new "Types" table and the CHANGELOG line, and checked the examples against Blender's source.
+
+- **The "Done when" holds.** Every type in the row has its form and an example: booleans, integers, floats, enums, flag sets, strings with bytes outside UTF-8, pointers, collections, arrays, multi-dimensional arrays and matrices. The CHANGELOG records it, S65 included.
+- **The byte list is right.** `[47 47 109 252 108 108 101 114 46 112 110 103]` is `//m`, byte 252 and `ller.png`. "Raw bytes, not an escape" says why, as S65 does: Scowr's lexer refuses `\x`.
+- **Matrices are right.** Blender keeps `float[4][4]` column by column (`m[3]` is the translation), so RNA's flat element for row `i` and column `j` is `j × rows + i`. Row by row is how `mathutils.Matrix` prints. The example's 2 m sits in row 0, column 3, as a translation in x should.
+- **Pointers and lengths:** `none`, and over-long strings as errors, follow S61 (5).
+
+**Nits, none blocking:**
+1. **Integer frames.** The Integer row says an integer never takes a unit. But `frame_start` and `frame_end` are `PROP_INT` with `PROP_TIME` (`rna_scene.cc`), and the units table's `TIME` line offers seconds for "a frame". Say on the `TIME` line that integer frame properties stay bare whole numbers and only float frame properties take seconds, so 1c-01c doesn't have to decide.
+2. **Which floats are matrices.** Say that "matrix" means a float array of subtype `MATRIX`. Other two-dimensional arrays, such as `bound_box`'s `[8 3]`, follow the multi-dimensional row with the first dimension outermost.
+3. **A string's length.** Say "longer than Blender's field for it" is counted in bytes with room for the terminating NUL. A byte list containing 0 should be an error, since a DNA string cannot hold one.
+4. **Flag sets.** Say whether a list out of the schema's item order is an error or is read and reprinted in order. "In the schema's item order" reads as the printed form, not the accepted one.
+
 ### 1c-01b, Null `2c66b92`, by agent/cosmosis-a, November 7, 2026: approved
 
 Read the row, the 1c-01b section below and the diff. `just verify` passed on a clean copy of `2c66b92` (`git archive`, Scowr beside it, in my scratch folder): Clippy, the licence gate, 168 tests in the check run and again in the 4,096-case release run, and the fuzz target for 60 seconds.
@@ -1027,6 +1145,15 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **0-10** is in review at Sau `b38fde8d`, after the second fix. `just verify` passed, with all 802 of Blender's tests.
 - **1c-01h**: approved, the review in agent/cos-units-null `8912c09`.
 - **Next:** 1a-10b, once 1a-10 is merged.
+- **1b-02c**, fixed after the second review (Null `32d581a`). Inside its block, a path falls through to a datablock of the same handle only when the owner has no sub-object of that handle. So `@bsdf.rougness` inside `@oak` keeps its fix, and `@bsdf/@x` lists the node's sub-objects. The test fails without the fix. It goes back to review once `just verify` passes.
+- **1c-01c**, approved (Null `1cda890`). Its two nits are in Null `32d581a`: Blender's 29.97 preset is `fps 30` with `fps-base 1.001` as a float32, besides `fps 30000` with `fps-base 1001`; an action's keys take no seconds.
+- **1c-01d**, fixed after review (Null `e0d1519`). It goes back to review once `just verify` passes.
+  - **One reader.** `null_check::units` reads `units` for both the checker and `null_print`, and Sau's apply can use it too. It gives the scale and the display units.
+  - **Empty and repeated lines.** An empty `units {}` is the project's units, at a new scene's settings. Only the first `units` line counts, and the first of each setting in it; the others are `null-repeated`.
+  - **Outside a scene, with no project `units`.** Values use the scale every scene has. Where the scenes differ, the first value in a scaled unit is one `null-unit` error naming each scene's scale, and write-back writes such values bare.
+  - **For Sau.** `null_print` now depends on `null_check`. Sau's `sau/crates/Cargo.lock` therefore needs `null_check` under `null_print` when Sau next takes Null; `--locked` fails until then.
+- **0-11**, the integrate lock (Sau agent/lock `21411c4b`). Its verify is running; the report is `docs/rounds/agent-lock.md` on that branch.
+- **Spec fix** (Null `7737164`): Blender's turn unit is in `#if 0`, so Blender does not offer it.
 - **Phases 1b to 1d split** (Sau `8204b94`, the board edited by hand under its lock, at the lead's request). 76 rows replace the 14 coarse ones: 23 in 1b, 11 in 1c and 42 in 1d. Seven rows note a lead's call. The critical path is 16 tasks: 1a-09, 1a-10, 1a-12, 1a-13, 1a-16, 1a-17, then 1d-01a, 1d-01c, 1d-02a, 1d-02b, 1d-05a, 1d-06d, 1d-06f, 1d-07h, 1d-08b and 1d-08c.
 - **L-02** (agent/cos-look6 `815b41b`): sent back, review in agent/cos-look6 `33d0a6d`. Shrinking the wheel's straight-alpha PNG darkens its edges; premultiply around `IMB_scale`.
 - **L-06** (agent/cos-look5, `8a8b7e4` synced at `bc1c198`): sent back, review in agent/cos-look5 `46d5d4b`. The static timer pointer outlives the window manager that "Load UI" frees. The timer's life, the GPU cost at 15 Hz and the wheel against `branding/loading` hold.

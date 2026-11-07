@@ -7,7 +7,7 @@ expression: "lines.join(\"\\n\")"
 @pier/@tarck: error: `@pier` has no sub-object `@tarck`: it has @array, @bevel, @track [fix: @pier/@track]
 @weathered-oak/@bsfd.roughness: error: `@weathered-oak` has no sub-object `@bsfd`: it has @bsdf, @out [fix: @weathered-oak/@bsdf.roughness]
 @weathered-oak/@bsdf.rougness: error: a principled-bsdf node has no socket `rougness`: it has base-color, metallic, roughness, ior, alpha, thin-wall, normal, weight and 27 more [fix: @weathered-oak/@bsdf.roughness]
-@bsdf.metalic (in @weathered-oak): error: a principled-bsdf node has no socket `metalic`: it has base-color, metallic, roughness, ior, alpha, thin-wall, normal, weight and 27 more [fix: @bsdf.metallic]
+@bsdf.metalic (in material @weathered-oak): error: a principled-bsdf node has no socket `metalic`: it has base-color, metallic, roughness, ior, alpha, thin-wall, normal, weight and 27 more [fix: @bsdf.metallic]
 @rig/@spine-002/@lk: error: `@spine-002` has no sub-object `@lk`: it has @ik [fix: @rig/@spine-002/@ik]
 @rig/@spine-02/@ik: error: `@rig` has no sub-object `@spine-02`: it has @spine-002 [fix: @rig/@spine-002/@ik]
 @pier/@bevel.width: error: `@pier/@bevel.width` ends with a socket, which only a node has: `@owner/@node.width`

@@ -10,9 +10,9 @@ rust-version.workspace = true
 [dependencies]
 null_syntax.workspace = true
 null_value.workspace = true
+null_check.workspace = true
 
 [dev-dependencies]
-null_check.workspace = true
 proptest = { version = "1", default-features = false, features = ["std"] }
 
 [lints]

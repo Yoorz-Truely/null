@@ -15,7 +15,7 @@ use num_integer::Integer;
 use num_traits::{One, Zero};
 
 use crate::number::{Decimal, Float};
-use crate::unit::Conv;
+use crate::unit::{Conv, Dimension, Scene};
 
 /// Bits of π for the first try.
 const FIRST_BITS: u64 = 1024;
@@ -305,6 +305,170 @@ pub(crate) fn in_unit<F: Float>(value: F, conv: Conv) -> Option<Decimal> {
     // 40 significant digits: q = floor(num × 10^s / den) with s chosen so q has about 40.
     let ten = BigUint::from(10u32);
     let magnitude = num.bits() as i64 - den.bits() as i64; // log2 of the ratio, roughly
+    let s = 40 - (magnitude as f64 * std::f64::consts::LOG10_2).floor() as i64;
+    let q = if s >= 0 {
+        (num * ten.pow(s as u32)) / den
+    } else {
+        num / (den * ten.pow((-s) as u32))
+    };
+    Some(Decimal {
+        negative,
+        digits: q.to_string(),
+        exp: -s,
+    })
+}
+
+// --- The scene: unit scale and frame rate (task 1c-01h) -----------------------------------------
+
+/// A finite float as an exact fraction of positive integers (its magnitude).
+fn binary_fraction(x: f64) -> (BigUint, BigUint) {
+    let bits = x.abs().to_bits();
+    let (raw_exp, frac) = ((bits >> 52) as i64, bits & ((1u64 << 52) - 1));
+    let (m, e) = if raw_exp == 0 {
+        (frac, -1074)
+    } else {
+        (frac | (1u64 << 52), raw_exp - 1075)
+    };
+    if e >= 0 {
+        (BigUint::from(m) << e as u64, BigUint::one())
+    } else {
+        (BigUint::from(m), BigUint::one() << (-e) as u64)
+    }
+}
+
+/// What `scene` multiplies a value of `dimension` by, as (numerator, denominator): divided by
+/// the unit scale to the dimension's power, and for frames times fps / fps-base. Each float is
+/// taken at its exact value.
+fn scene_factor(dimension: Dimension, scene: &Scene) -> (BigUint, BigUint) {
+    let (mut num, mut den) = (BigUint::one(), BigUint::one());
+    let k = dimension.scale_power();
+    if k > 0 && scene.scale_length != 1.0 {
+        let (sn, sd) = binary_fraction(f64::from(scene.scale_length));
+        num *= sd.pow(k);
+        den *= sn.pow(k);
+    }
+    if dimension == Dimension::Frames {
+        let (bn, bd) = binary_fraction(f64::from(scene.fps_base));
+        num *= BigUint::from(scene.fps) * bd;
+        den *= bn;
+    }
+    (num, den)
+}
+
+/// A scene's factor reaches about 10^±135 (a float32 scale cubed) or 10^54 (frames), so the
+/// limit on the value's leading power widens by that much.
+const SCENE_LEAD_LIMIT: i64 = LEAD_LIMIT + 200;
+
+/// `value` in a unit converting by `conv`, in `scene`: the exact value in the internal unit,
+/// times the scene's factor, rounded once into `F`. Degrees are never scaled.
+pub(crate) fn in_scene<F: Float>(
+    value: &Decimal,
+    conv: Conv,
+    dimension: Dimension,
+    scene: &Scene,
+) -> F {
+    let lead = value.leading_exp();
+    let affine = matches!(conv, Conv::Affine { .. });
+    if !value.is_zero() && lead > SCENE_LEAD_LIMIT {
+        return F::infinity(value.negative);
+    }
+    if !affine && (value.is_zero() || lead < -SCENE_LEAD_LIMIT) {
+        return F::zero(value.negative);
+    }
+    let (mut num, mut den) = if value.is_zero() || lead < -SCENE_LEAD_LIMIT {
+        (BigUint::zero(), BigUint::one())
+    } else {
+        decimal_ratio(value)
+    };
+    let mut negative = value.negative;
+    let ten = BigUint::from(10u32);
+    match conv {
+        Conv::Shift(k) if k >= 0 => num *= ten.pow(k as u32),
+        Conv::Shift(k) => den *= ten.pow((-k) as u32),
+        Conv::Ratio(n, d) => {
+            num *= BigUint::from(n);
+            den *= BigUint::from(d);
+        }
+        Conv::Affine { offset, factor } => {
+            let (on, od) = (BigUint::from(offset.0), BigUint::from(offset.1));
+            let (a, b) = (&num * &od, &on * &den);
+            (negative, num) = if negative && a > b {
+                (true, a - b)
+            } else if negative {
+                (false, b - a)
+            } else {
+                (false, a + b)
+            };
+            den = den * od * BigUint::from(factor.1);
+            num *= BigUint::from(factor.0);
+        }
+        Conv::Pi => return degrees(value),
+    }
+    let (sn, sd) = scene_factor(dimension, scene);
+    num *= sn;
+    den *= sd;
+    if num.is_zero() {
+        return F::zero(negative && !affine);
+    }
+    let magnitude: F = round_ratio(&num, &den);
+    if negative {
+        magnitude.negated()
+    } else {
+        magnitude
+    }
+}
+
+/// |`value`| expressed in a unit converting by `conv`, in `scene`, to about 40 significant
+/// digits: [`in_unit`] with the scene's factor undone first.
+pub(crate) fn in_unit_scene<F: Float>(
+    value: F,
+    conv: Conv,
+    dimension: Dimension,
+    scene: &Scene,
+) -> Option<Decimal> {
+    let x = value.to_f64();
+    if !x.is_finite() || (x == 0.0 && !matches!(conv, Conv::Affine { .. })) {
+        return None;
+    }
+    let (mut num, mut den) = if x == 0.0 {
+        (BigUint::zero(), BigUint::one())
+    } else {
+        binary_fraction(x)
+    };
+    let (sn, sd) = scene_factor(dimension, scene);
+    num *= sd;
+    den *= sn;
+    let mut negative = x < 0.0;
+    let ten = BigUint::from(10u32);
+    match conv {
+        Conv::Shift(k) if k >= 0 => den *= ten.pow(k as u32),
+        Conv::Shift(k) => num *= ten.pow((-k) as u32),
+        Conv::Ratio(n, d) => {
+            num *= BigUint::from(d);
+            den *= BigUint::from(n);
+        }
+        Conv::Affine { offset, factor } => {
+            let (fnum, fden) = (BigUint::from(factor.0), BigUint::from(factor.1));
+            let (on, od) = (BigUint::from(offset.0), BigUint::from(offset.1));
+            let a = &num * &fden * &od;
+            let b = &on * &den * &fnum;
+            let (neg, diff) = if negative {
+                (true, a + b)
+            } else if a >= b {
+                (false, a - b)
+            } else {
+                (true, b - a)
+            };
+            if diff.is_zero() {
+                return Some(Decimal::new(false, "", 0));
+            }
+            negative = neg;
+            num = diff;
+            den = den * fnum * od;
+        }
+        Conv::Pi => return in_unit(value, conv),
+    }
+    let magnitude = num.bits() as i64 - den.bits() as i64;
     let s = 40 - (magnitude as f64 * std::f64::consts::LOG10_2).floor() as i64;
     let q = if s >= 0 {
         (num * ten.pow(s as u32)) / den

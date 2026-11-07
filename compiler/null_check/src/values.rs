@@ -2,7 +2,7 @@
 
 use null_syntax::ast::Value;
 use null_syntax::{Diagnostic, FileId, Span, closest};
-use null_value::{Dimension, ReadError, read, read_int};
+use null_value::{Dimension, ReadError, Scene, read_in, read_int, unit_of};
 
 use crate::codes;
 use crate::schema::Property;
@@ -11,6 +11,14 @@ use crate::schema::Property;
 pub(crate) struct Out<'o> {
     pub file: FileId,
     pub list: &'o mut Vec<Diagnostic>,
+    /// The scene whose block is being checked: its frame rate, for seconds written on a frame
+    /// property (task 1c-01c). `None` outside a scene.
+    pub scene: Option<Scene>,
+    /// The unit scale a value written with a unit is divided by (task 1c-01d).
+    pub scale: f32,
+    /// Outside every scene, where the scenes' scales disagree: the message for the first value
+    /// written with a scaled unit, taken when it is reported.
+    pub disagreement: &'o mut Option<String>,
 }
 
 impl Out<'_> {
@@ -39,14 +47,16 @@ pub(crate) fn dimension(p: &Property, power: bool) -> Dimension {
     if power {
         return Dimension::Power;
     }
-    // RNA's unit names, kebab-case (spec, section 6, "Units"). Frames (`time`) are bare
-    // numbers until their seconds are read through the scene's frame rate (task 1c-01c).
+    // RNA's unit names, kebab-case (spec, section 6, "Units"). A float frame (`time`) also
+    // takes seconds, through its scene's frame rate (task 1c-01c); an integer frame is read by
+    // `check_int`, always bare.
     match p.unit.as_deref() {
         Some("length") => Dimension::Length,
         Some("area") => Dimension::Area,
         Some("volume") => Dimension::Volume,
         Some("mass") => Dimension::Mass,
         Some("rotation") => Dimension::Angle,
+        Some("time") => Dimension::Frames,
         Some("time-absolute") => Dimension::Seconds,
         Some("velocity") => Dimension::Velocity,
         Some("acceleration") => Dimension::Acceleration,
@@ -70,6 +80,7 @@ fn describe(dimension: Dimension) -> &'static str {
         Dimension::Mass => "a mass, such as 1kg",
         Dimension::Angle => "an angle, such as 90deg",
         Dimension::Seconds => "a time, such as 1.5s",
+        Dimension::Frames => "a time in frames, such as 36 or 1.5s",
         Dimension::Velocity => "a velocity, such as 1m/s",
         Dimension::Acceleration => "an acceleration, such as 9.81m/s2",
         Dimension::Lens => "a focal length, such as 50mm",
@@ -90,6 +101,7 @@ fn plural(dimension: Dimension) -> &'static str {
         Dimension::Mass => "masses",
         Dimension::Angle => "angles",
         Dimension::Seconds => "times",
+        Dimension::Frames => "times in frames",
         Dimension::Velocity => "velocities",
         Dimension::Acceleration => "accelerations",
         Dimension::Lens => "focal lengths",
@@ -110,6 +122,7 @@ fn zero(dimension: Dimension) -> &'static str {
         Dimension::Mass => "0kg",
         Dimension::Angle => "0deg",
         Dimension::Seconds => "0s",
+        Dimension::Frames => "0",
         Dimension::Velocity => "0m/s",
         Dimension::Acceleration => "0m/s2",
         Dimension::Lens => "50mm",
@@ -141,7 +154,33 @@ pub(crate) fn check_float(
         );
         return;
     };
-    match read::<f32>(word, dimension) {
+    // Seconds on a frame property become frames through the scene's frame rate (spec,
+    // section 6, "Frames"); outside a scene there is none to take.
+    if dimension == Dimension::Frames && out.scene.is_none() && unit_of(word, dimension).is_some() {
+        let at = Span::new(
+            value.span().start + word.trim_end_matches(char::is_alphabetic).len(),
+            value.span().end,
+        );
+        out.error(
+            codes::UNIT,
+            at,
+            format!("`{name}` is in frames here: seconds need a scene's frame rate, and this is not inside a scene"),
+        );
+        return;
+    }
+    // Outside every scene, a scaled unit needs the one scale the scenes agree on.
+    if out.scene.is_none()
+        && dimension.scale_power() > 0
+        && unit_of(word, dimension).is_some()
+        && let Some(message) = out.disagreement.take()
+    {
+        out.error(codes::UNIT, value.span(), message);
+    }
+    let scene = Scene {
+        scale_length: out.scale,
+        ..out.scene.unwrap_or_default()
+    };
+    match read_in::<f32>(word, dimension, &scene) {
         Ok(x) => check_range(x as f64, word, value.span(), name, p, out),
         Err(e) => unit_error(e, word, value.span(), name, dimension, out),
     }
@@ -302,23 +341,10 @@ pub(crate) fn check_float_array(
     }
 }
 
-/// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve in f64, each
-/// channel then rounded once into float32.
+/// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve, exactly rounded once into
+/// float32 from the fixed table in `null_value` (spec, section 6; Sau's decision S62).
 pub fn srgb(word: &str) -> Option<[f32; 3]> {
-    let hex = word.strip_prefix('#')?;
-    if hex.len() != 6 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return None;
-    }
-    let channel = |i: usize| {
-        let c = u8::from_str_radix(&hex[i..i + 2], 16).ok()? as f64 / 255.0;
-        let linear = if c <= 0.04045 {
-            c / 12.92
-        } else {
-            ((c + 0.055) / 1.055).powf(2.4)
-        };
-        Some(linear as f32)
-    };
-    Some([channel(0)?, channel(2)?, channel(4)?])
+    null_value::read_srgb(word)
 }
 
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
