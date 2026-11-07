@@ -1,0 +1,6 @@
+// The project file of a slice project: units, colour management, the scene.
+project "Harbor at Dusk" {
+  units metric scale=1 length=m rotation=deg
+  color-management view=agx look=none
+  scene @main
+}

@@ -75,6 +75,22 @@ Reviewed Null `34cf222` (the task's only commit) against its row on Sau's board.
 - `every_spec_example_parses_clean_and_prints_back` asserts exactly five examples, so adding one to the spec fails it. That is a reasonable tripwire; the message says why.
 - The spec's own example `modifier @bevel bevel { width 4mm segments 3 }` does not mean what it says under the shared syntax (already recorded on 1a-06). It should be corrected in the spec itself, not only in the checker; for the spec's owner or 1a-17.
 
+## 1a-02: lexer and lossless syntax tree for the slice, kebab-case names
+
+In review, November 7, 2026.
+
+**What works.**
+
+- Seven slice files in `compiler/null_syntax/tests/slice/` cover every phase 1a construct: `project`, `scene` and `collection`; `object` with `location`, `rotation-euler`, `scale`, `parent` and `data`; `mesh` as a `primitive` and as inline `vertices` and `faces` lists spanning lines; `material` with a `principled-bsdf`'s `base-color` and `roughness`, links and a `layout` block; `camera` and `light`. A `lexical.noll` adds every lexical form: `;`, `/-` on a node and on a block, `\` continuation, nested block comments, escaped strings, raw strings, bare and `on`/`off` booleans, scientific notation, attributes as properties and as child nodes.
+- `null_syntax` now re-exports the lexer (`lex`) and has `dump`, an indented tree with each token's kind, span and text, for snapshots.
+- Kebab-case (S16) is enforced: `names::check` reports every node name and property key that is not lower-case kebab-case, code `null-name`, with the kebab-case spelling as a fix (`rotation_euler`, `frameStart`, `Rotation_Mode`, `"base color"`, `@Tex` in a layout). A node may be named by a kebab-case handle, as `layout` entries are. Strings are never names in Null. Handles in arguments, and enum values, are left to the checker. `diagnostics` returns syntax and name errors together, in text order.
+
+**Measured.** `cargo test -p null_syntax`: 11 tests and a doctest pass. For each slice file: the lexer finds no errors and its tokens cover the text; the parse has no diagnostics; the tree's tokens are exactly the lexer's (kind and length); the text prints back byte for byte; the tree is an `insta` snapshot (`tests/snapshots/`, 7 trees, 960 lines). The kebab-case messages are a snapshot too, and applying their fixes gives a file with no diagnostics. Null's `just check` exits 0.
+
+**Dependency** (licence checked): `insta` 1 for tests, without default features (Apache-2.0), with `similar` (Apache-2.0), `once_cell`, `tempfile`, `fastrand`, `rustix`, `errno`, `linux-raw-sys`, `r-efi` and `windows-sys` (each offering MIT or Apache-2.0).
+
+**Choices to review.** `null-name` is a new diagnostic code (spec section 18 lists codes "such as"). `to_kebab_case` splits a capital after a lower-case letter (`frameStart`), not after a digit (`use2D` becomes `use2d`).
+
 ## Next
 
-1a-02 once 1a-01 is done, then 1a-03.
+1a-03 once 1a-02 is done: the parser's error recovery for the slice and the first fuzz target.

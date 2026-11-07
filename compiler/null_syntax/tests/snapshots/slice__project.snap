@@ -1,0 +1,61 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..203
+  LineComment@0..76 "// The project file of a slice project: units, colour management, the scene."
+  Newline@76..77 "\n"
+  Node@77..203
+    Word@77..84 "project"
+    Whitespace@84..85 " "
+    Arg@85..101
+      String@85..101 "\"Harbor at Dusk\""
+    Whitespace@101..102 " "
+    Block@102..202
+      LBrace@102..103 "{"
+      Newline@103..104 "\n"
+      Whitespace@104..106 "  "
+      Node@106..149
+        Word@106..111 "units"
+        Whitespace@111..112 " "
+        Arg@112..118
+          Word@112..118 "metric"
+        Whitespace@118..119 " "
+        Prop@119..126
+          Word@119..124 "scale"
+          Equals@124..125 "="
+          Word@125..126 "1"
+        Whitespace@126..127 " "
+        Prop@127..135
+          Word@127..133 "length"
+          Equals@133..134 "="
+          Word@134..135 "m"
+        Whitespace@135..136 " "
+        Prop@136..148
+          Word@136..144 "rotation"
+          Equals@144..145 "="
+          Word@145..148 "deg"
+        Newline@148..149 "\n"
+      Whitespace@149..151 "  "
+      Node@151..187
+        Word@151..167 "color-management"
+        Whitespace@167..168 " "
+        Prop@168..176
+          Word@168..172 "view"
+          Equals@172..173 "="
+          Word@173..176 "agx"
+        Whitespace@176..177 " "
+        Prop@177..186
+          Word@177..181 "look"
+          Equals@181..182 "="
+          Word@182..186 "none"
+        Newline@186..187 "\n"
+      Whitespace@187..189 "  "
+      Node@189..201
+        Word@189..194 "scene"
+        Whitespace@194..195 " "
+        Arg@195..200
+          Word@195..200 "@main"
+        Newline@200..201 "\n"
+      RBrace@201..202 "}"
+    Newline@202..203 "\n"

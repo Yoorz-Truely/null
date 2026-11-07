@@ -8,9 +8,10 @@
 //! what is Null's own is written in `AGENTS.md` ("The shared front end").
 //!
 //! What this crate adds is Null's side of the boundary: diagnostics carry Null's
-//! codes (`null-syntax`, spec section 18) instead of Scowr's. The meaning of a
-//! word (numbers, units, handles, kinds) comes from Null's schema, never from
-//! the shared syntax.
+//! codes (`null-syntax`, spec section 18) instead of Scowr's; names are checked
+//! to be kebab-case (module [`names`], Sau's decision S16); and [`dump`] prints a
+//! tree for snapshot tests. The meaning of a word (numbers, units, handles,
+//! kinds) comes from Null's schema, never from the shared syntax.
 //!
 //! # Use
 //!
@@ -29,18 +30,23 @@
 
 pub use scowr_errors::{
     Diagnostic, FileId, Fix, Label, LineCol, Location, Severity, SourceFile, SourceMap, Span,
-    TextEdit,
+    TextEdit, apply_edits,
 };
+pub use scowr_syntax::lexer::{LexError, Token, lex};
 pub use scowr_syntax::{
     GreenElement, GreenNode, GreenToken, NodeKind, Parse, ParseError, Reparsed, SyntaxElement,
     SyntaxFix, SyntaxNode, SyntaxToken, TokenKind, ast, escape, raw_value, unescape,
 };
+
+pub mod names;
 
 /// Null's diagnostic codes for the syntax (spec, section 18). They are stable, so
 /// tools and AI can act on them.
 pub mod codes {
     /// Text that does not fit the node syntax.
     pub const SYNTAX: &str = "null-syntax";
+    /// A node name or property key that is not kebab-case.
+    pub const NAME: &str = "null-name";
 }
 
 /// Parses a whole Null file into its lossless tree, recovering from errors.
@@ -48,17 +54,55 @@ pub fn parse(text: &str) -> Parse {
     scowr_syntax::parse(text)
 }
 
-/// The syntax problems of `parse` as diagnostics in `file`, with Null's code
-/// [`codes::SYNTAX`] and the shared front end's fixes.
+/// The problems of `parse` as diagnostics in `file`, in text order: the syntax
+/// errors, with Null's code [`codes::SYNTAX`] and the shared front end's fixes,
+/// and the names that are not kebab-case ([`codes::NAME`], [`names::check`]).
 pub fn diagnostics(parse: &Parse, file: FileId) -> Vec<Diagnostic> {
-    parse
+    let mut out: Vec<Diagnostic> = parse
         .diagnostics(file)
         .into_iter()
         .map(|d| Diagnostic {
             code: codes::SYNTAX,
             ..d
         })
-        .collect()
+        .collect();
+    out.extend(names::check(parse, file));
+    out.sort_by_key(|d| (d.primary.span.start, d.primary.span.end));
+    out
+}
+
+/// The tree of `parse` as indented text, one element per line: each node's kind
+/// and span, each token's kind, span and text (escaped). Every byte appears in
+/// exactly one token, so the dump shows the whole file. For snapshot tests.
+pub fn dump(parse: &Parse) -> String {
+    let mut out = String::new();
+    dump_node(parse.root(), 0, &mut out);
+    out
+}
+
+fn dump_node(node: SyntaxNode<'_>, depth: usize, out: &mut String) {
+    use std::fmt::Write;
+    let span = node.span();
+    let indent = "  ".repeat(depth);
+    let _ = writeln!(
+        out,
+        "{indent}{:?}@{}..{}",
+        node.kind(),
+        span.start,
+        span.end
+    );
+    for child in node.children() {
+        match child {
+            SyntaxElement::Node(n) => dump_node(n, depth + 1, out),
+            SyntaxElement::Token(t) => {
+                let _ = writeln!(
+                    out,
+                    "{indent}  {:?}@{}..{} {:?}",
+                    t.kind, t.span.start, t.span.end, t.text
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]

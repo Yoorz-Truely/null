@@ -1,0 +1,181 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..402
+  Node@0..248
+    Word@0..8 "material"
+    Whitespace@8..9 " "
+    Arg@9..23
+      Word@9..23 "@weathered-oak"
+    Whitespace@23..24 " "
+    Arg@24..39
+      String@24..39 "\"Weathered Oak\""
+    Whitespace@39..40 " "
+    Block@40..247
+      LBrace@40..41 "{"
+      Newline@41..42 "\n"
+      Whitespace@42..44 "  "
+      Node@44..204
+        Word@44..49 "nodes"
+        Whitespace@49..50 " "
+        Block@50..203
+          LBrace@50..51 "{"
+          Newline@51..52 "\n"
+          Whitespace@52..56 "    "
+          Node@56..147
+            Word@56..60 "node"
+            Whitespace@60..61 " "
+            Arg@61..66
+              Word@61..66 "@bsdf"
+            Whitespace@66..67 " "
+            Arg@67..82
+              Word@67..82 "principled-bsdf"
+            Whitespace@82..83 " "
+            Block@83..146
+              LBrace@83..84 "{"
+              Newline@84..85 "\n"
+              Whitespace@85..91 "      "
+              Node@91..120
+                Word@91..101 "base-color"
+                Whitespace@101..102 " "
+                Arg@102..119
+                  List@102..119
+                    LBracket@102..103 "["
+                    Word@103..106 "0.8"
+                    Whitespace@106..107 " "
+                    Word@107..111 "0.62"
+                    Whitespace@111..112 " "
+                    Word@112..116 "0.41"
+                    Whitespace@116..117 " "
+                    Word@117..118 "1"
+                    RBracket@118..119 "]"
+                Newline@119..120 "\n"
+              Whitespace@120..126 "      "
+              Node@126..141
+                Word@126..135 "roughness"
+                Whitespace@135..136 " "
+                Arg@136..140
+                  Word@136..140 "0.62"
+                Newline@140..141 "\n"
+              Whitespace@141..145 "    "
+              RBrace@145..146 "}"
+            Newline@146..147 "\n"
+          Whitespace@147..151 "    "
+          Node@151..200
+            Word@151..155 "node"
+            Whitespace@155..156 " "
+            Arg@156..160
+              Word@156..160 "@out"
+            Whitespace@160..161 " "
+            Arg@161..176
+              Word@161..176 "output-material"
+            Whitespace@176..177 " "
+            Block@177..199
+              LBrace@177..178 "{"
+              Whitespace@178..179 " "
+              Node@179..198
+                Word@179..186 "surface"
+                Whitespace@186..187 " "
+                Arg@187..197
+                  Word@187..197 "@bsdf.bsdf"
+                Whitespace@197..198 " "
+              RBrace@198..199 "}"
+            Newline@199..200 "\n"
+          Whitespace@200..202 "  "
+          RBrace@202..203 "}"
+        Newline@203..204 "\n"
+      Whitespace@204..206 "  "
+      Node@206..246
+        Word@206..212 "layout"
+        Whitespace@212..213 " "
+        Block@213..245
+          LBrace@213..214 "{"
+          Whitespace@214..215 " "
+          Node@215..230
+            Word@215..220 "@bsdf"
+            Whitespace@220..221 " "
+            Arg@221..229
+              List@221..229
+                LBracket@221..222 "["
+                Word@222..226 "-160"
+                Whitespace@226..227 " "
+                Word@227..228 "0"
+                RBracket@228..229 "]"
+            Semicolon@229..230 ";"
+          Whitespace@230..231 " "
+          Node@231..244
+            Word@231..235 "@out"
+            Whitespace@235..236 " "
+            Arg@236..243
+              List@236..243
+                LBracket@236..237 "["
+                Word@237..240 "120"
+                Whitespace@240..241 " "
+                Word@241..242 "0"
+                RBracket@242..243 "]"
+            Whitespace@243..244 " "
+          RBrace@244..245 "}"
+        Newline@245..246 "\n"
+      RBrace@246..247 "}"
+    Newline@247..248 "\n"
+  Newline@248..249 "\n"
+  Node@249..402
+    Word@249..257 "material"
+    Whitespace@257..258 " "
+    Arg@258..263
+      Word@258..263 "@rust"
+    Whitespace@263..264 " "
+    Arg@264..270
+      String@264..270 "\"Rust\""
+    Whitespace@270..271 " "
+    Block@271..401
+      LBrace@271..272 "{"
+      Newline@272..273 "\n"
+      Whitespace@273..275 "  "
+      Node@275..400
+        Word@275..280 "nodes"
+        Whitespace@280..281 " "
+        Block@281..399
+          LBrace@281..282 "{"
+          Newline@282..283 "\n"
+          Whitespace@283..287 "    "
+          Node@287..347
+            Word@287..291 "node"
+            Whitespace@291..292 " "
+            Arg@292..297
+              Word@292..297 "@bsdf"
+            Whitespace@297..298 " "
+            Arg@298..313
+              Word@298..313 "principled-bsdf"
+            Whitespace@313..314 " "
+            Prop@314..332
+              Word@314..324 "base-color"
+              Equals@324..325 "="
+              Word@325..332 "#b7410e"
+            Whitespace@332..333 " "
+            Prop@333..346
+              Word@333..342 "roughness"
+              Equals@342..343 "="
+              Word@343..346 "0.9"
+            Newline@346..347 "\n"
+          Whitespace@347..351 "    "
+          Node@351..396
+            Word@351..355 "node"
+            Whitespace@355..356 " "
+            Arg@356..360
+              Word@356..360 "@out"
+            Whitespace@360..361 " "
+            Arg@361..376
+              Word@361..376 "output-material"
+            Whitespace@376..377 " "
+            Prop@377..395
+              Word@377..384 "surface"
+              Equals@384..385 "="
+              Word@385..395 "@bsdf.bsdf"
+            Newline@395..396 "\n"
+          Whitespace@396..398 "  "
+          RBrace@398..399 "}"
+        Newline@399..400 "\n"
+      RBrace@400..401 "}"
+    Newline@401..402 "\n"

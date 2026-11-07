@@ -1,0 +1,15 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: map.render_all(&found)
+---
+objects/pier.noll:1:21 error[null-name]: `Rotation_Mode` is not kebab-case: a property key is lower-case words joined by `-`
+  fix: write `rotation-mode`
+objects/pier.noll:2:3 error[null-name]: `rotation_euler` is not kebab-case: a node name is lower-case words joined by `-`
+  fix: write `rotation-euler`
+objects/pier.noll:3:3 error[null-name]: `frameStart` is not kebab-case: a node name is lower-case words joined by `-`
+  fix: write `frame-start`
+objects/pier.noll:4:3 error[null-name]: a node name is a kebab-case word, not a string
+  note: strings are for values: names, paths and free-text enum items
+  fix: write `base-color`
+objects/pier.noll:5:12 error[null-name]: `@Tex` is not a kebab-case handle: `@`, then lower-case words joined by `-`
+  fix: write `@tex`

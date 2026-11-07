@@ -1,0 +1,147 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..580
+  LineComment@0..64 "// Every lexical form of the shared syntax a slice file may use."
+  Newline@64..65 "\n"
+  Node@65..580
+    Word@65..70 "scene"
+    Whitespace@70..71 " "
+    Arg@71..79
+      Word@71..79 "@lexical"
+    Whitespace@79..80 " "
+    Arg@80..107
+      String@80..107 "\"Lexical \\\"forms\\\"\\t\\u{e9}\""
+    Whitespace@107..108 " "
+    Block@108..579
+      LBrace@108..109 "{"
+      Newline@109..110 "\n"
+      Whitespace@110..112 "  "
+      Node@112..126
+        Word@112..123 "frame-start"
+        Whitespace@123..124 " "
+        Arg@124..125
+          Word@124..125 "1"
+        Semicolon@125..126 ";"
+      Whitespace@126..127 " "
+      Node@127..161
+        Word@127..136 "frame-end"
+        Whitespace@136..137 " "
+        Arg@137..139
+          Word@137..139 "48"
+        Whitespace@139..142 "   "
+        LineComment@142..160 "// `;` ends a node"
+        Newline@160..161 "\n"
+      Whitespace@161..163 "  "
+      Node@163..229
+        Slashdash@163..165 "/-"
+        Whitespace@165..166 " "
+        Word@166..169 "fps"
+        Whitespace@169..170 " "
+        Arg@170..172
+          Word@170..172 "30"
+        Whitespace@172..193 "                     "
+        LineComment@193..228 "// `/-` comments the whole node out"
+        Newline@228..229 "\n"
+      Whitespace@229..231 "  "
+      Node@231..267
+        Slashdash@231..233 "/-"
+        Whitespace@233..234 " "
+        Word@234..244 "collection"
+        Whitespace@244..245 " "
+        Arg@245..249
+          Word@245..249 "@old"
+        Whitespace@249..250 " "
+        Block@250..266
+          LBrace@250..251 "{"
+          Whitespace@251..252 " "
+          Node@252..265
+            Word@252..258 "object"
+            Whitespace@258..259 " "
+            Arg@259..264
+              Word@259..264 "@gone"
+            Whitespace@264..265 " "
+          RBrace@265..266 "}"
+        Newline@266..267 "\n"
+      Whitespace@267..269 "  "
+      Node@269..336
+        Word@269..275 "camera"
+        Whitespace@275..276 " "
+        Continuation@276..277 "\\"
+        Newline@277..278 "\n"
+        Whitespace@278..282 "    "
+        Arg@282..291
+          Word@282..291 "@shot-cam"
+        Whitespace@291..310 "                   "
+        LineComment@310..335 "// `\\` continues the line"
+        Newline@335..336 "\n"
+      Whitespace@336..338 "  "
+      BlockComment@338..388 "/* a block comment, /* nested */, between nodes */"
+      Newline@388..389 "\n"
+      Whitespace@389..391 "  "
+      Node@391..554
+        Word@391..397 "render"
+        Whitespace@397..398 " "
+        Arg@398..404
+          Word@398..404 "cycles"
+        Whitespace@404..405 " "
+        Block@405..553
+          LBrace@405..406 "{"
+          Newline@406..407 "\n"
+          Whitespace@407..411 "    "
+          Node@411..423
+            Word@411..418 "samples"
+            Whitespace@418..419 " "
+            Arg@419..422
+              Word@419..422 "512"
+            Newline@422..423 "\n"
+          Whitespace@423..427 "    "
+          Node@427..435
+            Word@427..434 "denoise"
+            Newline@434..435 "\n"
+          Whitespace@435..439 "    "
+          Node@439..458
+            Word@439..454 "use-motion-blur"
+            Whitespace@454..455 " "
+            Arg@455..457
+              Word@455..457 "on"
+            Newline@457..458 "\n"
+          Whitespace@458..462 "    "
+          Node@462..483
+            Word@462..478 "film-transparent"
+            Whitespace@478..479 " "
+            Arg@479..482
+              Word@479..482 "off"
+            Newline@482..483 "\n"
+          Whitespace@483..487 "    "
+          Node@487..523
+            Word@487..495 "filepath"
+            Whitespace@495..496 " "
+            Arg@496..522
+              RawString@496..522 "#\"//renders/shot \"a\".png\"#"
+            Newline@522..523 "\n"
+          Whitespace@523..527 "    "
+          Node@527..550
+            Word@527..537 "resolution"
+            Whitespace@537..538 " "
+            Arg@538..549
+              List@538..549
+                LBracket@538..539 "["
+                Word@539..543 "1920"
+                Whitespace@543..544 " "
+                Word@544..548 "1080"
+                RBracket@548..549 "]"
+            Newline@549..550 "\n"
+          Whitespace@550..552 "  "
+          RBrace@552..553 "}"
+        Newline@553..554 "\n"
+      Whitespace@554..556 "  "
+      Node@556..578
+        Word@556..569 "frame-current"
+        Whitespace@569..570 " "
+        Arg@570..577
+          Word@570..577 "-1.5e-3"
+        Newline@577..578 "\n"
+      RBrace@578..579 "}"
+    Newline@579..580 "\n"

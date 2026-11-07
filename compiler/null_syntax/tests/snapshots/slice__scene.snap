@@ -1,0 +1,85 @@
+---
+source: compiler/null_syntax/tests/slice.rs
+expression: dump(&file)
+---
+Document@0..175
+  Node@0..175
+    Word@0..5 "scene"
+    Whitespace@5..6 " "
+    Arg@6..11
+      Word@6..11 "@main"
+    Whitespace@11..12 " "
+    Arg@12..18
+      String@12..18 "\"Main\""
+    Whitespace@18..19 " "
+    Block@19..174
+      LBrace@19..20 "{"
+      Newline@20..21 "\n"
+      Whitespace@21..23 "  "
+      Node@23..37
+        Word@23..34 "frame-start"
+        Whitespace@34..35 " "
+        Arg@35..36
+          Word@35..36 "1"
+        Newline@36..37 "\n"
+      Whitespace@37..39 "  "
+      Node@39..53
+        Word@39..48 "frame-end"
+        Whitespace@48..49 " "
+        Arg@49..52
+          Word@49..52 "240"
+        Newline@52..53 "\n"
+      Whitespace@53..55 "  "
+      Node@55..62
+        Word@55..58 "fps"
+        Whitespace@58..59 " "
+        Arg@59..61
+          Word@59..61 "24"
+        Newline@61..62 "\n"
+      Whitespace@62..64 "  "
+      Node@64..81
+        Word@64..70 "camera"
+        Whitespace@70..71 " "
+        Arg@71..80
+          Word@71..80 "@shot-cam"
+        Newline@80..81 "\n"
+      Newline@81..82 "\n"
+      Whitespace@82..84 "  "
+      Node@84..173
+        Word@84..94 "collection"
+        Whitespace@94..95 " "
+        Arg@95..102
+          Word@95..102 "@harbor"
+        Whitespace@102..103 " "
+        Arg@103..111
+          String@103..111 "\"Harbor\""
+        Whitespace@111..112 " "
+        Block@112..172
+          LBrace@112..113 "{"
+          Newline@113..114 "\n"
+          Whitespace@114..118 "    "
+          Node@118..131
+            Word@118..124 "object"
+            Whitespace@124..125 " "
+            Arg@125..130
+              Word@125..130 "@pier"
+            Newline@130..131 "\n"
+          Whitespace@131..135 "    "
+          Node@135..148
+            Word@135..141 "object"
+            Whitespace@141..142 " "
+            Arg@142..147
+              Word@142..147 "@lamp"
+            Newline@147..148 "\n"
+          Whitespace@148..152 "    "
+          Node@152..169
+            Word@152..158 "object"
+            Whitespace@158..159 " "
+            Arg@159..168
+              Word@159..168 "@shot-cam"
+            Newline@168..169 "\n"
+          Whitespace@169..171 "  "
+          RBrace@171..172 "}"
+        Newline@172..173 "\n"
+      RBrace@173..174 "}"
+    Newline@174..175 "\n"
