@@ -55,8 +55,10 @@ fn index() -> Index {
 }
 
 /// Each case resolved, as one line: what it names, or its error and fix.
-fn line(index: &Index, schema: &Schema, word: &str, within: Option<&str>) -> String {
-    let at = within.map(|w| format!(" (in {w})")).unwrap_or_default();
+fn line(index: &Index, schema: &Schema, word: &str, within: Option<(&str, &str)>) -> String {
+    let at = within
+        .map(|(k, h)| format!(" (in {k} {h})"))
+        .unwrap_or_default();
     match index.resolve(schema, word, within) {
         Ok(r) => format!(
             "{word}{at}: a {}{}{}",
@@ -102,12 +104,12 @@ fn every_path_form_of_the_spec_resolves() {
     assert_eq!(ok("@main/@beauty", None).kinds, ["view-layer"]);
     // Inside its owner's block, a path may leave the owner out.
     assert_eq!(
-        ok("@bsdf.roughness", Some("@weathered-oak"))
+        ok("@bsdf.roughness", Some(("material", "@weathered-oak")))
             .socket
             .as_deref(),
         Some("roughness")
     );
-    assert_eq!(ok("@bevel", Some("@pier")).kinds, ["modifier"]);
+    assert_eq!(ok("@bevel", Some(("object", "@pier"))).kinds, ["modifier"]);
     // A datablock alone is a path of one step.
     assert_eq!(ok("@pier", None).kinds, Vec::<String>::new());
 }
@@ -140,13 +142,13 @@ fn a_path_parses_into_its_steps() {
 #[test]
 fn misspelt_paths_are_errors_with_the_path_written_right() {
     let (index, schema) = (index(), schema());
-    let cases: &[(&str, Option<&str>)] = &[
+    let cases: &[(&str, Option<(&str, &str)>)] = &[
         ("@peir/@bevel", None),
         ("@pier/@bevle", None),
         ("@pier/@tarck", None),
         ("@weathered-oak/@bsfd.roughness", None),
         ("@weathered-oak/@bsdf.rougness", None),
-        ("@bsdf.metalic", Some("@weathered-oak")),
+        ("@bsdf.metalic", Some(("material", "@weathered-oak"))),
         ("@rig/@spine-002/@lk", None),
         ("@rig/@spine-02/@ik", None),
         ("@pier/@bevel.width", None),
@@ -186,4 +188,64 @@ object @lamp \"Lamp\" {
     );
     // Two owners may each have their own `@bevel`.
     assert!(!handles[0].message.contains("@lamp"));
+}
+
+#[test]
+fn inside_its_block_a_path_starts_at_the_owners_own_sub_objects() {
+    // From the 1b-02c review: a datablock with the same handle as one of the owner's
+    // sub-objects must not shadow it, and the owner is one datablock, its kind and handle.
+    let text = "\
+material @oak \"Oak\" {
+  nodes {
+    node @bsdf principled-bsdf { roughness 0.5 }
+  }
+}
+
+object @bsdf \"Bsdf\"
+
+object @pier \"Pier\" {
+  modifier @bevel bevel
+}
+
+mesh @pier \"Pier\"
+";
+    let p = parse(text);
+    let index = Index::build(&[(FileId(0), &p)]);
+    let schema = schema();
+    let r = index
+        .resolve(&schema, "@bsdf.roughness", Some(("material", "@oak")))
+        .unwrap();
+    assert_eq!(
+        (r.owner_kind.as_str(), r.kinds.as_slice()),
+        ("material", &["node".to_string()][..])
+    );
+    assert_eq!(r.socket.as_deref(), Some("roughness"));
+    let r = index
+        .resolve(&schema, "@bsdf", Some(("material", "@oak")))
+        .unwrap();
+    assert_eq!(r.kinds, ["node"]);
+    // Outside the block, `@bsdf` is the object.
+    assert_eq!(
+        index.resolve(&schema, "@bsdf", None).unwrap().owner_kind,
+        "object"
+    );
+    // Inside `object @pier` the modifier resolves; inside `mesh @pier` it is not the mesh's,
+    // and the error names that owner rather than calling `@pier` ambiguous.
+    let r = index
+        .resolve(&schema, "@bevel", Some(("object", "@pier")))
+        .unwrap();
+    assert_eq!(r.kinds, ["modifier"]);
+    let e = index
+        .resolve(&schema, "@bevel", Some(("mesh", "@pier")))
+        .unwrap_err();
+    assert!(
+        e.message.contains("`@pier` has no sub-object `@bevel`"),
+        "{}",
+        e.message
+    );
+    // A path that starts at another datablock is still read as written.
+    let r = index
+        .resolve(&schema, "@pier/@bevel", Some(("material", "@oak")))
+        .unwrap();
+    assert_eq!(r.owner_kind, "object");
 }
