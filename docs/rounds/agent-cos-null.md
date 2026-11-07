@@ -50,4 +50,4 @@ The lead chose the exactly rounded curve (Sau's decision S62): a file's `#808080
 
 ## Next
 
-`just sync`, `just verify`, then `just task review` for 1c-01f and 1d-01b.
+`just verify` passes after merging main (`20e9f76`). 1c-01f and 1d-01b are in review.
