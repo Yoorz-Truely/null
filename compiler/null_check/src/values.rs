@@ -14,6 +14,8 @@ pub(crate) struct Out<'o> {
     /// The scene whose block is being checked: its frame rate, for seconds written on a frame
     /// property (task 1c-01c). `None` outside a scene.
     pub scene: Option<Scene>,
+    /// The unit scale a value written with a unit is divided by (task 1c-01d).
+    pub scale: f32,
 }
 
 impl Out<'_> {
@@ -163,7 +165,10 @@ pub(crate) fn check_float(
         );
         return;
     }
-    let scene = out.scene.unwrap_or_default();
+    let scene = Scene {
+        scale_length: out.scale,
+        ..out.scene.unwrap_or_default()
+    };
     match read_in::<f32>(word, dimension, &scene) {
         Ok(x) => check_range(x as f64, word, value.span(), name, p, out),
         Err(e) => unit_error(e, word, value.span(), name, dimension, out),

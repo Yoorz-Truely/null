@@ -381,3 +381,29 @@ fn several_edits_to_one_file_apply_from_the_last() {
         "object @a \"A\" {\n  location [4m 5m 6m] // here\n}\n"
     );
 }
+
+#[test]
+fn a_location_is_written_at_the_projects_unit_scale() {
+    // Task 1c-01d: at `scale=0.01`, `1m` is 100 Blender units, so 100 is left as written and
+    // 50 becomes `0.5m`; at `scale=2`, `1m` is 0.5 and 0.25 becomes `0.5m`.
+    for (scale, same, half) in [("0.01", 100.0f32, 50.0f32), ("2", 0.5, 0.25)] {
+        let project = format!("project \"P\" {{\n  units metric scale={scale} length=m\n}}\n");
+        let object = "object @pier \"Pier\" {\n  location [1m 0m 0m]\n}\n";
+        let files = [
+            ProjectFile {
+                path: "project.noll",
+                text: &project,
+            },
+            ProjectFile {
+                path: "objects/pier.noll",
+                text: object,
+            },
+        ];
+        let none = write_transform(&files, "@pier", Transform::Location, [same, 0.0, 0.0]).unwrap();
+        assert!(none.is_empty(), "scale {scale}: {none:?}");
+        let edits =
+            write_transform(&files, "@pier", Transform::Location, [half, 0.0, 0.0]).unwrap();
+        assert_eq!(edits.len(), 1, "scale {scale}: {edits:?}");
+        assert_eq!(edits[0].replacement, "0.5m", "scale {scale}");
+    }
+}

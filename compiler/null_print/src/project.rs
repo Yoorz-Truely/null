@@ -8,9 +8,9 @@
 use std::fmt;
 
 use null_syntax::parse;
-use null_value::{Dimension, Unit};
+use null_value::{Dimension, Scene, Unit, read};
 
-use crate::write::{Values, WriteError, write};
+use crate::write::{Values, WriteError, write_in};
 
 /// One file of the project: its path, as the caller names it, and its whole text.
 #[derive(Clone, Copy, Debug)]
@@ -144,7 +144,11 @@ pub fn write_transform(
     }
     let (i, file) = found.ok_or(WriteBackError::NoSuchObject)?;
     let display = display_unit(files, transform);
-    let edits = write(
+    let scene = Scene {
+        scale_length: outside_scale(files),
+        ..Scene::default()
+    };
+    let edits = write_in(
         &file,
         "object",
         handle,
@@ -152,6 +156,7 @@ pub fn write_transform(
         Values::F32(&values),
         transform.dimension(),
         display,
+        &scene,
     )
     .map_err(|e| match e {
         WriteError::NoSuchNode => WriteBackError::NoSuchObject,
@@ -166,6 +171,57 @@ pub fn write_transform(
             replacement: e.replacement,
         })
         .collect())
+}
+
+/// The unit scale values outside a scene are read at (spec, section 6, "Scene scale"): the
+/// project's `units` `scale-length`, or, with no `units` in the project, the one scene's that
+/// sets one; 1 when the system is `none` or nothing says.
+fn outside_scale(files: &[ProjectFile<'_>]) -> f32 {
+    let settings = |holder: null_syntax::ast::Node<'_>| -> Option<(Option<String>, Option<f32>)> {
+        let units = holder.children().find(|c| c.name() == "units")?;
+        let mut system = units
+            .args()
+            .next()
+            .and_then(|v| v.as_word())
+            .map(str::to_string);
+        let mut scale = None;
+        let mut take = |key: &str, word: &str| match key {
+            "system" => system = Some(word.to_string()),
+            "scale" | "scale-length" => scale = read::<f32>(word, Dimension::None).ok(),
+            _ => {}
+        };
+        for entry in units.entries() {
+            if let null_syntax::ast::Entry::Prop { key, value } = entry
+                && let Some(w) = value.as_word()
+            {
+                take(key.text, w);
+            }
+        }
+        for line in units.children() {
+            if let Some(w) = line.args().next().and_then(|v| v.as_word()) {
+                take(&line.name(), w);
+            }
+        }
+        Some((system, scale))
+    };
+    let mut project = None;
+    let mut scenes = Vec::new();
+    for f in files {
+        let file = parse(f.text);
+        for node in file.document().nodes() {
+            match node.name().as_ref() {
+                "project" => project = project.or(settings(node)),
+                "scene" => scenes.extend(settings(node)),
+                _ => {}
+            }
+        }
+    }
+    let chosen = project.or_else(|| (scenes.len() == 1).then(|| scenes.remove(0)));
+    match chosen {
+        Some((system, _)) if system.as_deref() == Some("none") => 1.0,
+        Some((_, Some(scale))) if scale > 0.0 && scale.is_finite() => scale,
+        _ => 1.0,
+    }
 }
 
 /// Whether the object node defines `handle`: written, or made from its display name (S18).
