@@ -1,0 +1,8011 @@
+{
+ "schema": "null-schema",
+ "format": 1,
+ "scope": "slice",
+ "generator": "Sau's sau/tools/null-schema.py, run in the built Sau",
+ "blender": {
+  "version": "5.3.0",
+  "cycle": "rc"
+ },
+ "float": "RNA reads and writes every float as float32",
+ "structs": [
+  {
+   "kind": "id",
+   "rna": "ID",
+   "label": "ID",
+   "properties": [
+    {
+     "name": "name",
+     "rna": "name",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "name-full",
+     "rna": "name_full",
+     "type": "string",
+     "default": "",
+     "readonly": true
+    },
+    {
+     "name": "id-type",
+     "rna": "id_type",
+     "type": "enum",
+     "default": "action",
+     "items": [
+      {
+       "name": "action",
+       "rna": "ACTION",
+       "label": "Action",
+       "value": 17217
+      },
+      {
+       "name": "armature",
+       "rna": "ARMATURE",
+       "label": "Armature",
+       "value": 21057
+      },
+      {
+       "name": "brush",
+       "rna": "BRUSH",
+       "label": "Brush",
+       "value": 21058
+      },
+      {
+       "name": "cachefile",
+       "rna": "CACHEFILE",
+       "label": "Cache File",
+       "value": 17987
+      },
+      {
+       "name": "camera",
+       "rna": "CAMERA",
+       "label": "Camera",
+       "value": 16707
+      },
+      {
+       "name": "collection",
+       "rna": "COLLECTION",
+       "label": "Collection",
+       "value": 21063
+      },
+      {
+       "name": "curve",
+       "rna": "CURVE",
+       "label": "Curve",
+       "value": 21827
+      },
+      {
+       "name": "curves",
+       "rna": "CURVES",
+       "label": "Curves",
+       "value": 22083
+      },
+      {
+       "name": "font",
+       "rna": "FONT",
+       "label": "Font",
+       "value": 18006
+      },
+      {
+       "name": "greasepencil",
+       "rna": "GREASEPENCIL",
+       "label": "Grease Pencil",
+       "value": 17479
+      },
+      {
+       "name": "greasepencil-v3",
+       "rna": "GREASEPENCIL_V3",
+       "label": "Grease Pencil v3",
+       "value": 20551
+      },
+      {
+       "name": "image",
+       "rna": "IMAGE",
+       "label": "Image",
+       "value": 19785
+      },
+      {
+       "name": "key",
+       "rna": "KEY",
+       "label": "Key",
+       "value": 17739
+      },
+      {
+       "name": "lattice",
+       "rna": "LATTICE",
+       "label": "Lattice",
+       "value": 21580
+      },
+      {
+       "name": "library",
+       "rna": "LIBRARY",
+       "label": "Library",
+       "value": 18764
+      },
+      {
+       "name": "light",
+       "rna": "LIGHT",
+       "label": "Light",
+       "value": 16716
+      },
+      {
+       "name": "light-probe",
+       "rna": "LIGHT_PROBE",
+       "label": "Light Probe",
+       "value": 20556
+      },
+      {
+       "name": "linestyle",
+       "rna": "LINESTYLE",
+       "label": "Line Style",
+       "value": 21324
+      },
+      {
+       "name": "mask",
+       "rna": "MASK",
+       "label": "Mask",
+       "value": 21325
+      },
+      {
+       "name": "material",
+       "rna": "MATERIAL",
+       "label": "Material",
+       "value": 16717
+      },
+      {
+       "name": "mesh",
+       "rna": "MESH",
+       "label": "Mesh",
+       "value": 17741
+      },
+      {
+       "name": "meta",
+       "rna": "META",
+       "label": "Metaball",
+       "value": 16973
+      },
+      {
+       "name": "movieclip",
+       "rna": "MOVIECLIP",
+       "label": "Movie Clip",
+       "value": 17229
+      },
+      {
+       "name": "nodetree",
+       "rna": "NODETREE",
+       "label": "Node Tree",
+       "value": 21582
+      },
+      {
+       "name": "object",
+       "rna": "OBJECT",
+       "label": "Object",
+       "value": 16975
+      },
+      {
+       "name": "paintcurve",
+       "rna": "PAINTCURVE",
+       "label": "Paint Curve",
+       "value": 17232
+      },
+      {
+       "name": "palette",
+       "rna": "PALETTE",
+       "label": "Palette",
+       "value": 19536
+      },
+      {
+       "name": "particle",
+       "rna": "PARTICLE",
+       "label": "Particle",
+       "value": 16720
+      },
+      {
+       "name": "pointcloud",
+       "rna": "POINTCLOUD",
+       "label": "Point Cloud",
+       "value": 21584
+      },
+      {
+       "name": "scene",
+       "rna": "SCENE",
+       "label": "Scene",
+       "value": 17235
+      },
+      {
+       "name": "screen",
+       "rna": "SCREEN",
+       "label": "Screen",
+       "value": 21075
+      },
+      {
+       "name": "sound",
+       "rna": "SOUND",
+       "label": "Sound",
+       "value": 20307
+      },
+      {
+       "name": "speaker",
+       "rna": "SPEAKER",
+       "label": "Speaker",
+       "value": 19283
+      },
+      {
+       "name": "text",
+       "rna": "TEXT",
+       "label": "Text",
+       "value": 22612
+      },
+      {
+       "name": "texture",
+       "rna": "TEXTURE",
+       "label": "Texture",
+       "value": 17748
+      },
+      {
+       "name": "volume",
+       "rna": "VOLUME",
+       "label": "Volume",
+       "value": 20310
+      },
+      {
+       "name": "windowmanager",
+       "rna": "WINDOWMANAGER",
+       "label": "Window Manager",
+       "value": 19799
+      },
+      {
+       "name": "workspace",
+       "rna": "WORKSPACE",
+       "label": "Workspace",
+       "value": 21335
+      },
+      {
+       "name": "world",
+       "rna": "WORLD",
+       "label": "World",
+       "value": 20311
+      }
+     ],
+     "readonly": true
+    },
+    {
+     "name": "session-uid",
+     "rna": "session_uid",
+     "type": "int",
+     "range": {
+      "hard": [
+       -2147483648,
+       2147483647
+      ],
+      "soft": [
+       -10000,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "deep-hash",
+     "rna": "deep_hash",
+     "type": "string",
+     "subtype": "byte-string",
+     "default": "",
+     "readonly": true
+    },
+    {
+     "name": "is-evaluated",
+     "rna": "is_evaluated",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "original",
+     "rna": "original",
+     "type": "pointer",
+     "target": "ID",
+     "readonly": true
+    },
+    {
+     "name": "users",
+     "rna": "users",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "use-fake-user",
+     "rna": "use_fake_user",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-extra-user",
+     "rna": "use_extra_user",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "is-embedded-data",
+     "rna": "is_embedded_data",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "is-linked-packed",
+     "rna": "is_linked_packed",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "is-missing",
+     "rna": "is_missing",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "is-runtime-data",
+     "rna": "is_runtime_data",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "is-editable",
+     "rna": "is_editable",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "tag",
+     "rna": "tag",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "is-library-indirect",
+     "rna": "is_library_indirect",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "library",
+     "rna": "library",
+     "type": "pointer",
+     "target": "Library",
+     "readonly": true
+    },
+    {
+     "name": "library-weak-reference",
+     "rna": "library_weak_reference",
+     "type": "pointer",
+     "target": "LibraryWeakReference",
+     "readonly": true
+    },
+    {
+     "name": "asset-data",
+     "rna": "asset_data",
+     "type": "pointer",
+     "target": "AssetMetaData"
+    },
+    {
+     "name": "override-library",
+     "rna": "override_library",
+     "type": "pointer",
+     "target": "IDOverrideLibrary",
+     "readonly": true
+    },
+    {
+     "name": "preview",
+     "rna": "preview",
+     "type": "pointer",
+     "target": "ImagePreview",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "scene",
+   "rna": "Scene",
+   "label": "Scene",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "camera",
+     "rna": "camera",
+     "type": "pointer",
+     "target": "Object"
+    },
+    {
+     "name": "background-set",
+     "rna": "background_set",
+     "type": "pointer",
+     "target": "Scene"
+    },
+    {
+     "name": "world",
+     "rna": "world",
+     "type": "pointer",
+     "target": "World"
+    },
+    {
+     "name": "objects",
+     "rna": "objects",
+     "type": "collection",
+     "target": "Object",
+     "readonly": true
+    },
+    {
+     "name": "frame-current",
+     "rna": "frame_current",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       -1048574,
+       1048574
+      ],
+      "soft": [
+       -1048574,
+       1048574
+      ]
+     },
+     "default": 1
+    },
+    {
+     "name": "frame-subframe",
+     "rna": "frame_subframe",
+     "type": "float32",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "frame-float",
+     "rna": "frame_float",
+     "type": "float32",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       -1048574.0,
+       1048574.0
+      ],
+      "soft": [
+       -1048574.0,
+       1048574.0
+      ]
+     },
+     "default": 0.0,
+     "new": 1.0
+    },
+    {
+     "name": "frame-start",
+     "rna": "frame_start",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       0,
+       1048574
+      ],
+      "soft": [
+       0,
+       1048574
+      ]
+     },
+     "default": 1
+    },
+    {
+     "name": "frame-end",
+     "rna": "frame_end",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       0,
+       1048574
+      ],
+      "soft": [
+       0,
+       1048574
+      ]
+     },
+     "default": 250
+    },
+    {
+     "name": "frame-step",
+     "rna": "frame_step",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       0,
+       1048574
+      ],
+      "soft": [
+       1,
+       100
+      ]
+     },
+     "default": 1
+    },
+    {
+     "name": "time-jump-unit",
+     "rna": "time_jump_unit",
+     "type": "enum",
+     "default": "second",
+     "items": [
+      {
+       "name": "frame",
+       "rna": "FRAME",
+       "label": "Frame",
+       "value": 0
+      },
+      {
+       "name": "second",
+       "rna": "SECOND",
+       "label": "Second",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "time-jump-delta",
+     "rna": "time_jump_delta",
+     "type": "float32",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       0.1,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.1,
+       3.4028235e+38
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "frame-current-final",
+     "rna": "frame_current_final",
+     "type": "float32",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       -1048574.0,
+       1048574.0
+      ],
+      "soft": [
+       -1048574.0,
+       1048574.0
+      ]
+     },
+     "default": 0.0,
+     "readonly": true,
+     "new": 1.0
+    },
+    {
+     "name": "lock-frame-selection-to-range",
+     "rna": "lock_frame_selection_to_range",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "allow-preroll",
+     "rna": "allow_preroll",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-preview-range",
+     "rna": "use_preview_range",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "frame-preview-start",
+     "rna": "frame_preview_start",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       -2147483648,
+       2147483647
+      ],
+      "soft": [
+       -10000,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "frame-preview-end",
+     "rna": "frame_preview_end",
+     "type": "int",
+     "subtype": "time",
+     "unit": "time",
+     "range": {
+      "hard": [
+       -2147483648,
+       2147483647
+      ],
+      "soft": [
+       -10000,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "show-subframe",
+     "rna": "show_subframe",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-keys-from-selected-only",
+     "rna": "show_keys_from_selected_only",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "wrap-timeline-navigation",
+     "rna": "wrap_timeline_navigation",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-stamp-note",
+     "rna": "use_stamp_note",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    },
+    {
+     "name": "is-nla-tweakmode",
+     "rna": "is_nla_tweakmode",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "use-custom-simulation-range",
+     "rna": "use_custom_simulation_range",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "simulation-frame-start",
+     "rna": "simulation_frame_start",
+     "type": "int",
+     "range": {
+      "hard": [
+       -2147483648,
+       2147483647
+      ],
+      "soft": [
+       -10000,
+       10000
+      ]
+     },
+     "default": 1
+    },
+    {
+     "name": "simulation-frame-end",
+     "rna": "simulation_frame_end",
+     "type": "int",
+     "range": {
+      "hard": [
+       -2147483648,
+       2147483647
+      ],
+      "soft": [
+       -10000,
+       10000
+      ]
+     },
+     "default": 250
+    },
+    {
+     "name": "sync-mode",
+     "rna": "sync_mode",
+     "type": "enum",
+     "default": "audio-sync",
+     "items": [
+      {
+       "name": "none",
+       "rna": "NONE",
+       "label": "Play Every Frame",
+       "value": 0
+      },
+      {
+       "name": "frame-drop",
+       "rna": "FRAME_DROP",
+       "label": "Frame Dropping",
+       "value": 8
+      },
+      {
+       "name": "audio-sync",
+       "rna": "AUDIO_SYNC",
+       "label": "Sync to Audio",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "playback-loop-mode",
+     "rna": "playback_loop_mode",
+     "type": "enum",
+     "default": "infinite",
+     "items": [
+      {
+       "name": "infinite",
+       "rna": "INFINITE",
+       "label": "Infinite",
+       "value": 0
+      },
+      {
+       "name": "stop-end-frame",
+       "rna": "STOP_END_FRAME",
+       "label": "Stop at End Frame",
+       "value": 1
+      },
+      {
+       "name": "stop-start-frame",
+       "rna": "STOP_START_FRAME",
+       "label": "Stop at Start Frame",
+       "value": 2
+      },
+      {
+       "name": "restore",
+       "rna": "RESTORE",
+       "label": "Restore Frame",
+       "value": 3
+      },
+      {
+       "name": "bounce",
+       "rna": "BOUNCE",
+       "label": "Bounce",
+       "value": 4
+      }
+     ]
+    },
+    {
+     "name": "compositor-effects",
+     "rna": "compositor_effects",
+     "type": "collection",
+     "target": "SceneCompositorEffect",
+     "readonly": true
+    },
+    {
+     "name": "compositing-node-group",
+     "rna": "compositing_node_group",
+     "type": "pointer",
+     "target": "NodeTree",
+     "deprecated": {
+      "removed-in": "6.0.0",
+      "note": "Use compositor_effects instead."
+     }
+    },
+    {
+     "name": "use-nodes",
+     "rna": "use_nodes",
+     "type": "bool",
+     "default": false,
+     "deprecated": {
+      "removed-in": "6.0.0",
+      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True. Use #scene.render.use_compositing to turn compositing to enable or disable compositing."
+     },
+     "new": true
+    },
+    {
+     "name": "sequence-editor",
+     "rna": "sequence_editor",
+     "type": "pointer",
+     "target": "SequenceEditor",
+     "readonly": true
+    },
+    {
+     "name": "keying-sets",
+     "rna": "keying_sets",
+     "type": "collection",
+     "target": "KeyingSet",
+     "readonly": true
+    },
+    {
+     "name": "keying-sets-all",
+     "rna": "keying_sets_all",
+     "type": "collection",
+     "target": "KeyingSet",
+     "readonly": true
+    },
+    {
+     "name": "rigidbody-world",
+     "rna": "rigidbody_world",
+     "type": "pointer",
+     "target": "RigidBodyWorld",
+     "readonly": true
+    },
+    {
+     "name": "tool-settings",
+     "rna": "tool_settings",
+     "type": "pointer",
+     "target": "ToolSettings",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "unit-settings",
+     "rna": "unit_settings",
+     "type": "pointer",
+     "target": "UnitSettings",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "gravity",
+     "rna": "gravity",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "acceleration",
+     "unit": "acceleration",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -200.0,
+       200.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      -9.81
+     ]
+    },
+    {
+     "name": "use-gravity",
+     "rna": "use_gravity",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "render",
+     "rna": "render",
+     "type": "pointer",
+     "target": "RenderSettings",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "safe-areas",
+     "rna": "safe_areas",
+     "type": "pointer",
+     "target": "DisplaySafeAreas",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "timeline-markers",
+     "rna": "timeline_markers",
+     "type": "collection",
+     "target": "TimelineMarker",
+     "readonly": true
+    },
+    {
+     "name": "transform-orientation-slots",
+     "rna": "transform_orientation_slots",
+     "type": "collection",
+     "target": "TransformOrientationSlot",
+     "readonly": true
+    },
+    {
+     "name": "cursor",
+     "rna": "cursor",
+     "type": "pointer",
+     "target": "View3DCursor",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "use-audio",
+     "rna": "use_audio",
+     "type": "bool",
+     "default": false,
+     "new": true
+    },
+    {
+     "name": "use-audio-scrub",
+     "rna": "use_audio_scrub",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "audio-doppler-speed",
+     "rna": "audio_doppler_speed",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.01,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.01,
+       3.4028235e+38
+      ]
+     },
+     "default": 343.3
+    },
+    {
+     "name": "audio-doppler-factor",
+     "rna": "audio_doppler_factor",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       3.4028235e+38
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "audio-distance-model",
+     "rna": "audio_distance_model",
+     "type": "enum",
+     "default": "inverse-clamped",
+     "items": [
+      {
+       "name": "none",
+       "rna": "NONE",
+       "label": "None",
+       "value": 0
+      },
+      {
+       "name": "inverse",
+       "rna": "INVERSE",
+       "label": "Inverse",
+       "value": 1
+      },
+      {
+       "name": "inverse-clamped",
+       "rna": "INVERSE_CLAMPED",
+       "label": "Inverse Clamped",
+       "value": 2
+      },
+      {
+       "name": "linear",
+       "rna": "LINEAR",
+       "label": "Linear",
+       "value": 3
+      },
+      {
+       "name": "linear-clamped",
+       "rna": "LINEAR_CLAMPED",
+       "label": "Linear Clamped",
+       "value": 4
+      },
+      {
+       "name": "exponent",
+       "rna": "EXPONENT",
+       "label": "Exponential",
+       "value": 5
+      },
+      {
+       "name": "exponent-clamped",
+       "rna": "EXPONENT_CLAMPED",
+       "label": "Exponential Clamped",
+       "value": 6
+      }
+     ]
+    },
+    {
+     "name": "audio-volume",
+     "rna": "audio_volume",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       100.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "annotation",
+     "rna": "annotation",
+     "type": "pointer",
+     "target": "Annotation"
+    },
+    {
+     "name": "active-clip",
+     "rna": "active_clip",
+     "type": "pointer",
+     "target": "MovieClip"
+    },
+    {
+     "name": "view-settings",
+     "rna": "view_settings",
+     "type": "pointer",
+     "target": "ColorManagedViewSettings",
+     "readonly": true
+    },
+    {
+     "name": "display-settings",
+     "rna": "display_settings",
+     "type": "pointer",
+     "target": "ColorManagedDisplaySettings",
+     "readonly": true
+    },
+    {
+     "name": "sequencer-colorspace-settings",
+     "rna": "sequencer_colorspace_settings",
+     "type": "pointer",
+     "target": "ColorManagedSequencerColorspaceSettings",
+     "readonly": true
+    },
+    {
+     "name": "view-layers",
+     "rna": "view_layers",
+     "type": "collection",
+     "target": "ViewLayer",
+     "readonly": true
+    },
+    {
+     "name": "collection",
+     "rna": "collection",
+     "type": "pointer",
+     "target": "Collection",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "display",
+     "rna": "display",
+     "type": "pointer",
+     "target": "SceneDisplay",
+     "readonly": true
+    },
+    {
+     "name": "eevee",
+     "rna": "eevee",
+     "type": "pointer",
+     "target": "SceneEEVEE",
+     "readonly": true
+    },
+    {
+     "name": "grease-pencil-settings",
+     "rna": "grease_pencil_settings",
+     "type": "pointer",
+     "target": "SceneGpencil",
+     "readonly": true
+    },
+    {
+     "name": "hydra",
+     "rna": "hydra",
+     "type": "pointer",
+     "target": "SceneHydra",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "units",
+   "rna": "UnitSettings",
+   "label": "Unit Settings",
+   "properties": [
+    {
+     "name": "system",
+     "rna": "system",
+     "type": "enum",
+     "default": "none",
+     "items": [
+      {
+       "name": "none",
+       "rna": "NONE",
+       "label": "None",
+       "value": 0
+      },
+      {
+       "name": "metric",
+       "rna": "METRIC",
+       "label": "Metric",
+       "value": 1
+      },
+      {
+       "name": "imperial",
+       "rna": "IMPERIAL",
+       "label": "Imperial",
+       "value": 2
+      }
+     ],
+     "new": "metric"
+    },
+    {
+     "name": "system-rotation",
+     "rna": "system_rotation",
+     "type": "enum",
+     "default": "degrees",
+     "items": [
+      {
+       "name": "degrees",
+       "rna": "DEGREES",
+       "label": "Degrees",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "radians",
+       "rna": "RADIANS",
+       "label": "Radians",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "name": "scale-length",
+     "rna": "scale_length",
+     "type": "float32",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       1e-09,
+       1000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 0.0,
+     "new": 1.0
+    },
+    {
+     "name": "use-separate",
+     "rna": "use_separate",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "length-unit",
+     "rna": "length_unit",
+     "type": "enum",
+     "default": "default",
+     "items": [
+      {
+       "name": "adaptive",
+       "rna": "ADAPTIVE",
+       "label": "Adaptive",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "kilometers",
+       "rna": "KILOMETERS",
+       "label": "Kilometers",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "meters",
+       "rna": "METERS",
+       "label": "Meters",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "centimeters",
+       "rna": "CENTIMETERS",
+       "label": "Centimeters",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "millimeters",
+       "rna": "MILLIMETERS",
+       "label": "Millimeters",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "micrometers",
+       "rna": "MICROMETERS",
+       "label": "Micrometers",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "miles",
+       "rna": "MILES",
+       "label": "Miles",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "feet",
+       "rna": "FEET",
+       "label": "Feet",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "inches",
+       "rna": "INCHES",
+       "label": "Inches",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "thou",
+       "rna": "THOU",
+       "label": "Thou",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      }
+     ],
+     "new": "meters"
+    },
+    {
+     "name": "mass-unit",
+     "rna": "mass_unit",
+     "type": "enum",
+     "default": "default",
+     "items": [
+      {
+       "name": "adaptive",
+       "rna": "ADAPTIVE",
+       "label": "Adaptive",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "tonnes",
+       "rna": "TONNES",
+       "label": "Tons",
+       "when": {
+        "system": [
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "kilograms",
+       "rna": "KILOGRAMS",
+       "label": "Kilograms",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "grams",
+       "rna": "GRAMS",
+       "label": "Grams",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "milligrams",
+       "rna": "MILLIGRAMS",
+       "label": "Milligrams",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "centum-weights",
+       "rna": "CENTUM_WEIGHTS",
+       "label": "Centum weights",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "stones",
+       "rna": "STONES",
+       "label": "Stones",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "pounds",
+       "rna": "POUNDS",
+       "label": "Pounds",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "ounces",
+       "rna": "OUNCES",
+       "label": "Ounces",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      }
+     ],
+     "new": "kilograms"
+    },
+    {
+     "name": "time-unit",
+     "rna": "time_unit",
+     "type": "enum",
+     "default": "default",
+     "items": [
+      {
+       "name": "adaptive",
+       "rna": "ADAPTIVE",
+       "label": "Adaptive",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "days",
+       "rna": "DAYS",
+       "label": "Days",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "hours",
+       "rna": "HOURS",
+       "label": "Hours",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "minutes",
+       "rna": "MINUTES",
+       "label": "Minutes",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "seconds",
+       "rna": "SECONDS",
+       "label": "Seconds",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "milliseconds",
+       "rna": "MILLISECONDS",
+       "label": "Milliseconds",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "microseconds",
+       "rna": "MICROSECONDS",
+       "label": "Microseconds",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      }
+     ],
+     "new": "seconds"
+    },
+    {
+     "name": "temperature-unit",
+     "rna": "temperature_unit",
+     "type": "enum",
+     "default": "default",
+     "items": [
+      {
+       "name": "adaptive",
+       "rna": "ADAPTIVE",
+       "label": "Adaptive",
+       "when": {
+        "system": [
+         "none",
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "kelvin",
+       "rna": "KELVIN",
+       "label": "Kelvin",
+       "when": {
+        "system": [
+         "metric",
+         "imperial"
+        ]
+       }
+      },
+      {
+       "name": "celsius",
+       "rna": "CELSIUS",
+       "label": "Celsius",
+       "when": {
+        "system": [
+         "metric"
+        ]
+       }
+      },
+      {
+       "name": "fahrenheit",
+       "rna": "FAHRENHEIT",
+       "label": "Fahrenheit",
+       "when": {
+        "system": [
+         "imperial"
+        ]
+       }
+      }
+     ],
+     "new": "kelvin"
+    }
+   ]
+  },
+  {
+   "kind": "object",
+   "rna": "Object",
+   "label": "Object",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "data",
+     "rna": "data",
+     "type": "pointer",
+     "target": "ID"
+    },
+    {
+     "name": "type",
+     "rna": "type",
+     "type": "enum",
+     "default": "empty",
+     "items": [
+      {
+       "name": "mesh",
+       "rna": "MESH",
+       "label": "Mesh",
+       "value": 1
+      },
+      {
+       "name": "curve",
+       "rna": "CURVE",
+       "label": "Curve",
+       "value": 2
+      },
+      {
+       "name": "surface",
+       "rna": "SURFACE",
+       "label": "Surface",
+       "value": 3
+      },
+      {
+       "name": "meta",
+       "rna": "META",
+       "label": "Metaball",
+       "value": 5
+      },
+      {
+       "name": "font",
+       "rna": "FONT",
+       "label": "Text",
+       "value": 4
+      },
+      {
+       "name": "curves",
+       "rna": "CURVES",
+       "label": "Hair Curves",
+       "value": 27
+      },
+      {
+       "name": "pointcloud",
+       "rna": "POINTCLOUD",
+       "label": "Point Cloud",
+       "value": 28
+      },
+      {
+       "name": "volume",
+       "rna": "VOLUME",
+       "label": "Volume",
+       "value": 29
+      },
+      {
+       "name": "greasepencil",
+       "rna": "GREASEPENCIL",
+       "label": "Grease Pencil",
+       "value": 30
+      },
+      {
+       "name": "armature",
+       "rna": "ARMATURE",
+       "label": "Armature",
+       "value": 25
+      },
+      {
+       "name": "lattice",
+       "rna": "LATTICE",
+       "label": "Lattice",
+       "value": 22
+      },
+      {
+       "name": "empty",
+       "rna": "EMPTY",
+       "label": "Empty",
+       "value": 0
+      },
+      {
+       "name": "light",
+       "rna": "LIGHT",
+       "label": "Light",
+       "value": 10
+      },
+      {
+       "name": "light-probe",
+       "rna": "LIGHT_PROBE",
+       "label": "Light Probe",
+       "value": 13
+      },
+      {
+       "name": "camera",
+       "rna": "CAMERA",
+       "label": "Camera",
+       "value": 11
+      },
+      {
+       "name": "speaker",
+       "rna": "SPEAKER",
+       "label": "Speaker",
+       "value": 12
+      }
+     ],
+     "readonly": true
+    },
+    {
+     "name": "mode",
+     "rna": "mode",
+     "type": "enum",
+     "default": "object",
+     "items": [
+      {
+       "name": "object",
+       "rna": "OBJECT",
+       "label": "Object Mode",
+       "value": 0
+      },
+      {
+       "name": "edit",
+       "rna": "EDIT",
+       "label": "Edit Mode",
+       "value": 1
+      },
+      {
+       "name": "pose",
+       "rna": "POSE",
+       "label": "Pose Mode",
+       "value": 64
+      },
+      {
+       "name": "sculpt",
+       "rna": "SCULPT",
+       "label": "Sculpt Mode",
+       "value": 2
+      },
+      {
+       "name": "vertex-paint",
+       "rna": "VERTEX_PAINT",
+       "label": "Vertex Paint",
+       "value": 4
+      },
+      {
+       "name": "weight-paint",
+       "rna": "WEIGHT_PAINT",
+       "label": "Weight Paint",
+       "value": 8
+      },
+      {
+       "name": "texture-paint",
+       "rna": "TEXTURE_PAINT",
+       "label": "Texture Paint",
+       "value": 16
+      },
+      {
+       "name": "particle-edit",
+       "rna": "PARTICLE_EDIT",
+       "label": "Particle Edit",
+       "value": 32
+      },
+      {
+       "name": "edit-gpencil",
+       "rna": "EDIT_GPENCIL",
+       "label": "Edit Mode",
+       "value": 128
+      },
+      {
+       "name": "sculpt-grease-pencil",
+       "rna": "SCULPT_GREASE_PENCIL",
+       "label": "Sculpt Mode",
+       "value": 512
+      },
+      {
+       "name": "paint-grease-pencil",
+       "rna": "PAINT_GREASE_PENCIL",
+       "label": "Draw Mode",
+       "value": 256
+      },
+      {
+       "name": "weight-grease-pencil",
+       "rna": "WEIGHT_GREASE_PENCIL",
+       "label": "Weight Paint",
+       "value": 1024
+      },
+      {
+       "name": "vertex-grease-pencil",
+       "rna": "VERTEX_GREASE_PENCIL",
+       "label": "Vertex Paint",
+       "value": 2048
+      },
+      {
+       "name": "sculpt-curves",
+       "rna": "SCULPT_CURVES",
+       "label": "Sculpt Mode",
+       "value": 4096
+      }
+     ],
+     "readonly": true
+    },
+    {
+     "name": "bound-box",
+     "rna": "bound_box",
+     "type": "float32",
+     "array": [
+      8,
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true
+    },
+    {
+     "name": "parent",
+     "rna": "parent",
+     "type": "pointer",
+     "target": "Object"
+    },
+    {
+     "name": "parent-type",
+     "rna": "parent_type",
+     "type": "enum",
+     "default": "object",
+     "items": [
+      {
+       "name": "object",
+       "rna": "OBJECT",
+       "label": "Object",
+       "value": 0
+      },
+      {
+       "name": "armature",
+       "rna": "ARMATURE",
+       "label": "Armature",
+       "value": 4
+      },
+      {
+       "name": "lattice",
+       "rna": "LATTICE",
+       "label": "Lattice",
+       "value": 4
+      },
+      {
+       "name": "vertex",
+       "rna": "VERTEX",
+       "label": "Vertex",
+       "value": 5
+      },
+      {
+       "name": "vertex-3",
+       "rna": "VERTEX_3",
+       "label": "3 Vertices",
+       "value": 6
+      },
+      {
+       "name": "bone",
+       "rna": "BONE",
+       "label": "Bone",
+       "value": 7
+      }
+     ]
+    },
+    {
+     "name": "parent-vertices",
+     "rna": "parent_vertices",
+     "type": "int",
+     "array": [
+      3
+     ],
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "parent-bone",
+     "rna": "parent_bone",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "parent-bone-head-tail-factor",
+     "rna": "parent_bone_head_tail_factor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "use-parent-final-indices",
+     "rna": "use_parent_final_indices",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-camera-lock-parent",
+     "rna": "use_camera_lock_parent",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "track-axis",
+     "rna": "track_axis",
+     "type": "enum",
+     "default": "pos-y",
+     "items": [
+      {
+       "name": "pos-x",
+       "rna": "POS_X",
+       "label": "+X",
+       "value": 0
+      },
+      {
+       "name": "pos-y",
+       "rna": "POS_Y",
+       "label": "+Y",
+       "value": 1
+      },
+      {
+       "name": "pos-z",
+       "rna": "POS_Z",
+       "label": "+Z",
+       "value": 2
+      },
+      {
+       "name": "neg-x",
+       "rna": "NEG_X",
+       "label": "-X",
+       "value": 3
+      },
+      {
+       "name": "neg-y",
+       "rna": "NEG_Y",
+       "label": "-Y",
+       "value": 4
+      },
+      {
+       "name": "neg-z",
+       "rna": "NEG_Z",
+       "label": "-Z",
+       "value": 5
+      }
+     ]
+    },
+    {
+     "name": "up-axis",
+     "rna": "up_axis",
+     "type": "enum",
+     "default": "z",
+     "items": [
+      {
+       "name": "x",
+       "rna": "X",
+       "label": "X",
+       "value": 0
+      },
+      {
+       "name": "y",
+       "rna": "Y",
+       "label": "Y",
+       "value": 1
+      },
+      {
+       "name": "z",
+       "rna": "Z",
+       "label": "Z",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "material-slots",
+     "rna": "material_slots",
+     "type": "collection",
+     "target": "MaterialSlot",
+     "readonly": true
+    },
+    {
+     "name": "active-material",
+     "rna": "active_material",
+     "type": "pointer",
+     "target": "Material"
+    },
+    {
+     "name": "active-material-index",
+     "rna": "active_material_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "location",
+     "rna": "location",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "rotation-quaternion",
+     "rna": "rotation_quaternion",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "quaternion",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "rotation-axis-angle",
+     "rna": "rotation_axis_angle",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "axisangle",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    {
+     "name": "rotation-euler",
+     "rna": "rotation_euler",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "euler",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "rotation-mode",
+     "rna": "rotation_mode",
+     "type": "enum",
+     "default": "xyz",
+     "items": [
+      {
+       "name": "quaternion",
+       "rna": "QUATERNION",
+       "label": "Quaternion (WXYZ)",
+       "value": 0
+      },
+      {
+       "name": "xyz",
+       "rna": "XYZ",
+       "label": "XYZ Euler",
+       "value": 1
+      },
+      {
+       "name": "xzy",
+       "rna": "XZY",
+       "label": "XZY Euler",
+       "value": 2
+      },
+      {
+       "name": "yxz",
+       "rna": "YXZ",
+       "label": "YXZ Euler",
+       "value": 3
+      },
+      {
+       "name": "yzx",
+       "rna": "YZX",
+       "label": "YZX Euler",
+       "value": 4
+      },
+      {
+       "name": "zxy",
+       "rna": "ZXY",
+       "label": "ZXY Euler",
+       "value": 5
+      },
+      {
+       "name": "zyx",
+       "rna": "ZYX",
+       "label": "ZYX Euler",
+       "value": 6
+      },
+      {
+       "name": "axis-angle",
+       "rna": "AXIS_ANGLE",
+       "label": "Axis Angle",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "name": "scale",
+     "rna": "scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "dimensions",
+     "rna": "dimensions",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz-length",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "delta-location",
+     "rna": "delta_location",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "delta-rotation-euler",
+     "rna": "delta_rotation_euler",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "euler",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "delta-rotation-quaternion",
+     "rna": "delta_rotation_quaternion",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "quaternion",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "delta-scale",
+     "rna": "delta_scale",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "lock-location",
+     "rna": "lock_location",
+     "type": "bool",
+     "array": [
+      3
+     ],
+     "default": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "name": "lock-rotation",
+     "rna": "lock_rotation",
+     "type": "bool",
+     "array": [
+      3
+     ],
+     "default": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "name": "lock-rotation-w",
+     "rna": "lock_rotation_w",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "lock-rotations-4d",
+     "rna": "lock_rotations_4d",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "lock-scale",
+     "rna": "lock_scale",
+     "type": "bool",
+     "array": [
+      3
+     ],
+     "default": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "name": "matrix-world",
+     "rna": "matrix_world",
+     "type": "float32",
+     "array": [
+      4,
+      4
+     ],
+     "subtype": "matrix",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "name": "matrix-local",
+     "rna": "matrix_local",
+     "type": "float32",
+     "array": [
+      4,
+      4
+     ],
+     "subtype": "matrix",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "name": "matrix-basis",
+     "rna": "matrix_basis",
+     "type": "float32",
+     "array": [
+      4,
+      4
+     ],
+     "subtype": "matrix",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "name": "matrix-parent-inverse",
+     "rna": "matrix_parent_inverse",
+     "type": "float32",
+     "array": [
+      4,
+      4
+     ],
+     "subtype": "matrix",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "name": "modifiers",
+     "rna": "modifiers",
+     "type": "collection",
+     "target": "Modifier",
+     "readonly": true
+    },
+    {
+     "name": "shader-effects",
+     "rna": "shader_effects",
+     "type": "collection",
+     "target": "ShaderFx",
+     "readonly": true
+    },
+    {
+     "name": "constraints",
+     "rna": "constraints",
+     "type": "collection",
+     "target": "Constraint",
+     "readonly": true
+    },
+    {
+     "name": "vertex-groups",
+     "rna": "vertex_groups",
+     "type": "collection",
+     "target": "VertexGroup",
+     "readonly": true
+    },
+    {
+     "name": "empty-display-type",
+     "rna": "empty_display_type",
+     "type": "enum",
+     "default": "plain-axes",
+     "items": [
+      {
+       "name": "plain-axes",
+       "rna": "PLAIN_AXES",
+       "label": "Plain Axes",
+       "value": 2
+      },
+      {
+       "name": "arrows",
+       "rna": "ARROWS",
+       "label": "Arrows",
+       "value": 1
+      },
+      {
+       "name": "single-arrow",
+       "rna": "SINGLE_ARROW",
+       "label": "Single Arrow",
+       "value": 4
+      },
+      {
+       "name": "circle",
+       "rna": "CIRCLE",
+       "label": "Circle",
+       "value": 3
+      },
+      {
+       "name": "cube",
+       "rna": "CUBE",
+       "label": "Cube",
+       "value": 5
+      },
+      {
+       "name": "sphere",
+       "rna": "SPHERE",
+       "label": "Sphere",
+       "value": 6
+      },
+      {
+       "name": "cone",
+       "rna": "CONE",
+       "label": "Cone",
+       "value": 7
+      },
+      {
+       "name": "image",
+       "rna": "IMAGE",
+       "label": "Image",
+       "value": 8
+      }
+     ]
+    },
+    {
+     "name": "empty-display-size",
+     "rna": "empty_display_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0001,
+       1000.0
+      ],
+      "soft": [
+       0.01,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "empty-image-offset",
+     "rna": "empty_image_offset",
+     "type": "float32",
+     "array": [
+      2
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": [
+      -0.5,
+      -0.5
+     ]
+    },
+    {
+     "name": "image-user",
+     "rna": "image_user",
+     "type": "pointer",
+     "target": "ImageUser",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "empty-image-depth",
+     "rna": "empty_image_depth",
+     "type": "enum",
+     "default": "default",
+     "items": [
+      {
+       "name": "default",
+       "rna": "DEFAULT",
+       "label": "Default",
+       "value": 0
+      },
+      {
+       "name": "front",
+       "rna": "FRONT",
+       "label": "Front",
+       "value": 1
+      },
+      {
+       "name": "back",
+       "rna": "BACK",
+       "label": "Back",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "show-empty-image-perspective",
+     "rna": "show_empty_image_perspective",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "show-empty-image-orthographic",
+     "rna": "show_empty_image_orthographic",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "show-empty-image-only-axis-aligned",
+     "rna": "show_empty_image_only_axis_aligned",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-empty-image-alpha",
+     "rna": "use_empty_image_alpha",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "empty-image-side",
+     "rna": "empty_image_side",
+     "type": "enum",
+     "default": "double-sided",
+     "items": [
+      {
+       "name": "double-sided",
+       "rna": "DOUBLE_SIDED",
+       "label": "Both",
+       "value": 0
+      },
+      {
+       "name": "front",
+       "rna": "FRONT",
+       "label": "Front",
+       "value": 4
+      },
+      {
+       "name": "back",
+       "rna": "BACK",
+       "label": "Back",
+       "value": 8
+      }
+     ]
+    },
+    {
+     "name": "add-rest-position-attribute",
+     "rna": "add_rest_position_attribute",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "pass-index",
+     "rna": "pass_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       32767
+      ],
+      "soft": [
+       0,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "color",
+     "rna": "color",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "field",
+     "rna": "field",
+     "type": "pointer",
+     "target": "FieldSettings",
+     "readonly": true
+    },
+    {
+     "name": "collision",
+     "rna": "collision",
+     "type": "pointer",
+     "target": "CollisionSettings",
+     "readonly": true
+    },
+    {
+     "name": "soft-body",
+     "rna": "soft_body",
+     "type": "pointer",
+     "target": "SoftBodySettings",
+     "readonly": true
+    },
+    {
+     "name": "particle-systems",
+     "rna": "particle_systems",
+     "type": "collection",
+     "target": "ParticleSystem",
+     "readonly": true
+    },
+    {
+     "name": "rigid-body",
+     "rna": "rigid_body",
+     "type": "pointer",
+     "target": "RigidBodyObject",
+     "readonly": true
+    },
+    {
+     "name": "rigid-body-constraint",
+     "rna": "rigid_body_constraint",
+     "type": "pointer",
+     "target": "RigidBodyConstraint",
+     "readonly": true
+    },
+    {
+     "name": "use-simulation-cache",
+     "rna": "use_simulation_cache",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "hide-viewport",
+     "rna": "hide_viewport",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-select",
+     "rna": "hide_select",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-render",
+     "rna": "hide_render",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-probe-volume",
+     "rna": "hide_probe_volume",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-probe-sphere",
+     "rna": "hide_probe_sphere",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-probe-plane",
+     "rna": "hide_probe_plane",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide-surface-pick",
+     "rna": "hide_surface_pick",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-instancer-for-render",
+     "rna": "show_instancer_for_render",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "show-instancer-for-viewport",
+     "rna": "show_instancer_for_viewport",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-camera",
+     "rna": "visible_camera",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-diffuse",
+     "rna": "visible_diffuse",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-glossy",
+     "rna": "visible_glossy",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-transmission",
+     "rna": "visible_transmission",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-volume-scatter",
+     "rna": "visible_volume_scatter",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "visible-shadow",
+     "rna": "visible_shadow",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "is-holdout",
+     "rna": "is_holdout",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "is-shadow-catcher",
+     "rna": "is_shadow_catcher",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "visible-raycast",
+     "rna": "visible_raycast",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "instance-type",
+     "rna": "instance_type",
+     "type": "enum",
+     "default": "none",
+     "items": [
+      {
+       "name": "none",
+       "rna": "NONE",
+       "label": "None",
+       "value": 0
+      },
+      {
+       "name": "verts",
+       "rna": "VERTS",
+       "label": "Vertices",
+       "value": 16
+      },
+      {
+       "name": "faces",
+       "rna": "FACES",
+       "label": "Faces",
+       "value": 512
+      },
+      {
+       "name": "collection",
+       "rna": "COLLECTION",
+       "label": "Collection",
+       "value": 256
+      }
+     ]
+    },
+    {
+     "name": "use-instance-vertices-rotation",
+     "rna": "use_instance_vertices_rotation",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-instance-faces-scale",
+     "rna": "use_instance_faces_scale",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "instance-faces-scale",
+     "rna": "instance_faces_scale",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.001,
+       10000.0
+      ],
+      "soft": [
+       0.001,
+       10000.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "instance-collection",
+     "rna": "instance_collection",
+     "type": "pointer",
+     "target": "Collection"
+    },
+    {
+     "name": "is-instancer",
+     "rna": "is_instancer",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "display-type",
+     "rna": "display_type",
+     "type": "enum",
+     "default": "textured",
+     "items": [
+      {
+       "name": "bounds",
+       "rna": "BOUNDS",
+       "label": "Bounds",
+       "value": 1
+      },
+      {
+       "name": "wire",
+       "rna": "WIRE",
+       "label": "Wire",
+       "value": 2
+      },
+      {
+       "name": "solid",
+       "rna": "SOLID",
+       "label": "Solid",
+       "value": 3
+      },
+      {
+       "name": "textured",
+       "rna": "TEXTURED",
+       "label": "Textured",
+       "value": 5
+      }
+     ]
+    },
+    {
+     "name": "show-bounds",
+     "rna": "show_bounds",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "display-bounds-type",
+     "rna": "display_bounds_type",
+     "type": "enum",
+     "default": "box",
+     "items": [
+      {
+       "name": "box",
+       "rna": "BOX",
+       "label": "Box",
+       "value": 0
+      },
+      {
+       "name": "sphere",
+       "rna": "SPHERE",
+       "label": "Sphere",
+       "value": 1
+      },
+      {
+       "name": "cylinder",
+       "rna": "CYLINDER",
+       "label": "Cylinder",
+       "value": 2
+      },
+      {
+       "name": "cone",
+       "rna": "CONE",
+       "label": "Cone",
+       "value": 3
+      },
+      {
+       "name": "capsule",
+       "rna": "CAPSULE",
+       "label": "Capsule",
+       "value": 7
+      }
+     ]
+    },
+    {
+     "name": "show-name",
+     "rna": "show_name",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-axis",
+     "rna": "show_axis",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-texture-space",
+     "rna": "show_texture_space",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-wire",
+     "rna": "show_wire",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-all-edges",
+     "rna": "show_all_edges",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-grease-pencil-lights",
+     "rna": "use_grease_pencil_lights",
+     "type": "bool",
+     "default": true,
+     "new": false
+    },
+    {
+     "name": "show-transparent",
+     "rna": "show_transparent",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-in-front",
+     "rna": "show_in_front",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "pose",
+     "rna": "pose",
+     "type": "pointer",
+     "target": "Pose",
+     "readonly": true
+    },
+    {
+     "name": "show-only-shape-key",
+     "rna": "show_only_shape_key",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-shape-key-edit-mode",
+     "rna": "use_shape_key_edit_mode",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "active-shape-key",
+     "rna": "active_shape_key",
+     "type": "pointer",
+     "target": "ShapeKey",
+     "readonly": true
+    },
+    {
+     "name": "active-shape-key-index",
+     "rna": "active_shape_key_index",
+     "type": "int",
+     "range": {
+      "hard": [
+       -32768,
+       32767
+      ],
+      "soft": [
+       -32768,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "use-dynamic-topology-sculpting",
+     "rna": "use_dynamic_topology_sculpting",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "is-from-instancer",
+     "rna": "is_from_instancer",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "is-from-set",
+     "rna": "is_from_set",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "display",
+     "rna": "display",
+     "type": "pointer",
+     "target": "ObjectDisplay",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "lineart",
+     "rna": "lineart",
+     "type": "pointer",
+     "target": "ObjectLineArt",
+     "readonly": true
+    },
+    {
+     "name": "use-mesh-mirror-x",
+     "rna": "use_mesh_mirror_x",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-mesh-mirror-y",
+     "rna": "use_mesh_mirror_y",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-mesh-mirror-z",
+     "rna": "use_mesh_mirror_z",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "lightgroup",
+     "rna": "lightgroup",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "light-linking",
+     "rna": "light_linking",
+     "type": "pointer",
+     "target": "ObjectLightLinking",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "shadow-terminator-normal-offset",
+     "rna": "shadow_terminator_normal_offset",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       10.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shadow-terminator-geometry-offset",
+     "rna": "shadow_terminator_geometry_offset",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.1
+    },
+    {
+     "name": "shadow-terminator-shading-offset",
+     "rna": "shadow_terminator_shading_offset",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    },
+    {
+     "name": "animation-visualization",
+     "rna": "animation_visualization",
+     "type": "pointer",
+     "target": "AnimViz",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "motion-path",
+     "rna": "motion_path",
+     "type": "pointer",
+     "target": "MotionPath",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "mesh",
+   "rna": "Mesh",
+   "label": "Mesh",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "vertices",
+     "rna": "vertices",
+     "type": "collection",
+     "target": "MeshVertex",
+     "readonly": true
+    },
+    {
+     "name": "edges",
+     "rna": "edges",
+     "type": "collection",
+     "target": "MeshEdge",
+     "readonly": true
+    },
+    {
+     "name": "loops",
+     "rna": "loops",
+     "type": "collection",
+     "target": "MeshLoop",
+     "readonly": true
+    },
+    {
+     "name": "polygons",
+     "rna": "polygons",
+     "type": "collection",
+     "target": "MeshPolygon",
+     "readonly": true
+    },
+    {
+     "name": "normals-domain",
+     "rna": "normals_domain",
+     "type": "enum",
+     "default": "face",
+     "items": [
+      {
+       "name": "point",
+       "rna": "POINT",
+       "label": "Point",
+       "value": 1
+      },
+      {
+       "name": "face",
+       "rna": "FACE",
+       "label": "Face",
+       "value": 0
+      },
+      {
+       "name": "corner",
+       "rna": "CORNER",
+       "label": "Corner",
+       "value": 2
+      }
+     ],
+     "readonly": true,
+     "new": "point"
+    },
+    {
+     "name": "vertex-normals",
+     "rna": "vertex_normals",
+     "type": "collection",
+     "target": "MeshNormalValue",
+     "readonly": true
+    },
+    {
+     "name": "polygon-normals",
+     "rna": "polygon_normals",
+     "type": "collection",
+     "target": "MeshNormalValue",
+     "readonly": true
+    },
+    {
+     "name": "corner-normals",
+     "rna": "corner_normals",
+     "type": "collection",
+     "target": "MeshNormalValue",
+     "readonly": true
+    },
+    {
+     "name": "loop-triangles",
+     "rna": "loop_triangles",
+     "type": "collection",
+     "target": "MeshLoopTriangle",
+     "readonly": true
+    },
+    {
+     "name": "loop-triangle-polygons",
+     "rna": "loop_triangle_polygons",
+     "type": "collection",
+     "target": "ReadOnlyInteger",
+     "readonly": true
+    },
+    {
+     "name": "texture-mesh",
+     "rna": "texture_mesh",
+     "type": "pointer",
+     "target": "Mesh"
+    },
+    {
+     "name": "uv-layers",
+     "rna": "uv_layers",
+     "type": "collection",
+     "target": "MeshUVLoopLayer",
+     "readonly": true
+    },
+    {
+     "name": "uv-layer-clone",
+     "rna": "uv_layer_clone",
+     "type": "pointer",
+     "target": "MeshUVLoopLayer"
+    },
+    {
+     "name": "uv-layer-clone-index",
+     "rna": "uv_layer_clone_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "uv-layer-stencil",
+     "rna": "uv_layer_stencil",
+     "type": "pointer",
+     "target": "MeshUVLoopLayer"
+    },
+    {
+     "name": "uv-layer-stencil-index",
+     "rna": "uv_layer_stencil_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "vertex-colors",
+     "rna": "vertex_colors",
+     "type": "collection",
+     "target": "MeshLoopColorLayer",
+     "readonly": true
+    },
+    {
+     "name": "skin-vertices",
+     "rna": "skin_vertices",
+     "type": "collection",
+     "target": "MeshSkinVertexLayer",
+     "readonly": true
+    },
+    {
+     "name": "attributes",
+     "rna": "attributes",
+     "type": "collection",
+     "target": "Attribute",
+     "readonly": true
+    },
+    {
+     "name": "color-attributes",
+     "rna": "color_attributes",
+     "type": "collection",
+     "target": "Attribute",
+     "readonly": true
+    },
+    {
+     "name": "remesh-voxel-size",
+     "rna": "remesh_voxel_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.1
+    },
+    {
+     "name": "remesh-voxel-adaptivity",
+     "rna": "remesh_voxel_adaptivity",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "use-remesh-fix-poles",
+     "rna": "use_remesh_fix_poles",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-remesh-preserve-volume",
+     "rna": "use_remesh_preserve_volume",
+     "type": "bool",
+     "default": false,
+     "new": true
+    },
+    {
+     "name": "use-remesh-preserve-attributes",
+     "rna": "use_remesh_preserve_attributes",
+     "type": "bool",
+     "default": false,
+     "new": true
+    },
+    {
+     "name": "remesh-mode",
+     "rna": "remesh_mode",
+     "type": "enum",
+     "default": "voxel",
+     "items": [
+      {
+       "name": "voxel",
+       "rna": "VOXEL",
+       "label": "Voxel",
+       "value": 0
+      },
+      {
+       "name": "quad",
+       "rna": "QUAD",
+       "label": "Quad",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "use-mirror-x",
+     "rna": "use_mirror_x",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-mirror-y",
+     "rna": "use_mirror_y",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-mirror-z",
+     "rna": "use_mirror_z",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-mirror-vertex-groups",
+     "rna": "use_mirror_vertex_groups",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "radial-symmetry",
+     "rna": "radial_symmetry",
+     "type": "int",
+     "array": [
+      3
+     ],
+     "subtype": "xyz",
+     "range": {
+      "hard": [
+       1,
+       64
+      ],
+      "soft": [
+       1,
+       32
+      ]
+     },
+     "default": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "name": "has-custom-normals",
+     "rna": "has_custom_normals",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "texco-mesh",
+     "rna": "texco_mesh",
+     "type": "pointer",
+     "target": "Mesh"
+    },
+    {
+     "name": "shape-keys",
+     "rna": "shape_keys",
+     "type": "pointer",
+     "target": "Key",
+     "readonly": true
+    },
+    {
+     "name": "use-auto-texspace",
+     "rna": "use_auto_texspace",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "use-mirror-topology",
+     "rna": "use_mirror_topology",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-paint-bone-selection",
+     "rna": "use_paint_bone_selection",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "use-paint-mask",
+     "rna": "use_paint_mask",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-paint-mask-vertex",
+     "rna": "use_paint_mask_vertex",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "total-vert-sel",
+     "rna": "total_vert_sel",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "total-edge-sel",
+     "rna": "total_edge_sel",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "total-face-sel",
+     "rna": "total_face_sel",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "is-editmode",
+     "rna": "is_editmode",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    },
+    {
+     "name": "auto-texspace",
+     "rna": "auto_texspace",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "texspace-location",
+     "rna": "texspace_location",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "texspace-size",
+     "rna": "texspace_size",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "materials",
+     "rna": "materials",
+     "type": "collection",
+     "target": "Material",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "mesh-vertex",
+   "rna": "MeshVertex",
+   "label": "Mesh Vertex",
+   "properties": [
+    {
+     "name": "co",
+     "rna": "co",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "normal",
+     "rna": "normal",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "direction",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true
+    },
+    {
+     "name": "select",
+     "rna": "select",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide",
+     "rna": "hide",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "groups",
+     "rna": "groups",
+     "type": "collection",
+     "target": "VertexGroupElement",
+     "readonly": true
+    },
+    {
+     "name": "index",
+     "rna": "index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "undeformed-co",
+     "rna": "undeformed_co",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "translation",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "mesh-polygon",
+   "rna": "MeshPolygon",
+   "label": "Mesh Polygon",
+   "properties": [
+    {
+     "name": "vertices",
+     "rna": "vertices",
+     "type": "int",
+     "array": [
+      3
+     ],
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "loop-start",
+     "rna": "loop_start",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "loop-total",
+     "rna": "loop_total",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    },
+    {
+     "name": "material-index",
+     "rna": "material_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "select",
+     "rna": "select",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "hide",
+     "rna": "hide",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-smooth",
+     "rna": "use_smooth",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "normal",
+     "rna": "normal",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "direction",
+     "range": {
+      "hard": [
+       -1.0,
+       1.0
+      ],
+      "soft": [
+       -1.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true
+    },
+    {
+     "name": "center",
+     "rna": "center",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "xyz",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true
+    },
+    {
+     "name": "area",
+     "rna": "area",
+     "type": "float32",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       10000.0
+      ]
+     },
+     "default": 0.0,
+     "readonly": true
+    },
+    {
+     "name": "index",
+     "rna": "index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       2147483647
+      ],
+      "soft": [
+       0,
+       10000
+      ]
+     },
+     "default": 0,
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "material",
+   "rna": "Material",
+   "label": "Material",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "surface-render-method",
+     "rna": "surface_render_method",
+     "type": "enum",
+     "default": "dithered",
+     "items": [
+      {
+       "name": "dithered",
+       "rna": "DITHERED",
+       "label": "Dithered",
+       "value": 0
+      },
+      {
+       "name": "blended",
+       "rna": "BLENDED",
+       "label": "Blended",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "displacement-method",
+     "rna": "displacement_method",
+     "type": "enum",
+     "default": "bump",
+     "items": [
+      {
+       "name": "bump",
+       "rna": "BUMP",
+       "label": "Bump Only",
+       "value": 0
+      },
+      {
+       "name": "displacement",
+       "rna": "DISPLACEMENT",
+       "label": "Displacement Only",
+       "value": 1
+      },
+      {
+       "name": "both",
+       "rna": "BOTH",
+       "label": "Displacement and Bump",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "blend-method",
+     "rna": "blend_method",
+     "type": "enum",
+     "default": "opaque",
+     "items": [
+      {
+       "name": "opaque",
+       "rna": "OPAQUE",
+       "label": "Opaque",
+       "value": 0
+      },
+      {
+       "name": "clip",
+       "rna": "CLIP",
+       "label": "Alpha Clip",
+       "value": 3
+      },
+      {
+       "name": "hashed",
+       "rna": "HASHED",
+       "label": "Alpha Hashed",
+       "value": 4
+      },
+      {
+       "name": "blend",
+       "rna": "BLEND",
+       "label": "Alpha Blend",
+       "value": 5
+      }
+     ],
+     "new": "hashed"
+    },
+    {
+     "name": "alpha-threshold",
+     "rna": "alpha_threshold",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "use-transparency-overlap",
+     "rna": "use_transparency_overlap",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "show-transparent-back",
+     "rna": "show_transparent_back",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "use-backface-culling",
+     "rna": "use_backface_culling",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-backface-culling-shadow",
+     "rna": "use_backface_culling_shadow",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-backface-culling-lightprobe-volume",
+     "rna": "use_backface_culling_lightprobe_volume",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "use-transparent-shadow",
+     "rna": "use_transparent_shadow",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "use-raytrace-refraction",
+     "rna": "use_raytrace_refraction",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-screen-refraction",
+     "rna": "use_screen_refraction",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-sss-translucency",
+     "rna": "use_sss_translucency",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "refraction-depth",
+     "rna": "refraction_depth",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "thickness-mode",
+     "rna": "thickness_mode",
+     "type": "enum",
+     "default": "sphere",
+     "items": [
+      {
+       "name": "sphere",
+       "rna": "SPHERE",
+       "label": "Sphere",
+       "value": 0
+      },
+      {
+       "name": "slab",
+       "rna": "SLAB",
+       "label": "Slab",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "use-thickness-from-shadow",
+     "rna": "use_thickness_from_shadow",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "volume-intersection-method",
+     "rna": "volume_intersection_method",
+     "type": "enum",
+     "default": "fast",
+     "items": [
+      {
+       "name": "fast",
+       "rna": "FAST",
+       "label": "Fast",
+       "value": 0
+      },
+      {
+       "name": "accurate",
+       "rna": "ACCURATE",
+       "label": "Accurate",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "max-vertex-displacement",
+     "rna": "max_vertex_displacement",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "preview-render-type",
+     "rna": "preview_render_type",
+     "type": "enum",
+     "default": "sphere",
+     "items": [
+      {
+       "name": "flat",
+       "rna": "FLAT",
+       "label": "Flat",
+       "value": 0
+      },
+      {
+       "name": "sphere",
+       "rna": "SPHERE",
+       "label": "Sphere",
+       "value": 1
+      },
+      {
+       "name": "cube",
+       "rna": "CUBE",
+       "label": "Cube",
+       "value": 2
+      },
+      {
+       "name": "hair",
+       "rna": "HAIR",
+       "label": "Hair",
+       "value": 10
+      },
+      {
+       "name": "shaderball",
+       "rna": "SHADERBALL",
+       "label": "Shader Ball",
+       "value": 3
+      },
+      {
+       "name": "cloth",
+       "rna": "CLOTH",
+       "label": "Cloth",
+       "value": 12
+      },
+      {
+       "name": "fluid",
+       "rna": "FLUID",
+       "label": "Fluid",
+       "value": 13
+      }
+     ]
+    },
+    {
+     "name": "use-preview-world",
+     "rna": "use_preview_world",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "pass-index",
+     "rna": "pass_index",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       32767
+      ],
+      "soft": [
+       0,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "node-tree",
+     "rna": "node_tree",
+     "type": "pointer",
+     "target": "NodeTree",
+     "readonly": true
+    },
+    {
+     "name": "use-nodes",
+     "rna": "use_nodes",
+     "type": "bool",
+     "default": false,
+     "deprecated": {
+      "removed-in": "6.0.0",
+      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True."
+     },
+     "new": true
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    },
+    {
+     "name": "texture-paint-images",
+     "rna": "texture_paint_images",
+     "type": "collection",
+     "target": "Image",
+     "readonly": true
+    },
+    {
+     "name": "texture-paint-slots",
+     "rna": "texture_paint_slots",
+     "type": "collection",
+     "target": "TexPaintSlot",
+     "readonly": true
+    },
+    {
+     "name": "paint-active-slot",
+     "rna": "paint_active_slot",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       32767
+      ],
+      "soft": [
+       0,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "paint-clone-slot",
+     "rna": "paint_clone_slot",
+     "type": "int",
+     "subtype": "unsigned",
+     "range": {
+      "hard": [
+       0,
+       32767
+      ],
+      "soft": [
+       0,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "diffuse-color",
+     "rna": "diffuse_color",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.8,
+      0.8,
+      0.8,
+      1.0
+     ]
+    },
+    {
+     "name": "specular-color",
+     "rna": "specular_color",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "roughness",
+     "rna": "roughness",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.4
+    },
+    {
+     "name": "specular-intensity",
+     "rna": "specular_intensity",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "metallic",
+     "rna": "metallic",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "line-color",
+     "rna": "line_color",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "line-priority",
+     "rna": "line_priority",
+     "type": "int",
+     "range": {
+      "hard": [
+       0,
+       32767
+      ],
+      "soft": [
+       0,
+       32767
+      ]
+     },
+     "default": 0
+    },
+    {
+     "name": "grease-pencil",
+     "rna": "grease_pencil",
+     "type": "pointer",
+     "target": "MaterialGPencilStyle",
+     "readonly": true
+    },
+    {
+     "name": "is-grease-pencil",
+     "rna": "is_grease_pencil",
+     "type": "bool",
+     "default": false,
+     "readonly": true
+    },
+    {
+     "name": "lineart",
+     "rna": "lineart",
+     "type": "pointer",
+     "target": "MaterialLineArt",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "camera",
+   "rna": "Camera",
+   "label": "Camera",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "type",
+     "rna": "type",
+     "type": "enum",
+     "default": "persp",
+     "items": [
+      {
+       "name": "persp",
+       "rna": "PERSP",
+       "label": "Perspective",
+       "value": 0
+      },
+      {
+       "name": "ortho",
+       "rna": "ORTHO",
+       "label": "Orthographic",
+       "value": 1
+      },
+      {
+       "name": "pano",
+       "rna": "PANO",
+       "label": "Panoramic",
+       "value": 2
+      },
+      {
+       "name": "custom",
+       "rna": "CUSTOM",
+       "label": "Custom",
+       "value": 3
+      }
+     ]
+    },
+    {
+     "name": "sensor-fit",
+     "rna": "sensor_fit",
+     "type": "enum",
+     "default": "auto",
+     "items": [
+      {
+       "name": "auto",
+       "rna": "AUTO",
+       "label": "Auto",
+       "value": 0
+      },
+      {
+       "name": "horizontal",
+       "rna": "HORIZONTAL",
+       "label": "Horizontal",
+       "value": 1
+      },
+      {
+       "name": "vertical",
+       "rna": "VERTICAL",
+       "label": "Vertical",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "passepartout-alpha",
+     "rna": "passepartout_alpha",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "angle-x",
+     "rna": "angle_x",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.006405358,
+       3.0167491
+      ],
+      "soft": [
+       0.006405358,
+       3.0167491
+      ]
+     },
+     "default": 0.0,
+     "new": 0.69111115
+    },
+    {
+     "name": "angle-y",
+     "rna": "angle_y",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.006405358,
+       3.0167491
+      ],
+      "soft": [
+       0.006405358,
+       3.0167491
+      ]
+     },
+     "default": 0.0,
+     "new": 0.47108996
+    },
+    {
+     "name": "angle",
+     "rna": "angle",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.006405358,
+       3.0167491
+      ],
+      "soft": [
+       0.006405358,
+       3.0167491
+      ]
+     },
+     "default": 0.6911504,
+     "new": 0.69111115
+    },
+    {
+     "name": "clip-start",
+     "rna": "clip_start",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.1
+    },
+    {
+     "name": "clip-end",
+     "rna": "clip_end",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 1000.0
+    },
+    {
+     "name": "lens",
+     "rna": "lens",
+     "type": "float32",
+     "subtype": "distance-camera",
+     "unit": "camera",
+     "range": {
+      "hard": [
+       1.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       1.0,
+       5000.0
+      ]
+     },
+     "default": 50.0
+    },
+    {
+     "name": "sensor-width",
+     "rna": "sensor_width",
+     "type": "float32",
+     "subtype": "distance-camera",
+     "unit": "camera",
+     "range": {
+      "hard": [
+       1.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       1.0,
+       100.0
+      ]
+     },
+     "default": 36.0
+    },
+    {
+     "name": "sensor-height",
+     "rna": "sensor_height",
+     "type": "float32",
+     "subtype": "distance-camera",
+     "unit": "camera",
+     "range": {
+      "hard": [
+       1.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       1.0,
+       100.0
+      ]
+     },
+     "default": 24.0
+    },
+    {
+     "name": "ortho-scale",
+     "rna": "ortho_scale",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       10000.0
+      ]
+     },
+     "default": 6.0
+    },
+    {
+     "name": "display-size",
+     "rna": "display_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.01,
+       1000.0
+      ],
+      "soft": [
+       0.01,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "shift-x",
+     "rna": "shift_x",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -2.0,
+       2.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shift-y",
+     "rna": "shift_y",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -2.0,
+       2.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "stereo",
+     "rna": "stereo",
+     "type": "pointer",
+     "target": "CameraStereoData",
+     "readonly": true,
+     "never-none": true
+    },
+    {
+     "name": "show-limits",
+     "rna": "show_limits",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-mist",
+     "rna": "show_mist",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-passepartout",
+     "rna": "show_passepartout",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "show-safe-areas",
+     "rna": "show_safe_areas",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-safe-center",
+     "rna": "show_safe_center",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-name",
+     "rna": "show_name",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-sensor",
+     "rna": "show_sensor",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-background-images",
+     "rna": "show_background_images",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "lens-unit",
+     "rna": "lens_unit",
+     "type": "enum",
+     "default": "millimeters",
+     "items": [
+      {
+       "name": "millimeters",
+       "rna": "MILLIMETERS",
+       "label": "Millimeters",
+       "value": 0
+      },
+      {
+       "name": "fov",
+       "rna": "FOV",
+       "label": "Field of View",
+       "value": 32
+      }
+     ]
+    },
+    {
+     "name": "composition-guide-color",
+     "rna": "composition_guide_color",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.5,
+      0.5,
+      0.5,
+      1.0
+     ]
+    },
+    {
+     "name": "show-composition-center",
+     "rna": "show_composition_center",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-center-diagonal",
+     "rna": "show_composition_center_diagonal",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-thirds",
+     "rna": "show_composition_thirds",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-golden",
+     "rna": "show_composition_golden",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-golden-tria-a",
+     "rna": "show_composition_golden_tria_a",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-golden-tria-b",
+     "rna": "show_composition_golden_tria_b",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-harmony-tri-a",
+     "rna": "show_composition_harmony_tri_a",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "show-composition-harmony-tri-b",
+     "rna": "show_composition_harmony_tri_b",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "panorama-type",
+     "rna": "panorama_type",
+     "type": "enum",
+     "default": "fisheye-equisolid",
+     "items": [
+      {
+       "name": "equirectangular",
+       "rna": "EQUIRECTANGULAR",
+       "label": "Equirectangular",
+       "value": 0
+      },
+      {
+       "name": "equiangular-cubemap-face",
+       "rna": "EQUIANGULAR_CUBEMAP_FACE",
+       "label": "Equiangular Cubemap Face",
+       "value": 5
+      },
+      {
+       "name": "mirrorball",
+       "rna": "MIRRORBALL",
+       "label": "Mirror Ball",
+       "value": 3
+      },
+      {
+       "name": "fisheye-equidistant",
+       "rna": "FISHEYE_EQUIDISTANT",
+       "label": "Fisheye Equidistant",
+       "value": 1
+      },
+      {
+       "name": "fisheye-equisolid",
+       "rna": "FISHEYE_EQUISOLID",
+       "label": "Fisheye Equisolid",
+       "value": 2
+      },
+      {
+       "name": "fisheye-lens-polynomial",
+       "rna": "FISHEYE_LENS_POLYNOMIAL",
+       "label": "Fisheye Lens Polynomial",
+       "value": 4
+      },
+      {
+       "name": "central-cylindrical",
+       "rna": "CENTRAL_CYLINDRICAL",
+       "label": "Central Cylindrical",
+       "value": 6
+      }
+     ]
+    },
+    {
+     "name": "fisheye-fov",
+     "rna": "fisheye_fov",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.1745,
+       31.415926
+      ],
+      "soft": [
+       0.1745,
+       6.2831855
+      ]
+     },
+     "default": 3.1415927
+    },
+    {
+     "name": "fisheye-lens",
+     "rna": "fisheye_lens",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.01,
+       100.0
+      ],
+      "soft": [
+       0.01,
+       15.0
+      ]
+     },
+     "default": 10.5
+    },
+    {
+     "name": "latitude-min",
+     "rna": "latitude_min",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -1.5707964,
+       1.5707964
+      ],
+      "soft": [
+       -1.5707964,
+       1.5707964
+      ]
+     },
+     "default": -1.5707964
+    },
+    {
+     "name": "latitude-max",
+     "rna": "latitude_max",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -1.5707964,
+       1.5707964
+      ],
+      "soft": [
+       -1.5707964,
+       1.5707964
+      ]
+     },
+     "default": 1.5707964
+    },
+    {
+     "name": "longitude-min",
+     "rna": "longitude_min",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.1415927,
+       3.1415927
+      ]
+     },
+     "default": -3.1415927
+    },
+    {
+     "name": "longitude-max",
+     "rna": "longitude_max",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.1415927,
+       3.1415927
+      ]
+     },
+     "default": 3.1415927
+    },
+    {
+     "name": "fisheye-polynomial-k0",
+     "rna": "fisheye_polynomial_k0",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": -1.17351e-05,
+     "new": -1.1735144e-05
+    },
+    {
+     "name": "fisheye-polynomial-k1",
+     "rna": "fisheye_polynomial_k1",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": -0.019988736
+    },
+    {
+     "name": "fisheye-polynomial-k2",
+     "rna": "fisheye_polynomial_k2",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": -3.3525e-06,
+     "new": -3.3525323e-06
+    },
+    {
+     "name": "fisheye-polynomial-k3",
+     "rna": "fisheye_polynomial_k3",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": 3.0993e-06,
+     "new": 3.0992753e-06
+    },
+    {
+     "name": "fisheye-polynomial-k4",
+     "rna": "fisheye_polynomial_k4",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ]
+     },
+     "default": -2.61e-08,
+     "new": -2.6064647e-08
+    },
+    {
+     "name": "central-cylindrical-range-u-min",
+     "rna": "central_cylindrical_range_u_min",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.1415927,
+       3.1415927
+      ]
+     },
+     "default": -3.1415927
+    },
+    {
+     "name": "central-cylindrical-range-u-max",
+     "rna": "central_cylindrical_range_u_max",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -3.1415927,
+       3.1415927
+      ]
+     },
+     "default": 3.1415927
+    },
+    {
+     "name": "central-cylindrical-range-v-min",
+     "rna": "central_cylindrical_range_v_min",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10.0,
+       10.0
+      ]
+     },
+     "default": -1.0
+    },
+    {
+     "name": "central-cylindrical-range-v-max",
+     "rna": "central_cylindrical_range_v_max",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10.0,
+       10.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "central-cylindrical-radius",
+     "rna": "central_cylindrical_radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-05,
+       3.4028235e+38
+      ],
+      "soft": [
+       1e-05,
+       10.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "custom-filepath",
+     "rna": "custom_filepath",
+     "type": "string",
+     "subtype": "file-path",
+     "default": ""
+    },
+    {
+     "name": "custom-shader",
+     "rna": "custom_shader",
+     "type": "pointer",
+     "target": "Text"
+    },
+    {
+     "name": "custom-mode",
+     "rna": "custom_mode",
+     "type": "enum",
+     "default": "internal",
+     "items": [
+      {
+       "name": "internal",
+       "rna": "INTERNAL",
+       "label": "Internal",
+       "value": 0
+      },
+      {
+       "name": "external",
+       "rna": "EXTERNAL",
+       "label": "External",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "custom-bytecode",
+     "rna": "custom_bytecode",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "custom-bytecode-hash",
+     "rna": "custom_bytecode_hash",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "name": "dof",
+     "rna": "dof",
+     "type": "pointer",
+     "target": "CameraDOFSettings",
+     "readonly": true
+    },
+    {
+     "name": "background-images",
+     "rna": "background_images",
+     "type": "collection",
+     "target": "CameraBackgroundImage",
+     "readonly": true
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "light",
+   "rna": "Light",
+   "label": "Light",
+   "base": "ID",
+   "properties": [
+    {
+     "name": "type",
+     "rna": "type",
+     "type": "enum",
+     "default": "point",
+     "items": [
+      {
+       "name": "point",
+       "rna": "POINT",
+       "label": "Point",
+       "value": 0
+      },
+      {
+       "name": "sun",
+       "rna": "SUN",
+       "label": "Sun",
+       "value": 1
+      },
+      {
+       "name": "spot",
+       "rna": "SPOT",
+       "label": "Spot",
+       "value": 2
+      },
+      {
+       "name": "area",
+       "rna": "AREA",
+       "label": "Area",
+       "value": 4
+      }
+     ]
+    },
+    {
+     "name": "use-temperature",
+     "rna": "use_temperature",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "color",
+     "rna": "color",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "temperature",
+     "rna": "temperature",
+     "type": "float32",
+     "subtype": "color-temperature",
+     "unit": "color-temperature",
+     "range": {
+      "hard": [
+       800.0,
+       20000.0
+      ],
+      "soft": [
+       800.0,
+       20000.0
+      ]
+     },
+     "default": 6500.0
+    },
+    {
+     "name": "temperature-color",
+     "rna": "temperature_color",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "readonly": true,
+     "new": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "specular-factor",
+     "rna": "specular_factor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "diffuse-factor",
+     "rna": "diffuse_factor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "transmission-factor",
+     "rna": "transmission_factor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "volume-factor",
+     "rna": "volume_factor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "use-custom-distance",
+     "rna": "use_custom_distance",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "cutoff-distance",
+     "rna": "cutoff_distance",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.01,
+       100.0
+      ]
+     },
+     "default": 40.0
+    },
+    {
+     "name": "use-shadow",
+     "rna": "use_shadow",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "exposure",
+     "rna": "exposure",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       -32.0,
+       32.0
+      ],
+      "soft": [
+       -10.0,
+       10.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "normalize",
+     "rna": "normalize",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "node-tree",
+     "rna": "node_tree",
+     "type": "pointer",
+     "target": "NodeTree",
+     "readonly": true
+    },
+    {
+     "name": "use-nodes",
+     "rna": "use_nodes",
+     "type": "bool",
+     "default": false,
+     "deprecated": {
+      "removed-in": "6.0.0",
+      "note": "Unused but kept for compatibility reasons. Setting the property has no effect, and getting it always returns True."
+     },
+     "new": true
+    },
+    {
+     "name": "animation-data",
+     "rna": "animation_data",
+     "type": "pointer",
+     "target": "AnimData",
+     "readonly": true
+    }
+   ]
+  },
+  {
+   "kind": "point-light",
+   "rna": "PointLight",
+   "label": "Point Light",
+   "base": "Light",
+   "properties": [
+    {
+     "name": "use-soft-falloff",
+     "rna": "use_soft_falloff",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "name": "energy",
+     "rna": "energy",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1000000.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "shadow-buffer-clip-start",
+     "rna": "shadow_buffer_clip_start",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.05
+    },
+    {
+     "name": "shadow-soft-size",
+     "rna": "shadow_soft_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shadow-filter-radius",
+     "rna": "shadow_filter_radius",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       5.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "shadow-maximum-resolution",
+     "rna": "shadow_maximum_resolution",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0001,
+       0.02
+      ]
+     },
+     "default": 0.001
+    },
+    {
+     "name": "use-shadow-jitter",
+     "rna": "use_shadow_jitter",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "shadow-jitter-overblur",
+     "rna": "shadow_jitter_overblur",
+     "type": "float32",
+     "subtype": "percentage",
+     "range": {
+      "hard": [
+       0.0,
+       100.0
+      ],
+      "soft": [
+       0.0,
+       20.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "use-absolute-resolution",
+     "rna": "use_absolute_resolution",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "kind": "sun-light",
+   "rna": "SunLight",
+   "label": "Sun Light",
+   "base": "Light",
+   "properties": [
+    {
+     "name": "angle",
+     "rna": "angle",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.0,
+       3.1415927
+      ],
+      "soft": [
+       0.0,
+       3.1415927
+      ]
+     },
+     "default": 0.009180432
+    },
+    {
+     "name": "energy",
+     "rna": "energy",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       10.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "shadow-buffer-clip-start",
+     "rna": "shadow_buffer_clip_start",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.05
+    },
+    {
+     "name": "shadow-soft-size",
+     "rna": "shadow_soft_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shadow-filter-radius",
+     "rna": "shadow_filter_radius",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       5.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "shadow-maximum-resolution",
+     "rna": "shadow_maximum_resolution",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0001,
+       0.02
+      ]
+     },
+     "default": 0.001
+    },
+    {
+     "name": "use-shadow-jitter",
+     "rna": "use_shadow_jitter",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "shadow-jitter-overblur",
+     "rna": "shadow_jitter_overblur",
+     "type": "float32",
+     "subtype": "percentage",
+     "range": {
+      "hard": [
+       0.0,
+       100.0
+      ],
+      "soft": [
+       0.0,
+       20.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "shadow-cascade-max-distance",
+     "rna": "shadow_cascade_max_distance",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       3.4028235e+38
+      ]
+     },
+     "default": 200.0
+    },
+    {
+     "name": "shadow-cascade-count",
+     "rna": "shadow_cascade_count",
+     "type": "int",
+     "range": {
+      "hard": [
+       1,
+       4
+      ],
+      "soft": [
+       1,
+       4
+      ]
+     },
+     "default": 4
+    },
+    {
+     "name": "shadow-cascade-exponent",
+     "rna": "shadow_cascade_exponent",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.8
+    },
+    {
+     "name": "shadow-cascade-fade",
+     "rna": "shadow_cascade_fade",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.1
+    }
+   ]
+  },
+  {
+   "kind": "spot-light",
+   "rna": "SpotLight",
+   "label": "Spot Light",
+   "base": "Light",
+   "properties": [
+    {
+     "name": "energy",
+     "rna": "energy",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1000000.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "shadow-buffer-clip-start",
+     "rna": "shadow_buffer_clip_start",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.05
+    },
+    {
+     "name": "shadow-soft-size",
+     "rna": "shadow_soft_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shadow-filter-radius",
+     "rna": "shadow_filter_radius",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       5.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "shadow-maximum-resolution",
+     "rna": "shadow_maximum_resolution",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0001,
+       0.02
+      ]
+     },
+     "default": 0.001
+    },
+    {
+     "name": "use-shadow-jitter",
+     "rna": "use_shadow_jitter",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "shadow-jitter-overblur",
+     "rna": "shadow_jitter_overblur",
+     "type": "float32",
+     "subtype": "percentage",
+     "range": {
+      "hard": [
+       0.0,
+       100.0
+      ],
+      "soft": [
+       0.0,
+       20.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "use-absolute-resolution",
+     "rna": "use_absolute_resolution",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-square",
+     "rna": "use_square",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "spot-blend",
+     "rna": "spot_blend",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.15
+    },
+    {
+     "name": "spot-size",
+     "rna": "spot_size",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.017453292,
+       3.1415927
+      ],
+      "soft": [
+       0.017453292,
+       3.1415927
+      ]
+     },
+     "default": 0.7853982
+    },
+    {
+     "name": "show-cone",
+     "rna": "show_cone",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "use-soft-falloff",
+     "rna": "use_soft_falloff",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "area-light",
+   "rna": "AreaLight",
+   "label": "Area Light",
+   "base": "Light",
+   "properties": [
+    {
+     "name": "energy",
+     "rna": "energy",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1000000.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "shadow-buffer-clip-start",
+     "rna": "shadow_buffer_clip_start",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       1e-06,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.001,
+       3.4028235e+38
+      ]
+     },
+     "default": 0.05
+    },
+    {
+     "name": "shadow-soft-size",
+     "rna": "shadow_soft_size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "shadow-filter-radius",
+     "rna": "shadow_filter_radius",
+     "type": "float32",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       5.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "shadow-maximum-resolution",
+     "rna": "shadow_maximum_resolution",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0001,
+       0.02
+      ]
+     },
+     "default": 0.001
+    },
+    {
+     "name": "use-shadow-jitter",
+     "rna": "use_shadow_jitter",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "shadow-jitter-overblur",
+     "rna": "shadow_jitter_overblur",
+     "type": "float32",
+     "subtype": "percentage",
+     "range": {
+      "hard": [
+       0.0,
+       100.0
+      ],
+      "soft": [
+       0.0,
+       20.0
+      ]
+     },
+     "default": 10.0
+    },
+    {
+     "name": "use-absolute-resolution",
+     "rna": "use_absolute_resolution",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "shape",
+     "rna": "shape",
+     "type": "enum",
+     "default": "square",
+     "items": [
+      {
+       "name": "square",
+       "rna": "SQUARE",
+       "label": "Square",
+       "value": 0
+      },
+      {
+       "name": "rectangle",
+       "rna": "RECTANGLE",
+       "label": "Rectangle",
+       "value": 1
+      },
+      {
+       "name": "disk",
+       "rna": "DISK",
+       "label": "Disk",
+       "value": 4
+      },
+      {
+       "name": "ellipse",
+       "rna": "ELLIPSE",
+       "label": "Ellipse",
+       "value": 5
+      }
+     ]
+    },
+    {
+     "name": "size",
+     "rna": "size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.25
+    },
+    {
+     "name": "size-y",
+     "rna": "size_y",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.25
+    },
+    {
+     "name": "spread",
+     "rna": "spread",
+     "type": "float32",
+     "subtype": "angle",
+     "unit": "rotation",
+     "range": {
+      "hard": [
+       0.0,
+       3.1415927
+      ],
+      "soft": [
+       0.0,
+       3.1415927
+      ]
+     },
+     "default": 3.1415927
+    }
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "kind": "principled-bsdf",
+   "rna": "ShaderNodeBsdfPrincipled",
+   "label": "Principled BSDF",
+   "inputs": [
+    {
+     "name": "base-color",
+     "socket": "Base Color",
+     "class": "NodeSocketColor",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      0.8,
+      0.8,
+      0.8,
+      1.0
+     ]
+    },
+    {
+     "name": "metallic",
+     "socket": "Metallic",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "roughness",
+     "socket": "Roughness",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "ior",
+     "socket": "IOR",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 1.5
+    },
+    {
+     "name": "alpha",
+     "socket": "Alpha",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "thin-wall",
+     "socket": "Thin Wall",
+     "class": "NodeSocketBool",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "name": "normal",
+     "socket": "Normal",
+     "class": "NodeSocketVector",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "weight",
+     "socket": "Weight",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "diffuse-roughness",
+     "socket": "Diffuse Roughness",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "subsurface-weight",
+     "socket": "Subsurface Weight",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "subsurface-radius",
+     "socket": "Subsurface Radius",
+     "class": "NodeSocketVector",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      1.0,
+      0.2,
+      0.1
+     ]
+    },
+    {
+     "name": "subsurface-scale",
+     "socket": "Subsurface Scale",
+     "class": "NodeSocketFloatDistance",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 0.005
+    },
+    {
+     "name": "subsurface-ior",
+     "socket": "Subsurface IOR",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 1.4
+    },
+    {
+     "name": "subsurface-anisotropy",
+     "socket": "Subsurface Anisotropy",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "specular-ior-level",
+     "socket": "Specular IOR Level",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "specular-tint",
+     "socket": "Specular Tint",
+     "class": "NodeSocketColor",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "anisotropic",
+     "socket": "Anisotropic",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "anisotropic-rotation",
+     "socket": "Anisotropic Rotation",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "tangent",
+     "socket": "Tangent",
+     "class": "NodeSocketVector",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "transmission-weight",
+     "socket": "Transmission Weight",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "transmission-dispersion-scale",
+     "socket": "Transmission Dispersion Scale",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "transmission-dispersion-abbe-number",
+     "socket": "Transmission Dispersion Abbe Number",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 20.0
+    },
+    {
+     "name": "coat-weight",
+     "socket": "Coat Weight",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "coat-roughness",
+     "socket": "Coat Roughness",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.03
+    },
+    {
+     "name": "coat-ior",
+     "socket": "Coat IOR",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 1.5
+    },
+    {
+     "name": "coat-tint",
+     "socket": "Coat Tint",
+     "class": "NodeSocketColor",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "coat-normal",
+     "socket": "Coat Normal",
+     "class": "NodeSocketVector",
+     "type": "float32",
+     "array": [
+      3
+     ],
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "sheen-weight",
+     "socket": "Sheen Weight",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "sheen-roughness",
+     "socket": "Sheen Roughness",
+     "class": "NodeSocketFloatFactor",
+     "type": "float32",
+     "subtype": "factor",
+     "range": {
+      "hard": [
+       0.0,
+       1.0
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": 0.5
+    },
+    {
+     "name": "sheen-tint",
+     "socket": "Sheen Tint",
+     "class": "NodeSocketColor",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "emission-color",
+     "socket": "Emission Color",
+     "class": "NodeSocketColor",
+     "type": "float32",
+     "array": [
+      4
+     ],
+     "subtype": "color",
+     "range": {
+      "hard": [
+       0.0,
+       3.4028235e+38
+      ],
+      "soft": [
+       0.0,
+       1.0
+      ]
+     },
+     "default": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "emission-strength",
+     "socket": "Emission Strength",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "thin-film-thickness",
+     "socket": "Thin Film Thickness",
+     "class": "NodeSocketFloatWavelength",
+     "type": "float32",
+     "subtype": "wavelength",
+     "unit": "wavelength",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "thin-film-ior",
+     "socket": "Thin Film IOR",
+     "class": "NodeSocketFloat",
+     "type": "float32",
+     "range": {
+      "hard": [
+       -3.4028235e+38,
+       3.4028235e+38
+      ],
+      "soft": [
+       -10000.0,
+       10000.0
+      ]
+     },
+     "default": 1.33
+    }
+   ],
+   "outputs": [
+    {
+     "name": "bsdf",
+     "socket": "BSDF",
+     "type": "shader"
+    }
+   ]
+  }
+ ],
+ "primitives": [
+  {
+   "kind": "cube",
+   "operator": "mesh.primitive_cube_add",
+   "properties": [
+    {
+     "name": "size",
+     "rna": "size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "plane",
+   "operator": "mesh.primitive_plane_add",
+   "properties": [
+    {
+     "name": "size",
+     "rna": "size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "circle",
+   "operator": "mesh.primitive_circle_add",
+   "properties": [
+    {
+     "name": "vertices",
+     "rna": "vertices",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       10000000
+      ],
+      "soft": [
+       3,
+       500
+      ]
+     },
+     "default": 32
+    },
+    {
+     "name": "radius",
+     "rna": "radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "fill-type",
+     "rna": "fill_type",
+     "type": "enum",
+     "default": "nothing",
+     "items": [
+      {
+       "name": "nothing",
+       "rna": "NOTHING",
+       "label": "Nothing",
+       "value": 0
+      },
+      {
+       "name": "ngon",
+       "rna": "NGON",
+       "label": "N-Gon",
+       "value": 1
+      },
+      {
+       "name": "trifan",
+       "rna": "TRIFAN",
+       "label": "Triangle Fan",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "grid",
+   "operator": "mesh.primitive_grid_add",
+   "properties": [
+    {
+     "name": "x-subdivisions",
+     "rna": "x_subdivisions",
+     "type": "int",
+     "range": {
+      "hard": [
+       1,
+       10000000
+      ],
+      "soft": [
+       1,
+       1000
+      ]
+     },
+     "default": 10
+    },
+    {
+     "name": "y-subdivisions",
+     "rna": "y_subdivisions",
+     "type": "int",
+     "range": {
+      "hard": [
+       1,
+       10000000
+      ],
+      "soft": [
+       1,
+       1000
+      ]
+     },
+     "default": 10
+    },
+    {
+     "name": "size",
+     "rna": "size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "uv-sphere",
+   "operator": "mesh.primitive_uv_sphere_add",
+   "properties": [
+    {
+     "name": "segments",
+     "rna": "segments",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       100000
+      ],
+      "soft": [
+       3,
+       500
+      ]
+     },
+     "default": 32
+    },
+    {
+     "name": "ring-count",
+     "rna": "ring_count",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       100000
+      ],
+      "soft": [
+       3,
+       500
+      ]
+     },
+     "default": 16
+    },
+    {
+     "name": "radius",
+     "rna": "radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "ico-sphere",
+   "operator": "mesh.primitive_ico_sphere_add",
+   "properties": [
+    {
+     "name": "subdivisions",
+     "rna": "subdivisions",
+     "type": "int",
+     "range": {
+      "hard": [
+       1,
+       10
+      ],
+      "soft": [
+       1,
+       8
+      ]
+     },
+     "default": 2
+    },
+    {
+     "name": "radius",
+     "rna": "radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "cylinder",
+   "operator": "mesh.primitive_cylinder_add",
+   "properties": [
+    {
+     "name": "vertices",
+     "rna": "vertices",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       10000000
+      ],
+      "soft": [
+       3,
+       500
+      ]
+     },
+     "default": 32
+    },
+    {
+     "name": "radius",
+     "rna": "radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "depth",
+     "rna": "depth",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "end-fill-type",
+     "rna": "end_fill_type",
+     "type": "enum",
+     "default": "ngon",
+     "items": [
+      {
+       "name": "nothing",
+       "rna": "NOTHING",
+       "label": "Nothing",
+       "value": 0
+      },
+      {
+       "name": "ngon",
+       "rna": "NGON",
+       "label": "N-Gon",
+       "value": 1
+      },
+      {
+       "name": "trifan",
+       "rna": "TRIFAN",
+       "label": "Triangle Fan",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "cone",
+   "operator": "mesh.primitive_cone_add",
+   "properties": [
+    {
+     "name": "vertices",
+     "rna": "vertices",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       10000000
+      ],
+      "soft": [
+       3,
+       500
+      ]
+     },
+     "default": 32
+    },
+    {
+     "name": "radius1",
+     "rna": "radius1",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "radius2",
+     "rna": "radius2",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.0
+    },
+    {
+     "name": "depth",
+     "rna": "depth",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "end-fill-type",
+     "rna": "end_fill_type",
+     "type": "enum",
+     "default": "ngon",
+     "items": [
+      {
+       "name": "nothing",
+       "rna": "NOTHING",
+       "label": "Nothing",
+       "value": 0
+      },
+      {
+       "name": "ngon",
+       "rna": "NGON",
+       "label": "N-Gon",
+       "value": 1
+      },
+      {
+       "name": "trifan",
+       "rna": "TRIFAN",
+       "label": "Triangle Fan",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "torus",
+   "operator": "mesh.primitive_torus_add",
+   "properties": [
+    {
+     "name": "major-segments",
+     "rna": "major_segments",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       256
+      ],
+      "soft": [
+       3,
+       256
+      ]
+     },
+     "default": 48
+    },
+    {
+     "name": "minor-segments",
+     "rna": "minor_segments",
+     "type": "int",
+     "range": {
+      "hard": [
+       3,
+       256
+      ],
+      "soft": [
+       3,
+       256
+      ]
+     },
+     "default": 12
+    },
+    {
+     "name": "mode",
+     "rna": "mode",
+     "type": "enum",
+     "default": "major-minor",
+     "items": [
+      {
+       "name": "major-minor",
+       "rna": "MAJOR_MINOR",
+       "label": "Major/Minor",
+       "value": 0
+      },
+      {
+       "name": "ext-int",
+       "rna": "EXT_INT",
+       "label": "Exterior/Interior",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "name": "major-radius",
+     "rna": "major_radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       10000.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 1.0
+    },
+    {
+     "name": "minor-radius",
+     "rna": "minor_radius",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       10000.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.25
+    },
+    {
+     "name": "abso-major-rad",
+     "rna": "abso_major_rad",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       10000.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 1.25
+    },
+    {
+     "name": "abso-minor-rad",
+     "rna": "abso_minor_rad",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       10000.0
+      ],
+      "soft": [
+       0.0,
+       100.0
+      ]
+     },
+     "default": 0.75
+    },
+    {
+     "name": "generate-uvs",
+     "rna": "generate_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "kind": "monkey",
+   "operator": "mesh.primitive_monkey_add",
+   "properties": [
+    {
+     "name": "size",
+     "rna": "size",
+     "type": "float32",
+     "subtype": "distance",
+     "unit": "length",
+     "range": {
+      "hard": [
+       0.0,
+       1000000000000.0
+      ],
+      "soft": [
+       0.001,
+       100.0
+      ]
+     },
+     "default": 2.0
+    },
+    {
+     "name": "calc-uvs",
+     "rna": "calc_uvs",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  }
+ ],
+ "slice": {
+  "ID": [
+   "name"
+  ],
+  "Scene": [
+   "camera",
+   "frame_start",
+   "frame_end",
+   "unit_settings"
+  ],
+  "UnitSettings": [
+   "system",
+   "system_rotation",
+   "length_unit",
+   "scale_length"
+  ],
+  "Object": [
+   "location",
+   "rotation_euler",
+   "rotation_mode",
+   "scale",
+   "parent",
+   "data",
+   "active_material"
+  ],
+  "Mesh": [
+   "vertices",
+   "polygons"
+  ],
+  "MeshVertex": [
+   "co"
+  ],
+  "MeshPolygon": [
+   "vertices"
+  ],
+  "Material": [
+   "node_tree",
+   "diffuse_color",
+   "roughness"
+  ],
+  "Camera": [
+   "type",
+   "lens",
+   "lens_unit",
+   "clip_start",
+   "clip_end"
+  ],
+  "Light": [
+   "type",
+   "color"
+  ],
+  "PointLight": [
+   "energy",
+   "shadow_soft_size"
+  ],
+  "SunLight": [
+   "energy",
+   "angle"
+  ],
+  "SpotLight": [
+   "energy",
+   "spot_size",
+   "spot_blend"
+  ],
+  "AreaLight": [
+   "energy",
+   "shape",
+   "size"
+  ],
+  "principled-bsdf": [
+   "Base Color",
+   "Roughness"
+  ]
+ }
+}
