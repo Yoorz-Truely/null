@@ -134,6 +134,27 @@ Done, November 7, 2026 (`0edf8f4`, approved).
 
 **Choices to review.** `null-name` is a new diagnostic code (spec section 18 lists codes "such as"). `to_kebab_case` splits a capital after a lower-case letter (`frameStart`), not after a digit (`use2D` becomes `use2d`).
 
+## 1a-03: parser with error recovery for the slice
+
+In review, November 7, 2026 (`5cef529`, `a5262c3`).
+
+**What works.**
+
+- Recovery is the shared parser's (Scowr's `scowr_syntax`, unchanged); Null tests it on the slice. Twelve kinds of broken slice text (unclosed block, list and string; a stray `}` and `]`; reserved `(` `)`; a missing value after `=`; a missing key; a property written as a node, `frame-start=1`; a block with no name; text after a block; bad escapes) each give the whole tree, every byte kept, and diagnostics, and the node after the break still parses (`tests/recovery.rs`; the messages are a snapshot).
+- Null's own wording (`src/messages.rs`), Scowr untouched: the three shared messages that carried Scowr's examples are reworded (`such as object { ... }`, `such as frame-start=1`, `such as \u{e9}`), and `frame-start=1` on a line of its own gets its own message and a fix (`=` to a space). `KNOWN` lists the 22 messages of the shared syntax as read at Scowr `770a472`; the invariants fail on any other, so a new Scowr message is read before Null shows it.
+- `src/invariants.rs`: the checks for any text, shared by the tests and the fuzz target: lossless print, contiguous tokens, every span and fix on character boundaries in the text, one `null-syntax` diagnostic per syntax error, no Scowr example in any message, rendering and dumping without panic, and an incremental edit reparsing to exactly a fresh parse (tree and errors).
+- The first fuzz target, `fuzz/fuzz_targets/parse.rs`: libFuzzer's input as text (bad UTF-8 replaced) and an edit chosen by its first three bytes, through the invariants. Its own workspace in `fuzz/`, built by cargo-fuzz 0.13.2 on nightly (rustc 1.101.0-nightly, 2026-11-06), both installed today as `testing.md` says. `tools/fuzz.sh` seeds it from `fuzz/seeds/parse` (the slice files); the growing corpus and any crash files are ignored.
+
+**Measured.**
+
+- The fuzz target ran 601 s (`tools/fuzz.sh 600`) without a crash: 667,044 inputs, coverage 3,396 edges, corpus 2,471 inputs, peak memory 814 MB, no artifact. Thermal pressure was nominal at the start and moderate at the end (load 24.8 on 18 cores from other work). A first 21-second run: 61,006 inputs, no crash.
+- 3,000 seeded mutations of the slice files (1 to 4 insertions, deletions or replacements of braces, brackets, quotes, `#"`, `\`, comment marks, `/-`, `;`, `=`, line breaks, CRLF, tab, `é`, U+2028), most of them broken: every invariant holds.
+- `null_syntax`: 16 tests and a doctest. Null's `just check` exits 0; `just verify` passes, its 60 s fuzz run included (66,665 inputs, no crash).
+
+**Dependency** of the fuzz crate only (licence checked): `libfuzzer-sys` 0.4, (MIT OR Apache-2.0) AND NCSA (LLVM's libFuzzer, a permissive BSD-style licence), with `arbitrary`, `cc`, `jobserver`, `shlex`, `find-msvc-tools` and `libc` (MIT OR Apache-2.0). The fuzz crate is outside Null's workspace, so `cargo deny` does not see it; NCSA is not in `deny.toml`'s list.
+
+**Unverified.** Recovery is the shared parser's own: Null tests it and does not change it. Memory grows with the corpus (814 MB after 10 minutes, under libFuzzer's 2 GB limit); longer runs may need `-rss_limit_mb`.
+
 ## Next
 
-1a-03 once 1a-02 is done: the parser's error recovery for the slice and the first fuzz target.
+The S59 spec corrections, then whatever the lead routes.
