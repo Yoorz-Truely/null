@@ -14,6 +14,7 @@ rust-version = "1.99"
 [workspace.dependencies]
 null_syntax = { path = "compiler/null_syntax" }
 null_value = { path = "compiler/null_value" }
+null_check = { path = "compiler/null_check" }
 scowr_errors = { path = "../Scowr/compiler/scowr_errors" }
 scowr_syntax = { path = "../Scowr/compiler/scowr_syntax" }
 

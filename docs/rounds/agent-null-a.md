@@ -357,6 +357,39 @@ The corpus changes are 1a-15's. For the lead: the schema needs `ShaderNodeOutput
 - Link types are not checked (a shader output into a vector input passes).
 - Only the slice's structs are in the schema, so anything else (`modifier`, `render`, `world`) is an unknown name.
 
+## 1a-07: canonical printer and minimal-edit writer
+
+In review, November 7, 2026.
+
+**What works.** A new crate, `compiler/null_print`.
+
+- **`write`, the write-back** (spec, section 17), on the lossless tree. It takes a datablock (kind and handle, or a handle made from the display name), one attribute and its new `f32` or `f64` values, and returns the smallest text edits.
+  - A value that still reads back to the same bits is not touched.
+  - A changed value is rewritten in its word's unit when a decimal in that unit reads back exactly, and bare otherwise (S21).
+  - A list of another length is replaced whole.
+  - A missing attribute becomes one new line in the block, at the last child's indentation, or `; name value` in a one-line block, or `name=value` on a block-less line before its comment.
+- **`format`, the formatter's layout pass** (section 15): indentation by block and list depth, single spaces, none inside `[ ]`, `=` as written, no trailing whitespace (a line comment's included), at most one blank line, one final line feed. Every comment and non-whitespace token is kept. Attribute order and default omission need the schema and are left for later.
+- **The 1a-04 review's finding is fixed in `null_value`.** `print_in` for `deg`, `in` and `ft` now finds its candidates from the value in that unit computed exactly to 40 digits, not from an `f64` estimate. So a value written in a unit prints back in it. `unit_of` gives a word's unit.
+
+**Measured.**
+
+- **The writer** (`tests/write.rs`). Each run is a random edit of the checker's clean three-file slice project: a random object, one of `location`, `rotation-euler` and `scale`, and three values from any finite `f32` bits, short decimals, or the old value. Each edit is checked for:
+  - the values reading back to the bits written;
+  - exactly the changed words being edited, and every other token, comments included, the same kind and text;
+  - a changed word keeping its unit wherever a decimal in it fits;
+  - an added attribute being one insertion with all text before and after kept;
+  - the edited project parsing and checking clean with `null_check`.
+
+  At 20,000 cases in release, all pass (7.0 s).
+- **The formatter.** Every slice file (10) formats idempotently with the same tokens. Their whitespace, scrambled at random (run lengths, tabs, indentation, trailing spaces, longer blank runs), formats back to the same text: 20,000 cases, all pass (3.4 s).
+- **`null_value`:** a new property test, a value read from up to 17 digits in `deg`, `in` or `ft` prints back in that unit, passes 100,000 cases. So does the review's own example, `-18750715569787871e-5ft`.
+- `null_print`: 7 tests and a doctest. Null's `just check` exits 0.
+
+**Unverified.**
+
+- The writer handles floats and lists of floats, the slice's transforms; enums, handles and strings are not written yet.
+- Three-way merging with an outside change (section 17) is not part of this task.
+
 ## Next
 
-1a-07: the canonical printer and minimal-edit writer.
+Whatever the lead routes next.
