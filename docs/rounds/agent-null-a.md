@@ -844,11 +844,11 @@ Constraints, bones, bone collections, vertex groups, attributes and UV maps, vie
 
 **Changed.** The spec's example `@rig/@spine.002` is now `@rig/@spine-002`.
 
-## 1b-01a: the persistent ID's rules (in progress)
+## 1b-01a: the persistent ID's rules (in review)
 
 **Null's side is done.** Null `68d13dc`: section 7's "Persistent IDs" states each case's rule.
 
-**Sau's side waits on a worktree from the lead.** ARCHITECTURE.md is to gain a table of every case (new, added to `Main`, copy, duplicate, evaluated copies, rename, save, reopen, old files, undo, append, link, override, copy buffer, embedded IDs, projects opened from text), each with its rule and the Blender function it hooks, checked in Sau's tree at `33b69ad`. The draft is ready.
+**Sau's side is on agent/null-sau `97800cb`, with the report `docs/rounds/agent-null-sau.md` (`3b004d7`).** The lead accepted the derived IDs for old files as S63 (cited in Null `5c5b887`). ARCHITECTURE.md is to gain a table of every case (new, added to `Main`, copy, duplicate, evaluated copies, rename, save, reopen, old files, undo, append, link, override, copy buffer, embedded IDs, projects opened from text), each with its rule and the Blender function it hooks, checked in Sau's tree at `33b69ad`. The draft is ready.
 
 **Chosen beyond S61.**
 
