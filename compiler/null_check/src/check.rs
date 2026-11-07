@@ -755,7 +755,24 @@ impl<'s> Checker<'s> {
         for e in &entries {
             match props.iter().find(|p| p.name == e.name) {
                 Some(p) => self.property(file, e, p, false),
-                None => self.unknown(file, e, &format!("a {word} primitive"), &names, None),
+                None => {
+                    // A setting other primitives take: say which, rather than guess a name.
+                    let others: Vec<&str> = self
+                        .schema
+                        .primitives
+                        .iter()
+                        .filter(|p| p.properties.iter().any(|q| q.name == e.name))
+                        .map(|p| p.kind.as_str())
+                        .collect();
+                    let whose = (!others.is_empty()).then(|| {
+                        format!(
+                            "not a {word}'s: Blender's {word} operator does not take it; {} {}",
+                            list(&others),
+                            if others.len() == 1 { "does" } else { "do" }
+                        )
+                    });
+                    self.unknown(file, e, &format!("a {word} primitive"), &names, whose)
+                }
             }
         }
     }

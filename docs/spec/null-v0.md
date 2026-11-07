@@ -91,7 +91,7 @@ scene @main "Main" {
 object @pier "Pier" {
   location [0m -4m 0.35m]
   rotation-euler [0deg 0deg 12deg]
-  scale [1.2 3 0.08]
+  scale [1 1 1]
   data mesh @pier-deck
 
   modifier @array array {
@@ -103,7 +103,7 @@ object @pier "Pier" {
 }
 
 mesh @pier-deck "PierDeck" {
-  primitive cube size=1m     // level 1: a procedure, scaled by its object
+  primitive cube size=1m scale=[1.2 3 0.08]     // level 1: a procedure
 }
 ```
 
@@ -194,7 +194,7 @@ The schema Sau generates from RNA (`schema/null-schema.json`) gives every name, 
 | `object @h` and `collection @h` in a `scene` or `collection` | Members: objects and child collections of the scene's master collection, or of the collection. A `collection` line with a display name or a block defines the collection there | RNA's `objects` and `children` are read-only collections |
 | `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
 | `material @h` in an `object` | One material slot, in order; the first is the active material | RNA keeps materials in slots |
-| `primitive <kind> settings…` in a `mesh` | The mesh as made by Blender's add operator of that kind (`cube`, `uv-sphere`, …) with the operator's settings by their names. `size` is one length: a box of other proportions is a cube scaled by its object | Level 1 geometry (section 9); the operators are RNA's |
+| `primitive <kind> settings…` in a `mesh` | The mesh as made by Blender's add operator of that kind (`cube`, `uv-sphere`, …) with the operator's settings by their names. `size` is one length, and a primitive's proportions come from the operator's `scale` (unitless, default `[1 1 1]`), which shapes the mesh: `primitive cube size=1m scale=[1.2 3 0.08]` is a 1.2 m by 3 m by 0.08 m box with its object's scale left at 1, so the object's modifiers (a 4 mm bevel stays 4 mm) and children are not squashed. The cube, UV sphere, ico sphere, cylinder and cone take `scale`; the plane, circle, grid, monkey and torus do not (Blender 5.3's operators ignore it or have none) | Level 1 geometry (section 9); the operators are RNA's |
 | `vertices [[x y z] …]` and `polygons [[0 1 2] …]` in a `mesh` | Level 0 data: each vertex's `co`, and each polygon's `vertices`, three or more indices of existing vertices | A collection of one-value structs is written as a list of the values. The name is RNA's `polygons`, not `faces` (S16) |
 | `nodes { node @h <kind> { inputs } }` and `layout { @h [x y]; … }` in a `material` | The material's node tree: each node's handle, kind and input sockets by name, a socket taking a value or a link `@node.output`; `layout` holds positions, one node per line or `;` | Section 10 |
 | `energy` of a point, spot or area light | A power, in `W` | RNA gives `energy` no unit; Blender shows watts. A sun's `energy` is an irradiance, written bare |

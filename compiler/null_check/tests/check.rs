@@ -212,3 +212,108 @@ fn scene_units_take_short_and_full_forms() {
     let (_, found) = run(&[("p.noll", "project \"P\" { units metric length=yd }\n")]);
     assert_eq!(found[0].code, codes::ENUM);
 }
+
+/// The spec's pier (section 4), as far as the slice schema reaches: its object and its deck.
+/// The schema has no modifiers yet, so the `modifier` nodes are read here, not checked.
+fn spec_pier() -> String {
+    let spec = include_str!("../../../docs/spec/null-v0.md");
+    let start = spec.find("// objects/pier.noll").expect("the pier example");
+    let body = &spec[start..];
+    body[..body.find("```").unwrap()].to_string()
+}
+
+#[test]
+fn the_pier_is_proportioned_by_its_primitive_not_its_object() {
+    // Task 1a-06b, after Sau's 1a-05c: `primitive cube size=1m scale=[1.2 3 0.08]` shapes the
+    // deck, and the object's scale stays 1, so its 4mm bevel is 4mm in the world. Measured in
+    // Sau (agent/null-a's report): a 4mm bevel insets every face by 0.004 m this way, and by
+    // 0.012, 0.0048 and 0.0048 m when the object is scaled instead.
+    let pier = spec_pier();
+    let file = parse(&pier);
+    let object = file
+        .document()
+        .nodes()
+        .find(|n| n.name() == "object")
+        .unwrap();
+    let words = |node: &null_syntax::ast::Node<'_>, attr: &str| -> Vec<String> {
+        node.children()
+            .find(|c| c.name() == attr)
+            .and_then(|c| c.args().next())
+            .map(|v| v.items().iter().map(|i| i.text().to_string()).collect())
+            .unwrap()
+    };
+    let scale: Vec<f32> = words(&object, "scale")
+        .iter()
+        .map(|w| null_value::read(w, null_value::Dimension::None).unwrap())
+        .collect();
+    assert_eq!(scale, [1.0, 1.0, 1.0], "the object is not scaled");
+    let bevel = object
+        .children()
+        .find(|c| {
+            c.name() == "modifier" && c.args().nth(1).and_then(|v| v.as_word()) == Some("bevel")
+        })
+        .unwrap();
+    let width = bevel.children().find(|c| c.name() == "width").unwrap();
+    let width: f32 = null_value::read(
+        width.args().next().unwrap().text(),
+        null_value::Dimension::Length,
+    )
+    .unwrap();
+    assert_eq!(width, 0.004, "4mm, and nothing scales it");
+
+    // Without the modifier nodes (not in the slice schema yet) and with its material defined,
+    // the pier checks clean against the schema: the primitive's `scale` is the operator's.
+    let kept: String = pier
+        .lines()
+        .scan(0usize, |skip, line| {
+            let t = line.trim_start();
+            let opens = t.matches('{').count();
+            let closes = t.matches('}').count();
+            if *skip > 0 {
+                *skip = *skip + opens - closes;
+                return Some(None);
+            }
+            if t.starts_with("modifier ") {
+                *skip = opens - closes;
+                return Some(None);
+            }
+            Some(Some(line))
+        })
+        .flatten()
+        .collect::<Vec<_>>()
+        .join("\n");
+    let material = "material @weathered-oak \"Weathered Oak\" { roughness 0.62 }\n";
+    let (map, found) = run(&[
+        ("objects/pier.noll", &kept),
+        ("materials/oak.noll", material),
+    ]);
+    assert!(found.is_empty(), "{}\n{kept}", map.render_all(&found));
+    assert!(kept.contains("primitive cube size=1m scale=[1.2 3 0.08]"));
+}
+
+#[test]
+fn only_primitives_whose_operator_takes_scale_accept_it() {
+    let (_, found) = run(&[(
+        "a.noll",
+        "mesh @a \"A\" { primitive uv-sphere radius=1m scale=[1 1 2] }\n",
+    )]);
+    assert!(found.is_empty(), "{found:?}");
+    let (_, found) = run(&[(
+        "a.noll",
+        "mesh @a \"A\" { primitive plane size=2m scale=[1 2 1] }\n",
+    )]);
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY);
+    assert_eq!(
+        found[0].message,
+        "`scale` is not a plane's: Blender's plane operator does not take it; \
+         `cube`, `uv-sphere`, `ico-sphere`, `cylinder`, `cone` do"
+    );
+    // Unitless: a length is not a scale.
+    let (_, found) = run(&[(
+        "a.noll",
+        "mesh @a \"A\" { primitive cube scale=[1m 1m 1m] }\n",
+    )]);
+    assert!(found.iter().all(|d| d.code == codes::UNIT), "{found:?}");
+    assert_eq!(found.len(), 3);
+}

@@ -20,7 +20,7 @@ objects/cases.noll:20:8 error[null-type]: `data` names the data's kind before it
 objects/cases.noll:21:17 error[null-enum]: `spherical` is not a value of `rotation-mode`: it takes `quaternion`, `xyz`, `xzy`, `yxz`, `yzx`, `zxy`, `zyx`, `axis-angle`
 objects/cases.noll:24:58 error[null-unit]: `MM` is not a unit `location` takes; it takes m, cm, mm, km, in, ft or a bare number
   fix: write `mm`
-objects/cases.noll:27:26 error[null-unknown-property]: a cube primitive has no `segments`
+objects/cases.noll:27:26 error[null-unknown-property]: `segments` is not a cube's: Blender's cube operator does not take it; `uv-sphere` does
 objects/cases.noll:28:3 error[null-unknown-property]: a mesh has no `faces`: write `polygons`, as RNA calls a mesh's faces `polygons` (S16: RNA's own names)
   fix: write `polygons`
 objects/cases.noll:33:18 error[null-range]: vertex 3 does not exist: the mesh has 3 vertices, 0 to 2

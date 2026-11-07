@@ -414,6 +414,54 @@ In review, November 7, 2026.
 - The writer handles floats and lists of floats, the slice's transforms; enums, handles and strings are not written yet.
 - Three-way merging with an outside change (section 17) is not part of this task.
 
+## 1a-06b: a primitive's proportions from its `scale`
+
+In review, November 7, 2026.
+
+**What works.**
+
+- The checker reads a primitive's `scale` from the merged schema (Sau's 1a-05c: unitless, default `[1 1 1]`, listed for the cube, UV sphere, ico sphere, cylinder and cone), through the same property check as any other setting.
+- A `scale` on a primitive whose operator does not take it now says whose it is: "`scale` is not a plane's: Blender's plane operator does not take it; `cube`, `uv-sphere`, `ico-sphere`, `cylinder`, `cone` do". Before, it guessed `size`.
+- The spec's section 8 rule says a primitive's proportions come from the operator's `scale`, which shapes the mesh, so the object's modifiers and children are not squashed. It replaces 1a-06's "a box of other proportions is a cube scaled by its object".
+- The pier example (section 4) is `primitive cube size=1m scale=[1.2 3 0.08]` with object scale `[1 1 1]`. The CHANGELOG records it.
+
+**Measured.**
+
+- `the_pier_is_proportioned_by_its_primitive_not_its_object` reads the pier from the spec itself. The object's scale reads to exactly `[1 1 1]`, and the bevel's `width 4mm` to exactly 0.004 m. With its `modifier` nodes left out (the slice schema has none yet) and its material defined, the pier checks clean.
+- `only_primitives_whose_operator_takes_scale_accept_it` passes: a UV sphere takes `scale`, a plane gets the message above, and `scale=[1m 1m 1m]` gives three unit errors.
+- One snapshot line changed, for the same message on a cube's `segments`.
+- **The bevel, in Blender** (Sau through the sandbox, with `agent/sau-f`'s build). The deck was built both ways with a 4 mm, 3-segment bevel, and I measured how far each face of the evaluated mesh stops inside the box's edge, in world space:
+  - with the operator's `scale` (object scale 1), all three faces show 0.004 m;
+  - with the object scaled instead, they show 0.012, 0.0048 and 0.0048 m.
+
+  The script, as run, is reproduced below. It is not in a test suite: Null cannot run Blender, and Sau's gates have no place for it yet.
+
+```python
+import bpy
+def deck(name, op_scale, ob_scale):
+    bpy.ops.mesh.primitive_cube_add(size=1, scale=op_scale)
+    ob = bpy.context.active_object
+    ob.name, ob.scale = name, ob_scale
+    m = ob.modifiers.new("bevel", 'BEVEL')
+    m.width, m.segments = 0.004, 3
+    me = ob.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+    world = [ob.matrix_world @ v.co for v in me.vertices]
+    hi = [max(c[i] for c in world) for i in range(3)]
+    insets = []
+    for axis in range(3):
+        a = [k for k in range(3) if k != axis][0]
+        face = [c for c in world if abs(c[axis] - hi[axis]) < 1e-6]
+        insets.append(round(hi[a] - max(c[a] for c in face), 6))
+    print(name, insets)
+deck("operator-scale", (1.2, 3, 0.08), (1, 1, 1))   # [0.004, 0.004, 0.004]
+deck("object-scale", (1, 1, 1), (1.2, 3, 0.08))     # [0.012, 0.0048, 0.0048]
+```
+
+**Unverified.**
+
+- The full pier, with its array and bevel modifiers, cannot check clean until the schema has modifiers.
+- Cosmósis's corpus still writes `size=[…]`; that is 1a-15's.
+
 ## Next
 
 Whatever the lead routes next.
