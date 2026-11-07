@@ -193,9 +193,38 @@ Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA
 
 - **Handles.** Every datablock written in Null has a handle, `@pier`, unique within the project for its kind. The handle is the identity Null uses; the quoted string after it is Blender's display name, which may change freely (`object @pier "Pier"`). A handle may be omitted when the name is a valid handle and the same (`object "Pier"` gives `@pier`).
 - **Persistent IDs.** Behind every handle Sau keeps a persistent ID in DNA, so a rename in either Sau or the file never breaks links. The map from handles to IDs is a cache in `.sau/`, rebuilt from the files.
-- **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers and action slots are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine.002`.
+- **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers, action slots and the rest are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine-002`. The rules are under "Sub-object handles" below.
 - **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
 - **Linked libraries** (another `.blend` or another Null project) are packages or `link` nodes naming the source and the handles taken from it. Library overrides are written as the overridden values on top of the linked handle.
+
+### Sub-object handles
+
+Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that is not a datablock itself. Its handle is written where it is defined, like a datablock's (`modifier @bevel bevel "Bevel" { … }`), and is the identity Null uses for it; the quoted string is Blender's name, which may change freely.
+
+- **Made from the name.** A new sub-object's handle is its Blender name in kebab-case, as for datablocks (S18): `Spine.002` gives `spine-002`, `Base Color` gives `base-color`.
+- **Unique within its owner, across kinds.** No two sub-objects of one owner share a handle, whatever their kinds, so `@pier/@bevel` names one thing without saying whether it is a modifier or a constraint. Blender lets a modifier and a constraint of one object share a name; the second then gets `-2` (`@bevel-2`), as Blender itself numbers names. A duplicate handle within an owner is an error.
+- **Paths.** `/` steps from an owner to a sub-object, and may step again where a sub-object owns others (`@rig/@spine-002/@ik`, a bone's constraint on the object's pose). `.` names a socket of a node (`@bsdf.roughness`) and nothing else. A path starts at a datablock handle; inside the owner's own block the owner may be left out (`@bevel`).
+- **What keeps identity across a rename.** Where Blender keeps an identity of its own that survives renaming, Sau maps the handle to it. Where Blender identifies the sub-object only by its name, Sau keeps the handle through the project's map, `.sau/ids.noll`, keyed by the owner's persistent ID (Sau's decision S61 (3), task 1b-02b). Either way a rename in Sau changes the quoted name and keeps the handle and every reference.
+
+| Sub-object | Owner | Blender's own identity (checked in Blender 5.3's DNA) | Kept by |
+| --- | --- | --- | --- |
+| Modifier | Object | `ModifierData::persistent_uid` (`int`), unique in the object, saved in files; renaming keeps it | Blender's field |
+| Node | Node tree (a material's, world's, light's or a node group) | `bNode::identifier` (`int32_t`), unique in the tree, saved; renaming keeps it | Blender's field |
+| Node socket | Node | `bNodeSocket::identifier` (a string, unique in the node), fixed by the node's declaration; written by its name in kebab-case (`base-color`) | Blender's field |
+| Group input or output, group panel | Node group | `bNodeTreeInterfaceSocket::identifier` (a string such as `Socket_3`) and the panel's `identifier` (`int`), saved; renaming keeps them | Blender's field |
+| Shape key | Mesh, curve or lattice (through its `Key`) | `KeyBlock::uid` (`int`), unique in the key, saved | Blender's field |
+| Action slot | Action | `ActionSlot::handle` (`int32_t`), unique in the action, saved | Blender's field |
+| Constraint | Object, or a bone in the object's pose | The name only (`bConstraint::name`) | `.sau/ids.noll` |
+| Bone | Armature (its pose bone in the object shares the name) | The name only (`Bone::name`); `bPoseChannel::session_uid` lasts one session | `.sau/ids.noll` |
+| Bone collection | Armature | The name only | `.sau/ids.noll` |
+| Vertex group | Mesh, lattice or Grease Pencil data | The name only (`bDeformGroup::name`) | `.sau/ids.noll` |
+| UV map, colour attribute, any attribute | Mesh, curves, point cloud | The name only; `CustomDataLayer::uid` serves shape keys alone | `.sau/ids.noll` |
+| View layer | Scene | The name only | `.sau/ids.noll` |
+| Action layer and strip, NLA track and strip | Action; the animated datablock | The name only (a strip may have none, and gets its handle from its track and position) | `.sau/ids.noll` |
+| Timeline marker | Scene or action | The name only, which may be empty or repeated; a marker without a usable name gets its handle from its frame (`@f120`) | `.sau/ids.noll` |
+| Grease Pencil layer and layer group | Grease Pencil data | The name only | `.sau/ids.noll` |
+
+Blender gives a modifier its `persistent_uid` from a hash of its name when it is created, and a node its `identifier` at random, so neither is a handle: the handle is still made from the name, and the map ties the two together. A node socket is the one sub-object never renamed by a person outside node groups, so its handle is its name.
 
 ## 8. The objects
 
