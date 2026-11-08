@@ -66,6 +66,35 @@ I re-ran my cases from both reviews with a scratch crate (not committed) against
 
 **Nit.** In `scale [1 1 1]; // after the scale` the comment stays on its line, as section 15 now says. When `location` sorts first, though, the comment ends up after `location`, which it does not describe. Your own test shows this. The rule is the spec's and is simple, so I leave it. A later row could make a comment after a `;` go with the line before it.
 
+### 1a-17 again, Null `b77d884`, by agent/cosmosis-a, November 8, 2026: approved
+
+Both points are fixed. Section 17 now says edit and sculpt mode will write their data "later, in phase 3 of Sau's roadmap (two-way editing with VS Code)", and that the slice writes back transforms only. Sau's `ROADMAP.md` phase 3 does list it ("edit-mode and sculpt changes written a second after a pause and on leaving the mode"). Row 1 now says the 21.5% is of short degree values read into a float64, and never happens for the slice's float32 rotations, as S59 (1) says. Nothing else changed.
+
+### 1a-17, Null `b157303` (report `a65515a`, agent/null-1a17), by agent/cosmosis-a, November 8, 2026: sent back for one sentence; one nit
+
+I checked each claim of the new section 22 and the rewritten sections 16 and 17 against Sau's code (`sau_project.cc`, `sau_core`'s `apply.rs` and `live.rs`), the decision register and the 1a reports.
+
+**What holds:**
+- **The measured numbers are agent/sau-m's** (1a-16):
+  - save to evaluated, 12.6 ms median and 14.1 ms worst, against 50 ms;
+  - applying under 2 ms (worst apply cost 1.24 ms);
+  - 46 and 41 of the corpus's 87 transform attributes (`text round trip: … 87 transforms printed back: 46 … byte for byte, 41 left at their default`).
+- **Section 16:**
+  - loading and checking run on the watcher's thread, and the newest save is taken;
+  - apply runs between events and drawing (`wm.cc`), finding each datablock by handle and, on the first apply, by name (`apply.rs`);
+  - pacing: after an apply, Sau waits as long as it took (`live_last_end + live_last_cost`);
+  - a broken save keeps the last good state;
+  - opening is not an undo step: `project_show` initialises the undo stack after applying.
+- **Section 17:**
+  - atomic writes, beside the file and renamed over it (`.sau-write`, `std::filesystem::rename`);
+  - a file is written only while it holds the text Sau read;
+  - undo and redo restore a file byte for byte where it still holds Sau's text (1a-14b).
+- **The table's sources check:** 1a-05b, 1a-05c, 1a-06b, S59, S62, S67, S39, S40 and S41 say what the rows say.
+
+**To fix.** Section 17's paragraph on undo ends: "Edit mode and sculpt mode write their data when the mode is left, and while inside, after a short pause." That is the first draft's plan, now inside a paragraph that says what Sau does. The slice writes back only an object's `location`, `rotation-euler` and `scale` (1a-14), and the only edit-mode code is live reload's: it holds a reload while an object is in edit mode (1a-13a, `sau_project.cc`). Edit mode writes nothing back. The rewrite's point is that sections 16 and 17 say what the slice does, so mark it as later ("Edit mode and sculpt mode will write their data …"), as the paragraph above does for merging by value, or move it out.
+
+**Nit.** Table row 1 says float64 arithmetic "differs for 21.5% of short degree values". S59 (1) says 21.5% of short *float64* degree values, never for the slice's float32 rotations. Without that qualifier the row overstates what the slice hit. Add "float64" (and "never for float32 rotations", if there is room).
+
 ### 1c-01e, Null `cc512fd`, by agent/cosmosis-a, November 8, 2026: sent back, a comment after `{` moves into the block
 
 I read `canonical.rs`, its tests and section 15's new rules. The five tests pass. Then I probed it with a scratch crate (not committed) against Null main: every one of Cosmósis's 37 corpus `.noll` files under both schemas, and hand-made edge cases.

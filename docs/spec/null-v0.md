@@ -1,6 +1,6 @@
 # Null: Sau's project language
 
-Draft v0, November 6, 2026. Nothing is built yet. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
+Draft v0, November 6, 2026. Phase 1a's slice (Sau's roadmap) was built on it by November 8, 2026; what the slice changed in this draft, and why, is section 22. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
 
 Null is the source code of a Sau project. A project is a folder of Null files, media and data files, laid out by Cosmósis (`Cosmosis/docs/spec/cosmosis-v0.md`). Sau reads the folder, shows it, renders it and edits it. People and AI change a project by editing its files directly, and every change appears live. Sau's own edits are written back into the same files.
 
@@ -147,6 +147,7 @@ Null uses Scowr's node syntax (settled November 6, 2026, decision S15; `Scowr/do
 - Any attribute can be a property on its owner's line or a child node: `modifier @bevel bevel width=4mm` and `modifier @bevel bevel { width 4mm }` mean the same.
 - A boolean is written bare for on (`denoise`) or with `on` or `off`. The formatter omits attributes equal to their default, except settings the project pins (as Scowr settled on November 5, 2026).
 - Error recovery: one broken line never hides the rest of the file, and the syntax tree keeps every byte.
+- Scowr reads `at`, `to` and `len` before a value as keyword attributes. Null has no keywords of its own: the checker reads a keyword attribute as two arguments, the word and then its value, so `constraint @aim damped-track to @target` means what the same line with any other word would (task 1a-01).
 
 What Null adds to Scowr's syntax is only schema: the node names, the value forms of section 6 and Blender's kinds.
 
@@ -304,7 +305,7 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 
 Shader, geometry, compositor and texture node trees are written as their nodes and links:
 
-- A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, the kind being the node's RNA identifier in kebab-case.
+- A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, its kind named by section 8's rule (`bsdf-principled`).
 - A link is a socket value that names another node's output: `base-color @tex.color`. A socket with no line takes its default.
 - Group nodes reference a node tree (`shader`, `geometry`, `compositor` or `texture-node-tree`, by S67); group interfaces list their inputs and outputs with types and defaults.
 - Zones (repeat, simulation, for-each) are blocks containing their nodes.
@@ -365,24 +366,33 @@ The canonical order (task 1c-01e, `null_print::canonical`):
 
 Changes are live in both directions, all the time, the way every query in a Convex app updates the moment its data or code changes (Sau's roadmap, design decision 9). Each change, from any source, is one checked, atomic transaction with a revision number, and every view (viewport, editors, code views, the language server's clients and the gateway's subscribers) follows the same revision.
 
-There is no run step and no separate save step (the user, November 6, 2026: changes "with hot reload open and autosave, rather than making scripts"). VS Code is the editor (Sau's decision S44): Sau's extension sends each change of the open buffer to Sau through the language server, and Sau applies it as soon as it is valid, without a save, at a pace the scene can take. Saving a file in any other editor, an AI's edit or a `git checkout` makes Sau, while it is open:
+There is no run step and no separate save step (the user, November 6, 2026: changes "with hot reload open and autosave, rather than making scripts"). VS Code is the editor (Sau's decision S44): Sau's extension sends each change of the open buffer to Sau through the language server, and Sau applies it as soon as it is valid, without a save, at a pace the scene can take. Phase 1a's slice applies on save; the buffer's changes come with the language server. Saving a file in any other editor, an AI's edit or a `git checkout` makes Sau, while it has a project open (Sau's tasks 1a-10, 1a-10b, 1a-13 and 1a-13a):
 
-1. read and parse the changed files off the main thread;
-2. check them against the schema; on any error, keep the last good state, show the diagnostics in the code view and the status bar, and stop;
-3. compare the new tree with the last applied one by handle, producing the list of created, deleted and changed datablocks and properties;
-4. apply the changes to `Main` on the main thread through RNA, so Blender's own update callbacks and dependency-graph tags run, as one undo step named after the file;
-5. redraw the affected editors.
+1. load and check the project again on the watcher's own thread, never on Blender's. Saves made while one is loading replace each other, so the newest text is taken and nothing queues (S39);
+2. on any error, keep the last good state: each problem is reported once (`file:line:column: error[code]: message`; the code view and the status bar will show it too), nothing is applied and no undo step is pushed. The next good save applies;
+3. apply the newest checked project to `Main` on the main thread, between handling events and drawing, as one undo step (an outside save is one step, S41). Apply finds each datablock by its handle (on the first apply, by its name) or makes it, then reads each value the files write and writes it through RNA only where Blender's differs, so Blender's own update callbacks and dependency-graph tags run. Applying the same text twice changes nothing and pushes no step. Any datablock, scene member or material slot applied before that no file defines now is removed in the same step. Data something outside the project still uses stays, and objects made in Sau, which no file defines, are left alone;
+4. redraw the affected editors.
 
-Edits Sau makes itself (section 17) are recognised by their content hash and not reloaded.
+After an apply, Sau waits as long as that apply took before it looks for a newer text (S39's pace by cost). S39's in-app control of the pace, and slowing down when the Mac runs hot, come later. Measured for the slice (Sau's task 1a-16, a gate in `just verify`): from the end of a save to the evaluated object, 12.6 ms median and 14.1 ms worst against a 50 ms target. Nearly all of that is the watcher's own delay; applying takes under 2 ms.
+
+Edits Sau makes itself (section 17) are not applied back. After write-back writes a file, the watcher reads the folder at once, and a project whose texts are those Sau already holds applies nothing, so Blender's exact values are never rounded to their written spelling.
+
+Opening a project (`Sau --project <folder>`, task 1a-12) loads, checks and applies it into an empty file in the same way. A project with errors reports each problem and changes nothing. Opening is not a step to undo.
 
 ## 17. Write-back
 
-Every edit in Sau's interface (a drag, a slider, an operator, a node link) ends in an undo push. At that moment Sau already knows, from Blender's undo system, which datablocks changed. For each one it prints the new Null form, compares it with the current text of its node, and applies the smallest edit to the lossless syntax tree, keeping comments, ordering and untouched lines. The smallest edit is per value (task 1a-07):
+Every edit in Sau's interface (a drag, a slider, an operator, a node link) ends in an undo push. At that moment Sau compares each datablock of the open project with its file and, for each one that differs, prints the new Null form, compares it with the current text of its node, and applies the smallest edit to the lossless syntax tree, keeping comments, ordering and untouched lines. Phase 1a's slice writes back an object's `location`, `rotation-euler` (XYZ) and `scale` (Sau's task 1a-14). Every object of the slice's corpus, moved, turned or scaled and pushed, changes exactly one line of one file, or adds one (task 1a-16). The smallest edit is per value (task 1a-07):
 
 - a value that still reads back to the same bits is left exactly as written;
 - a changed value is rewritten in the unit its word already uses, whenever a decimal in that unit reads back to the new bits, and bare in the internal unit otherwise (S21);
 - a list of another length is replaced whole;
-- an attribute the datablock does not have yet is added as one new line in its block, in the project's display unit, or as `name=value` on its line when it has no block; a new line goes after a comment on the block's opening line, and ends as the file's lines end (LF or CRLF). The file is written atomically. Edit mode and sculpt mode write their data when the mode is left, and while inside, after a short pause. A file changed outside while an edit is pending is merged three-way, like an editor's reload prompt; if both sides changed the same value, Sau asks.
+- an attribute the datablock does not have yet is added as one new line in its block, in the project's display unit, or as `name=value` on its line when it has no block; a new line goes after a comment on the block's opening line, and ends as the file's lines end (LF or CRLF).
+
+A file is written atomically, beside itself and then renamed over it, so an editor or the watcher sees the old text or the new, never half. It is written only while its text is the one Sau last read. A file changed outside Sau is left alone and read again, and live reload applies the outside save. If Sau held a change that it could not write, the file's value then wins. Merging the two by value, so that both writers' edits to different values stay and the user is asked only when both changed the same one (Sau's decision S40), comes later.
+
+Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back each file's text from before the steps it crosses, byte for byte, where the file still holds exactly what Sau wrote; redo does the same forwards. A file edited outside Sau since then keeps the editor's text.
+
+Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
 
 ## 18. Diagnostics
 
@@ -406,8 +416,37 @@ Correctness is checked by a field-by-field comparison of the original and the ro
 
 ## 21. What building Null takes
 
-- **Design (phase 0 and 1a):** this draft, tested against the slice and the census, then frozen with a changelog and RFCs for later changes, as Scowr does.
+- **Design (phase 0 and 1a):** this draft, tested against the slice (section 22) and the census, then frozen with a changelog and RFCs for later changes, as Scowr does.
 - **The front end (Rust, in Null's repository):** lexer, lossless syntax tree, parser with error recovery, formatter, diagnostics, the checker that reads the generated schema, and the language server. Shared with Scowr where the syntax is shared.
 - **The binding (C++, inside Sau):** the schema generator in `makesrna`, applying a checked tree to `Main` through RNA, printing any datablock to Null, the raw DNA fallback, the live-reload watcher and the write-back at undo push.
 - **Tooling (phase 4):** the tree-sitter grammar, the VS Code extension, the generated field reference, examples and a short guide written for AI.
 - **Stability:** a `format` version in every project's manifest; when Blender renames or moves an RNA property between releases, Sau ships a migration that rewrites old files, the way Blender's versioning code updates old `.blend` files.
+
+## 22. What the slice taught
+
+Phase 1a built Sau's slice on this draft (Sau's roadmap; tasks 1a-01 to 1a-16, November 6 to 8, 2026): a project of cubes, primitives, materials, cameras and lights that Sau opens, reloads live and writes back. Every change the slice forced on the draft is below, with its reason; the sections hold the rules themselves. Sau's decision register holds the S decisions, and Null's `CHANGELOG.md` dates each change.
+
+| Change | Section | Why | From |
+| --- | --- | --- | --- |
+| A value with a unit is converted exactly and rounded once, never in float64 arithmetic | 6 | float64 arithmetic rounds twice: for 21.5% of short degree values read into a float64, it gives other bits than the exact rule. It never does for the slice's float32 rotations, but S59 holds every type to the exact rule | 1a-04, S59 (1) |
+| NaN is written `nan`, without sign or payload, the one value that does not read back to the same bits | 6 | A NaN's sign and payload have no decimal form | S59 (2) |
+| A node ends only at a line feed, `;` or `}`, so a one-line block is `{ width 4mm; segments 3 }` | 4, 5 | Scowr's syntax: the first draft's `{ width 4mm segments 3 }` was one attribute with three values | S59 |
+| `at`, `to` and `len` before a value are read as two arguments | 5 | Scowr's lexer makes them keyword attributes, and Scowr's syntax is shared unchanged | 1a-01 |
+| `#rrggbb` converts through a fixed table of the 256 exactly rounded values of the sRGB curve, with no `pow` | 6 | "Computed in float64 and rounded once" held on one Mac, but `pow` differs between platforms | 1a-06's review, S62 |
+| Faces are written `polygons` | 8 | RNA's name for them, and every Null name is RNA's (S16) | 1a-05, 1a-06 |
+| A point, spot or area light's `energy` is in `W`; a sun's is bare | 8 | RNA gives `energy` no unit, though Blender shows watts; a sun's is an irradiance | 1a-05, 1a-06 |
+| A camera's `lens` is in `mm` | 8 | RNA's camera unit is the millimetre, not a length | 1a-06 |
+| Null's own forms: `project`, `units`, scene and collection members, `data <kind> @h`, `material` slot lines, the light's type struct, `vertices` and `polygons` as lists | 8 | RNA's `unit-settings`, `objects` and `children` are read-only, `data` points to any ID, materials live in slots, lights are split by type, and the short forms come first (S35) | 1a-06 |
+| A primitive's proportions come from its add operator's `scale`, and the pier's object scale is back to 1 | 4, 8 | An object scale of `[1.2 3 0.08]` squashed the object's 4 mm bevel and its children; Blender's operator shapes the mesh itself | 1a-05c, 1a-06b |
+| The schema has the material output node, with its `surface` input | 8 | The slice's materials end in `output-material`, which the first schema left out | 1a-05b |
+| A property's default is its value in a new datablock | 8, 15 | RNA's own default is not what a new datablock gets (a new scene's units are `metric`) | 1a-06 |
+| The formatter's layout is fixed | 15 | One printed form for every file | 1a-07 |
+| Write-back's smallest edit is per value | 17 | A drag must change one line, and an unchanged value its spelling never | 1a-07, S21 |
+| Apply finds datablocks by handle, writes only values that differ, removes what the files no longer define, and is one undo step | 16 | Applying twice must change nothing, and an outside save is one step to undo (S41) | 1a-10, 1a-10b |
+| Live reload loads on the watcher's thread, takes the newest save, applies between events and drawing, and paces itself by each apply's cost | 16 | S39; a broken save keeps the last good state | 1a-13, 1a-13a |
+| Sau's own writes are known by their text, not a content hash, and are not applied back | 16 | Applying them back would round Blender's exact values to the file's spelling | 1a-13 |
+| Write-back runs on every undo push, writes a file atomically and only while it holds the text Sau read, and leaves a file changed outside alone | 17 | Never overwrite an editor's save; merging by value (S40) is later | 1a-14 |
+| Undo and redo restore a file's text byte for byte | 17 | One history for the files and the scene (S41): a value's spelling must come back with it | 1a-14b |
+| A project with errors opens as nothing, and opening is not an undo step | 16 | The last good state is the only state Sau shows | 1a-12 |
+
+What the slice confirmed without a change: every attribute the corpus writes reprints from Blender's values with no edit, in every unit it uses (`m`, `cm`, `mm`, `deg`, `rad`, bare), and every attribute it leaves out holds its default (Sau's task 1a-16: 46 and 41 of the corpus's 87 transform attributes).
