@@ -346,9 +346,9 @@ fn same_kind(a: &Val, b: &Val, what: &str) -> Result<(Q, Q), String> {
                 deg: gb,
             },
         ) if da == db && ga == gb => Ok((*qa, *qb)),
-        (Val::Num { dim: da, .. }, Val::Num { dim: db, .. }) if da == db => Err(format!(
-            "degrees and radians do not {what} exactly (by π/180): write both in one"
-        )),
+        (Val::Num { dim: da, .. }, Val::Num { dim: db, .. }) if da == db => {
+            Err(expr::mixed_angles(what))
+        }
         _ => Err(format!(
             "only values of one kind {what}: {} and {}",
             a.kind(),
@@ -409,9 +409,17 @@ fn eval(e: &Expr, scope: &HashMap<String, Val>) -> Result<Val, String> {
                 return Err("only numbers are multiplied and divided".into());
             };
             let (q, dim, deg) = match op {
-                '*' => (qa.mul(qb).ok_or(TOO_LARGE)?, da.times(db), ga + gb),
+                '*' => (
+                    qa.mul(qb).ok_or(TOO_LARGE)?,
+                    da.checked_times(db).ok_or(TOO_LARGE)?,
+                    ga.checked_add(gb).ok_or(TOO_LARGE)?,
+                ),
                 _ if qb.n == 0 => return Err("a division by zero".into()),
-                _ => (qa.div(qb).ok_or(TOO_LARGE)?, da.over(db), ga - gb),
+                _ => (
+                    qa.div(qb).ok_or(TOO_LARGE)?,
+                    da.checked_over(db).ok_or(TOO_LARGE)?,
+                    ga.checked_sub(gb).ok_or(TOO_LARGE)?,
+                ),
             };
             Ok(Val::Num { q, dim, deg })
         }
@@ -682,28 +690,59 @@ impl<'a> Ex<'a, '_> {
             layers.retain(|(p, _)| !same_line(*p, *o));
             layers.push((*o, octx.clone()));
         }
-        let over = layers.as_slice();
-        let replaced = |c: &Node<'a>| over.iter().any(|(o, _)| same_line(*o, *c));
-        let kept: Vec<Node<'a>> = children.into_iter().filter(|c| !replaced(c)).collect();
-        if kept.is_empty() && over.is_empty() && node.block().is_none() {
+        if children.is_empty() && layers.is_empty() && node.block().is_none() {
             let _ = writeln!(out, "{pad}{line}");
             return;
         }
         let _ = writeln!(out, "{pad}{line} {{");
-        for c in kept {
-            let path = first_word(c)
-                .filter(|h| h.starts_with('@'))
-                .map(|h| format!("{owner}/{h}"));
-            let lay = match &path {
-                Some(p) if self.overrides.contains_key(p) => self.overrides_of(file, p),
-                _ => Vec::new(),
-            };
-            self.emit(file, c, ctx, depth + 1, &lay, None, owner, out);
+        // A line laid over takes the place of the first line it replaces, so a stack keeps its
+        // order; the copy's other lines it replaces go, and a line that replaces none is added.
+        let mut used = vec![false; layers.len()];
+        for c in children {
+            match layers.iter().position(|(o, _)| same_line(*o, c)) {
+                Some(i) if used[i] => {}
+                Some(i) => {
+                    used[i] = true;
+                    let (o, octx) = &layers[i];
+                    self.child(file, *o, octx, depth + 1, owner, out);
+                }
+                None => self.child(file, c, ctx, depth + 1, owner, out),
+            }
         }
-        for (o, octx) in over {
-            self.emit(file, *o, octx, depth + 1, &[], None, owner, out);
+        for (i, (o, octx)) in layers.iter().enumerate() {
+            if !used[i] {
+                self.child(file, *o, octx, depth + 1, owner, out);
+            }
         }
         let _ = writeln!(out, "{pad}}}");
+    }
+
+    /// A line inside a datablock `owner` (`@rig.2`) or a sub-object of one: a sub-object's line
+    /// with the overrides that name its path (`@rig.2/@spine`) laid over it, its own lines then
+    /// inside that path, so an override reaches a sub-object of a sub-object
+    /// (`@rig.2/@spine/@reach`, task 1d-03i). A node tree's nodes, and a zone's, are their
+    /// owner's (section 7).
+    fn child(
+        &mut self,
+        file: FileId,
+        node: Node<'a>,
+        ctx: &Ctx,
+        depth: usize,
+        owner: &str,
+        out: &mut String,
+    ) {
+        let path = first_word(node)
+            .filter(|h| h.starts_with('@'))
+            .map(|h| format!("{owner}/{h}"));
+        let lay = match &path {
+            Some(p) if self.overrides.contains_key(p) => self.overrides_of(file, p),
+            _ => Vec::new(),
+        };
+        let inner = match &path {
+            Some(p) if node.name() != "zone" => p.clone(),
+            _ => owner.to_string(),
+        };
+        self.emit(file, node, ctx, depth, &lay, None, &inner, out);
     }
 
     /// A placement (`use`), in `ctx` (the placing copy's, or the project's), its copies' handles
@@ -1176,6 +1215,17 @@ mod tests {
         assert!(get("length/0", false).is_err());
         assert!(get("length + 1", true).is_err());
         assert!(get("length*length", false).is_ok_and(|t| t.starts_with("5.76")));
+    }
+
+    #[test]
+    fn a_power_past_what_its_counter_holds_is_an_error() {
+        // 128 degrees multiplied: the power of degrees passes an i8, and the length's too.
+        let scope = HashMap::new();
+        for unit in ["deg", "m"] {
+            let text = vec![format!("1{unit}"); 128].join("*");
+            let e = expr::parse(&text, false).unwrap();
+            assert!(eval(&e, &scope).is_err(), "{unit}");
+        }
     }
 
     #[test]

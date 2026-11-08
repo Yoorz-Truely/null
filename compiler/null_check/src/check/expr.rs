@@ -35,20 +35,41 @@ impl Dim {
         Dim(d)
     }
 
+    /// The product's powers, saturating where a power passes ±127 (no unit has such a power, so
+    /// a saturated one is refused as any unnamed power is).
     pub(crate) fn times(self, o: Dim) -> Dim {
         let mut d = self.0;
         for (x, y) in d.iter_mut().zip(o.0) {
-            *x += y;
+            *x = x.saturating_add(y);
         }
         Dim(d)
     }
 
+    /// The quotient's powers, saturating as [`Dim::times`] does.
     pub(crate) fn over(self, o: Dim) -> Dim {
         let mut d = self.0;
         for (x, y) in d.iter_mut().zip(o.0) {
-            *x -= y;
+            *x = x.saturating_sub(y);
         }
         Dim(d)
+    }
+
+    /// The product's powers, `None` where a power passes ±127.
+    pub(crate) fn checked_times(self, o: Dim) -> Option<Dim> {
+        let mut d = self.0;
+        for (x, y) in d.iter_mut().zip(o.0) {
+            *x = x.checked_add(y)?;
+        }
+        Some(Dim(d))
+    }
+
+    /// The quotient's powers, `None` where a power passes ±127.
+    pub(crate) fn checked_over(self, o: Dim) -> Option<Dim> {
+        let mut d = self.0;
+        for (x, y) in d.iter_mut().zip(o.0) {
+            *x = x.checked_sub(y)?;
+        }
+        Some(Dim(d))
     }
 
     /// What a dimension of Null's units is, as powers.
@@ -401,6 +422,41 @@ pub(crate) fn is_expression(word: &str) -> bool {
     }
     // `/`: division unless the whole word is one number and a unit.
     word.contains('/') && null_value::unit_of(word, Dimension::None).is_none()
+}
+
+/// The message for degrees and radians met in one sum or comparison: π/180 is no fraction, so
+/// the two do not `what` (add, subtract, compare) exactly. The checker and the expansion say the
+/// same (task 1d-03i).
+pub(crate) fn mixed_angles(what: &str) -> String {
+    format!("degrees and radians do not {what} exactly (by π/180): write both in one")
+}
+
+/// Whether `word`, a number with its unit, is written in degrees.
+pub(crate) fn in_degrees(word: &str) -> bool {
+    null_value::unit_of(word, Dimension::Angle).is_some_and(Unit::is_degrees)
+}
+
+/// The power of `e`'s angle held in degrees (`35deg` 1, `35deg*2m/1m` 1, `35deg/5deg` 0), its
+/// names' through `lookup`, where every name's is known; an error where degrees and radians
+/// meet in a sum (task 1d-03i).
+pub(crate) fn degrees(e: &Expr, lookup: &dyn Fn(&str) -> Option<i8>) -> Result<Option<i8>, String> {
+    Ok(match e {
+        Expr::Number { lit, .. } => Some(i8::from(in_degrees(lit))),
+        Expr::Name(n) => lookup(n),
+        Expr::Neg(x) => degrees(x, lookup)?,
+        Expr::Op(op, a, b) => {
+            let (x, y) = (degrees(a, lookup)?, degrees(b, lookup)?);
+            match (op, x, y) {
+                ('*', Some(x), Some(y)) => x.checked_add(y),
+                ('/', Some(x), Some(y)) => x.checked_sub(y),
+                ('+' | '-', Some(x), Some(y)) if x != y => {
+                    return Err(mixed_angles(if *op == '+' { "add" } else { "subtract" }));
+                }
+                ('+' | '-', Some(x), Some(_)) => Some(x),
+                _ => None,
+            }
+        }
+    })
 }
 
 /// What `e` is, its names read through `lookup`; the error says what is wrong.

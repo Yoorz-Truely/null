@@ -389,3 +389,83 @@ fn a_value_beyond_exact_reach_is_an_error_never_a_panic() {
         "{problems}"
     );
 }
+
+/// A rig whose spine bone reaches for a target: a sub-object (the constraint) of a sub-object
+/// (the pose bone) of each copy (task 1d-03i).
+const RIG: &str = r#"component @rig "Rig" {
+  object @rig "Rig" {
+    data armature @rig-bones
+    bone @spine "Spine" {
+      rotation-mode xyz
+      constraint @reach kinematic "IK" {
+        target @lid
+        chain-count 2
+      }
+    }
+  }
+  armature @rig-bones "Rig"
+}
+
+object @lid "Lid"
+"#;
+
+fn rigs(overrides: &str) -> (Vec<Expanded>, String) {
+    let yard =
+        format!("collection @yard \"Yard\" {{\n  use @rig @rig count=2 {{}}\n{overrides}}}\n");
+    run(&[("rig.noll", RIG), ("yard.noll", &yard)], false)
+}
+
+/// The checker's problems on the rigs as written, rendered.
+fn rig_problems(overrides: &str) -> String {
+    let yard =
+        format!("collection @yard \"Yard\" {{\n  use @rig @rig count=2 {{}}\n{overrides}}}\n");
+    let mut map = SourceMap::new();
+    let texts = [("rig.noll", RIG), ("yard.noll", yard.as_str())];
+    let parses: Vec<(FileId, Parse)> = texts
+        .iter()
+        .map(|(name, text)| (map.add(*name, *text), parse(text)))
+        .collect();
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    map.render_all(&check(schema(), &files))
+}
+
+#[test]
+fn an_override_of_a_bone_s_constraint_lands_on_that_constraint_alone() {
+    let o = "  override @rig.2/@spine/@reach { chain-count 3 }\n";
+    assert_eq!(rig_problems(o), "");
+    let (out, problems) = rigs(o);
+    assert_eq!(problems, "");
+    let text = &out[1].text;
+    let two = block(text, "object @rig.2");
+    assert_eq!(
+        two,
+        "object @rig.2 \"Rig\" {\n  data armature @rig.2/@rig-bones\n  bone @spine \"Spine\" {\n    rotation-mode xyz\n    constraint @reach kinematic \"IK\" {\n      target @lid\n      chain-count 3\n    }\n  }\n}\n"
+    );
+    assert!(
+        block(text, "object @rig.1").contains("chain-count 2"),
+        "{text}"
+    );
+    // The bone itself, overridden, keeps its constraint; and the expanded rigs check clean.
+    let (out, _) = rigs("  override @rig.1/@spine { rotation-mode zyx }\n");
+    let one = block(&out[1].text, "object @rig.1");
+    assert!(
+        one.contains("rotation-mode zyx") && one.contains("chain-count 2"),
+        "{one}"
+    );
+    assert_eq!(expanded_problems(&out), "");
+}
+
+#[test]
+fn a_misspelt_step_of_a_sub_object_path_is_reported_with_the_nearest() {
+    let p = rig_problems("  override @rig.2/@spine/@reech { chain-count 3 }\n");
+    assert!(
+        p.contains("the bone `@spine` has no sub-object `@reech`; did you mean `@reach`?"),
+        "{p}"
+    );
+    let p = rig_problems("  override @rig.2/@spin/@reach { chain-count 3 }\n");
+    assert!(p.contains("did you mean `@spine`?"), "{p}");
+    // The override's lines are the constraint's own.
+    let p = rig_problems("  override @rig.2/@spine/@reach { chain-cont 3 }\n");
+    assert!(p.contains("`chain-cont`"), "{p}");
+    assert!(p.contains("chain-count"), "{p}");
+}

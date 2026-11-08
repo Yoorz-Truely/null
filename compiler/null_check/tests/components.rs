@@ -284,3 +284,36 @@ object @sign "Sign" { parent @gate.2 }
     ]);
     assert_eq!(p, "");
 }
+
+#[test]
+fn degrees_and_radians_do_not_meet_in_one_sum_or_comparison() {
+    // The checker refuses what the expansion refuses (task 1d-03i).
+    let sign = |line: &str| {
+        format!(
+            "component @sign \"Sign\" {{\n  param tilt 30deg\n  object @sign \"Sign\" {{\n{line}\n  }}\n}}\n"
+        )
+    };
+    let p = problems(&[("sign.noll", &sign("    if \"tilt > 1rad\" { hide-render }"))]);
+    assert!(
+        p.contains("degrees and radians do not compare exactly (by π/180): write both in one"),
+        "{p}"
+    );
+    let p = problems(&[(
+        "sign.noll",
+        &sign("    rotation-euler [0deg \"tilt + 1rad\" 0deg]"),
+    )]);
+    assert!(p.contains("degrees and radians do not add exactly"), "{p}");
+    let p = problems(&[("sign.noll", &sign("    pass-index tilt/1rad"))]);
+    assert!(
+        p.contains("with degrees in it, which has no exact form"),
+        "{p}"
+    );
+    // In one unit, both are fine.
+    let p = problems(&[(
+        "sign.noll",
+        &sign(
+            "    if \"tilt > 20deg\" { hide-render }\n    rotation-euler [0deg \"tilt + 5deg\" 0deg]",
+        ),
+    )]);
+    assert_eq!(p, "");
+}

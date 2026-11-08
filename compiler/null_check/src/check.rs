@@ -872,7 +872,7 @@ impl<'s> Checker<'s> {
             match self.copy_path(word) {
                 Ok(components::Reached::Copy(_)) if self.kind_fits("object", kind) => {}
                 Ok(components::Reached::Datablock(k)) if self.kind_fits(&k, kind) => {}
-                Ok(components::Reached::Sub) => {}
+                Ok(components::Reached::Sub { .. }) => {}
                 Ok(components::Reached::Copy(_)) => self.out(file).error(
                     codes::HANDLE,
                     v.span(),

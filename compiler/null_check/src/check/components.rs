@@ -34,6 +34,9 @@ pub(crate) struct Param {
     /// No default: every placement must give it.
     pub required: bool,
     pub countdown: bool,
+    /// The power of its angle in degrees where its default says (`30deg` 1, `0.5rad` and `2m`
+    /// 0); `None` with no default, as a placement may give either (task 1d-03i).
+    pub degrees: Option<i8>,
 }
 
 /// A placement, where it is made: the component placed, its handle, and how many copies (`None`
@@ -52,10 +55,22 @@ pub(crate) struct Component {
     /// Its own datablocks, (kind, handle), the first `object` its root.
     pub locals: Vec<(String, String)>,
     pub root: Option<String>,
-    /// The sub-objects its datablocks define, (handle), reached in a copy by path (`@plank.7/@fluid`).
-    pub subs: Vec<String>,
+    /// The sub-objects each of its datablocks defines, by the datablock's local handle, each
+    /// with its own (a bone's constraints): reached in a copy by path, the root's straight
+    /// from the copy (`@plank.7/@fluid`, `@rig.2/@spine/@reach`; tasks 1d-03b and 1d-03i).
+    pub subs: HashMap<String, Vec<Sub>>,
     /// The placements in its block, at any depth of `if`.
     pub places: Vec<Placed>,
+}
+
+/// A sub-object a component's datablock defines: its line's word (`modifier`, `bone`), its
+/// handle, its kind where its line gives one (`kinematic`), and the sub-objects it holds.
+#[derive(Clone, Debug)]
+pub(crate) struct Sub {
+    pub word: String,
+    pub handle: String,
+    pub of: Option<String>,
+    pub subs: Vec<Sub>,
 }
 
 /// What names mean where values are being checked inside a component or a placement's block.
@@ -63,6 +78,8 @@ pub(crate) struct Component {
 pub(crate) struct Scope {
     pub names: HashMap<String, Kind>,
     pub locals: Vec<(String, String)>,
+    /// The power of each name's angle held in degrees, where it is known ([`Param::degrees`]).
+    pub degrees: HashMap<String, i8>,
 }
 
 /// The type names a parameter with no default may give (section 8): a unit's dimension, a
@@ -239,11 +256,17 @@ impl Checker<'_> {
                 ),
             ));
         }
+        let degrees = args
+            .get(1)
+            .and_then(|v| v.as_word())
+            .filter(|w| !required && kind_of_word(w).is_some())
+            .map(|w| i8::from(expr::in_degrees(w)));
         Ok(Param {
             name: name.to_string(),
             kind,
             required,
             countdown,
+            degrees,
         })
     }
 
@@ -279,8 +302,10 @@ impl Checker<'_> {
                     if let Some((h, _)) = self.handle_of(child) {
                         if kind == "object" && c.root.is_none() {
                             c.root = Some(h.clone());
-                            subs(child, &mut c.subs);
                         }
+                        let mut found = Vec::new();
+                        subs(child, &mut found);
+                        c.subs.entry(h.clone()).or_insert(found);
                         c.locals.push((kind.to_string(), h));
                     }
                 }
@@ -391,9 +416,15 @@ impl Checker<'_> {
             .iter()
             .map(|p| (p.name.clone(), p.kind.clone()))
             .collect();
+        let degrees = comp
+            .params
+            .iter()
+            .filter_map(|p| Some((p.name.clone(), p.degrees?)))
+            .collect();
         let outer = self.scope.replace(super::components::Scope {
             names,
             locals: comp.locals.clone(),
+            degrees,
         });
         self.component_block(file, node, &handle, &comp, &mut Vec::new());
         self.scope = outer;
@@ -527,6 +558,20 @@ impl Checker<'_> {
                         v.span(),
                         format!("`{text}` compares {} with {}", a.describe(), b.describe()),
                     );
+                    return None;
+                }
+                // Degrees against radians, as the expansion refuses them (task 1d-03i).
+                let lookup = |n: &str| scope.degrees.get(n).copied();
+                let units = expr::degrees(&cond.left, &lookup).and_then(|x| {
+                    let y = expr::degrees(&cond.right, &lookup)?;
+                    match (x, y) {
+                        (Some(x), Some(y)) if x != y => Err(expr::mixed_angles("compare")),
+                        _ => Ok(()),
+                    }
+                });
+                if let Err(e) = units {
+                    self.out(file)
+                        .error(codes::TYPE, v.span(), format!("`{text}`: {e}"));
                     return None;
                 }
                 Some(cond)
@@ -722,6 +767,12 @@ impl Checker<'_> {
         let mut scope = self.scope.clone().unwrap_or_default();
         for (n, k) in extra {
             scope.names.insert(n.clone(), k.clone());
+            // `n` is a count; an item's unit is the list's, not known here.
+            if n == "n" {
+                scope.degrees.insert(n.clone(), 0);
+            } else {
+                scope.degrees.remove(n);
+            }
         }
         let outer = self.scope.replace(scope);
         let object_props = self.schema.properties_of("Object");
@@ -954,6 +1005,44 @@ impl Checker<'_> {
     }
 
     /// `override <path> { … }` (S33): the copy, or a datablock a copy made, and what it changes.
+    /// An override's lines for a sub-object a copy made (`override @rig.2/@spine/@reach { … }`,
+    /// task 1d-03i), checked as that sub-object's own lines: a modifier's or a constraint's by
+    /// its kind's struct, a pose bone's by `PoseBone`'s. Other sub-objects' lines are left to
+    /// the expanded project's check.
+    fn sub_override(&mut self, file: FileId, node: Node<'_>, word: &str, of: Option<&str>) {
+        let schema = self.schema;
+        let (owner, rna) = match (word, of) {
+            ("bone", _) => ("pose-bone".to_string(), "PoseBone".to_string()),
+            ("modifier" | "constraint", Some(kind)) => {
+                let base = if word == "modifier" {
+                    "Modifier"
+                } else {
+                    "Constraint"
+                };
+                let Some(st) = schema
+                    .structs
+                    .iter()
+                    .find(|st| st.kind == kind && st.base.as_deref() == Some(base))
+                else {
+                    return; // the copy's own line says so
+                };
+                (format!("{kind} {word}"), st.rna.clone())
+            }
+            _ => return,
+        };
+        let props: Vec<&crate::schema::Property> = schema
+            .properties_of(&rna)
+            .into_iter()
+            .filter(|p| {
+                !matches!(
+                    p.name.as_str(),
+                    "name" | "type" | "persistent-uid" | "is-active" | "active"
+                )
+            })
+            .collect();
+        self.attributes(file, node, &owner, &props, &[]);
+    }
+
     pub(super) fn override_line(&mut self, file: FileId, node: Node<'_>) {
         let args = args_of(node);
         let at = node.name_token().map_or(node.span(), |t| t.span);
@@ -980,7 +1069,7 @@ impl Checker<'_> {
                 let props = self.schema.properties_of(&rna);
                 self.attributes(file, node, &kind, &props, &[]);
             }
-            Ok(Reached::Sub) => {} // a copy's sub-object: its own lines, read with sub-objects (1d-03c)
+            Ok(Reached::Sub { word, of }) => self.sub_override(file, node, &word, of.as_deref()),
             Err(message) => self.out(file).error(codes::HANDLE, target.span(), message),
         }
     }
@@ -1000,30 +1089,37 @@ impl Checker<'_> {
             );
         };
         let mut at = self.check_copy(p, first, index)?;
-        for step in &steps[1..] {
+        let mut rest = &steps[1..];
+        while let Some((step, after)) = rest.split_first() {
             let comp = self.components.get(&at).cloned().unwrap_or_default();
             let (h, index) = split_copy(step);
             if let Some(inner) = comp.places.iter().find(|q| q.handle == h) {
                 at = self.check_copy(inner, h, index)?;
+                rest = after;
                 continue;
             }
+            let root_subs = comp
+                .root
+                .as_ref()
+                .and_then(|r| comp.subs.get(r))
+                .cloned()
+                .unwrap_or_default();
             if index.is_none() {
                 if let Some((kind, _)) = comp.locals.iter().find(|(_, l)| l == h) {
-                    return if steps.last() == Some(step) {
+                    let own = comp.subs.get(h).cloned().unwrap_or_default();
+                    return if after.is_empty() {
                         Ok(Reached::Datablock(kind.clone()))
                     } else {
-                        Err(format!(
-                            "`{h}` is a {kind} in `{at}`, which holds no copies"
-                        ))
+                        sub_path(&format!("{kind} `{at}/{h}`"), &own, after)
                     };
                 }
-                if comp.subs.iter().any(|s| s == h) && steps.last() == Some(step) {
-                    return Ok(Reached::Sub);
+                if root_subs.iter().any(|s| s.handle == h) {
+                    return sub_path(&format!("a copy of `{at}`"), &root_subs, rest);
                 }
             }
             let mut names: Vec<&str> = comp.locals.iter().map(|(_, l)| l.as_str()).collect();
             names.extend(comp.places.iter().map(|q| q.handle.as_str()));
-            names.extend(comp.subs.iter().map(String::as_str));
+            names.extend(root_subs.iter().map(|s| s.handle.as_str()));
             return Err(match closest(h, names.iter().copied()) {
                 Some(n) => format!("a copy of `{at}` makes no `{h}`; did you mean `{n}`?"),
                 None => format!("a copy of `{at}` makes no `{h}`"),
@@ -1055,8 +1151,37 @@ pub(crate) enum Reached {
     Copy(String),
     /// A datablock of the kind named, made by a copy.
     Datablock(String),
-    /// A sub-object of a copy's root.
-    Sub,
+    /// A sub-object a copy made: its line's word and kind (`constraint`, `kinematic`).
+    Sub { word: String, of: Option<String> },
+}
+
+/// The sub-object `steps` reach among `subs`, those of `owner` (as a message names it), each step
+/// one level down (`@spine/@reach`: the bone, then its constraint); a step that names nothing
+/// is an error with the nearest of that level.
+fn sub_path(owner: &str, subs: &[Sub], steps: &[&str]) -> Result<Reached, String> {
+    let (mut level, mut what) = (subs, owner.to_string());
+    let mut reached = None;
+    for step in steps {
+        let Some(s) = level.iter().find(|s| s.handle == *step) else {
+            let names: Vec<&str> = level.iter().map(|s| s.handle.as_str()).collect();
+            return Err(match closest(step, names.iter().copied()) {
+                Some(n) => format!("{what} has no sub-object `{step}`; did you mean `{n}`?"),
+                None if names.is_empty() => format!("{what} has no sub-objects, so no `{step}`"),
+                None => format!(
+                    "{what} has no sub-object `{step}`: it has {}",
+                    crate::values::list(&names)
+                ),
+            });
+        };
+        what = format!("the {} `{}`", s.word, s.handle);
+        level = &s.subs;
+        reached = Some(s);
+    }
+    let s = reached.expect("a sub-object path has a step");
+    Ok(Reached::Sub {
+        word: s.word.clone(),
+        of: s.of.clone(),
+    })
 }
 
 /// `@plank.7` as (`@plank`, 7); `@plank` as (`@plank`, none).
@@ -1091,21 +1216,40 @@ fn placed(node: Node<'_>) -> Option<Placed> {
     })
 }
 
-/// The sub-object handles defined in a datablock's block, conditions included.
-fn subs(node: Node<'_>, out: &mut Vec<String>) {
+/// The sub-objects defined in a datablock's or a sub-object's block, conditions included, each
+/// with its own; a node tree's nodes are its owner's, as section 7 has them.
+fn subs(node: Node<'_>, out: &mut Vec<Sub>) {
     for child in node.children() {
-        match child.name().as_ref() {
-            "if" | "else" => subs(child, out),
+        let word = child.name().into_owned();
+        match word.as_str() {
+            "if" | "else" | "nodes" => subs(child, out),
             _ => {
-                if let Some(h) = child
-                    .args()
-                    .next()
-                    .and_then(|v| v.as_word().map(str::to_string))
+                let args = args_of(child);
+                let Some(h) = args
+                    .first()
+                    .and_then(|v| v.as_word())
                     .filter(|w| w.starts_with('@'))
-                    && crate::paths::SUB_KINDS.contains(&child.name().as_ref())
+                else {
+                    continue;
+                };
+                if !(crate::paths::SUB_KINDS.contains(&word.as_str())
+                    || matches!(word.as_str(), "node" | "zone"))
                 {
-                    out.push(h);
+                    continue;
                 }
+                let mut inner = Vec::new();
+                if word == "zone" {
+                    // A zone's nodes are the tree's, beside it.
+                    subs(child, out);
+                } else {
+                    subs(child, &mut inner);
+                }
+                out.push(Sub {
+                    of: args.get(1).and_then(|v| v.as_word()).map(str::to_string),
+                    word,
+                    handle: h.to_string(),
+                    subs: inner,
+                });
             }
         }
     }
@@ -1197,6 +1341,31 @@ pub(crate) fn expression(
             return true;
         }
     };
+    // Degrees and radians in one sum, or degrees left where no angle is, as the expansion
+    // refuses them (task 1d-03i).
+    let units = expr::parse(&text, quoted)
+        .and_then(|e| expr::degrees(&e, &|n| scope.degrees.get(n).copied()));
+    let stray = match (&units, &got) {
+        (Ok(Some(d)), Kind::Quantity { dim, .. }) => {
+            *d != 0 && !(*d == 1 && *dim == Dim::of(Dimension::Angle))
+        }
+        _ => false,
+    };
+    if let Err(e) = units {
+        out.error(codes::TYPE, value.span(), format!("`{text}`: {e}"));
+        return true;
+    }
+    if stray {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!(
+                "`{text}` is {} with degrees in it, which has no exact form: write its angles in one unit",
+                got.describe()
+            ),
+        );
+        return true;
+    }
     let ok = match (&want, &got) {
         (Want::Dim(d), Kind::Quantity { dim, .. }) => dim.fits(*d),
         (Want::Whole, Kind::Quantity { dim, whole }) => *whole && *dim == Dim::NONE,

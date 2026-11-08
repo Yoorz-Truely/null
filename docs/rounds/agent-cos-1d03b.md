@@ -186,3 +186,29 @@ I read the diff from `2df94ba` and re-ran my round 1 probes against a copy of `6
 - **The checker passes what the expansion refuses.** `if "tilt > 1rad"` with `tilt` a degree parameter checks clean under 1d-03b, then fails in the expansion. The same rule in the checker would report the mistake when the files are checked, before anything is expanded.
 - **The same error is reported once per copy, at the same span.** With `count=2`, the condition's error appears twice at `p.noll:6:5`. For an error in the component's own text, one report is enough; this fits 1d-03h, spans back to the source.
 - **`deg` is an `i8` summed with `+` and `-`.** 128 degree factors in one expression would overflow (a panic in debug). A `checked_add` with the "too large" error would close it.
+
+## 1d-03i: overrides reach nested sub-objects
+
+Stacked on 1d-03c round 2 (`66e498f`, approved at `38e6d68`), on the same branch. Null's tests and lints only.
+
+**What changed.**
+- **The checker resolves nested paths.**
+  - A component now records each local datablock's sub-objects as a tree (`Sub`: word, handle, kind, and its own sub-objects), where 1d-03b recorded the root's handles flat. A node tree's nodes, a zone's included, are their owner's, as section 7 has them.
+  - `copy_path` steps through placements, then a local datablock or one of the root's sub-objects, then down the tree one level per step (`sub_path`). A step that names nothing is an error naming the nearest at that level ("the bone `@spine` has no sub-object `@reech`; did you mean `@reach`?").
+  - `Reached::Sub` now carries the sub-object's word and kind. `override_line` checks a sub-object override's lines as that sub-object's own: a modifier's or a constraint's against its kind's struct, and a pose bone's against `PoseBone`.
+- **Expansion lays an override on that sub-object alone.**
+  - Each line inside a datablock is written through `child`, which lays the overrides naming its path (`@rig.2/@spine`) and passes the path down. So `@rig.2/@spine/@reach` reaches the bone's constraint.
+  - A line laid over now takes the place of the first line it replaces, so a modifier or constraint stack keeps its order, where before the replacement moved to the end.
+- **The three notes from the 1d-03c round 2 review:**
+  - **Degrees against radians in the checker.** A parameter records the power of its angle in degrees when its default shows the unit (`Param::degrees`). `expr::degrees` carries that through an expression, and the checker refuses what the expansion refuses: degrees and radians in one sum or comparison, and degrees left where no angle is (`tilt/1rad`). Both use one message, `expr::mixed_angles`. A parameter with no default can take either unit from its placement, so only the expansion sees that case.
+  - **An error inside a component is reported once per copy, at the same span.** This is left to 1d-03h's map back to the source, which can merge them.
+  - **Checked powers.** `deg` and every dimension's power are now added with checked arithmetic in the expansion; passing ±127 gives the "too large" error. The checker's `Dim::times` and `over` saturate instead, and a saturated power has no named unit, so it is refused.
+
+**Tests.**
+- **A bone's constraint.** In `tests/expand.rs`, two rigs, each with a pose bone holding a kinematic constraint. `override @rig.2/@spine/@reach { chain-count 3 }` checks clean and changes only copy 2's constraint: its other lines and copy 1 are unchanged. An override of the bone itself keeps its constraint. The expanded project checks clean.
+- **Misspelt steps.** A wrong last step and a wrong middle step are each reported with the nearest name, and a misspelt property in a sub-object override is reported with its fix.
+- **Degrees and radians.** In `tests/components.rs`, a comparison, a sum and a stray degree power are each refused by the checker, and the same expressions in one unit check clean.
+- **Overflow.** A unit test shows 128 multiplied degrees, or metres, is an error, not a panic.
+
+**Checks.** `just check` passes.
+
