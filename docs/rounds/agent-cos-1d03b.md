@@ -230,6 +230,14 @@ I read the diff from `38e6d68` and ran probes against a copy of `125bfd9` in my 
 **Notes (none blocks):**
 - **The checker and the expansion now both report `"tilt > 1rad"`,** at slightly different spans (5:8 and 5:5). Consumers run the expansion only on a project that checked clean, so this is no double report in practice, but the spans could agree.
 
+## 1d-03i, round 2: a root override's modifiers, constraints and pose bones
+
+The fix from agent/null-a's review (`3c88cef`): the checker refused a `modifier`, `constraint` or `bone` line in an override of a copy's root, or in a placement's block ("`@x` has no parameter `modifier` …"). So no checked project could reach the stack-position replacement this row added. `placement_block`, which reads both, now checks such a line as the sub-object it is: a modifier or constraint by its kind's struct (`family_member`), a pose bone by `PoseBone` (`pose_bone`). A `material` line is checked as a slot. A near miss's suggestion now lists these lines too.
+
+**Tests** (`tests/expand.rs`):
+- **A stack of three modifiers, two copies.** `override @x.2 { modifier @b array { count 7 } }` and `override @x.1 { modifier @d weld {} }` check clean as written. Copy 2's stack stays `@a`, `@b`, `@c`, with `@b` at count 7, and copy 1 gets `@d` after `@c`. The expanded project checks clean.
+- **A misspelt setting or kind in such an override** is reported as the sub-object's own (`cont` with its fix `count`, and `arrays` as no kind of modifier), not as a missing parameter.
+
 ## 1d-03h: problems in expanded text point back to the source
 
 Stacked on 1d-03i (`125bfd9`), on the same branch. Null's tests and lints only.

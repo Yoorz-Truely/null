@@ -625,3 +625,79 @@ fn the_expansion_s_own_problem_in_a_component_is_reported_once() {
     assert!(problems.contains("components/plank.noll:6:5"), "{problems}");
     assert!(problems.contains("in 20 copies"), "{problems}");
 }
+
+/// A post with a stack of three modifiers, two copies of it in a yard.
+const STACKED: &str = r#"component @post "Post" {
+  object @post "Post" {
+    data mesh @post-mesh
+    modifier @a bevel { width 2mm }
+    modifier @b array { count 3 }
+    modifier @c subsurf { levels 1 }
+  }
+  mesh @post-mesh "Post" { primitive cube size=1m }
+}
+"#;
+
+fn stacked(yard_lines: &str) -> (Vec<Expanded>, String) {
+    let yard =
+        format!("collection @yard \"Yard\" {{\n  use @post @x count=2 {{}}\n{yard_lines}}}\n");
+    run(&[("post.noll", STACKED), ("yard.noll", &yard)], true)
+}
+
+#[test]
+fn a_root_override_replaces_a_modifier_in_its_place_and_checks_clean() {
+    // `run` asserts the project as written checks clean.
+    let (out, problems) = stacked(
+        "  override @x.2 { modifier @b array { count 7 } }\n  override @x.1 { modifier @d weld {} }\n",
+    );
+    assert_eq!(problems, "");
+    let text = &out[1].text;
+    let two = block(text, "object @x.2");
+    let order: Vec<&str> = two
+        .lines()
+        .filter(|l| l.trim_start().starts_with("modifier "))
+        .collect();
+    assert_eq!(
+        order,
+        [
+            "  modifier @a bevel {",
+            "  modifier @b array {",
+            "  modifier @c subsurf {"
+        ],
+        "{two}"
+    );
+    assert!(two.contains("count 7") && !two.contains("count 3"), "{two}");
+    // A modifier no line replaces is added after the stack.
+    let one = block(text, "object @x.1");
+    assert!(
+        one.contains("modifier @d weld") && one.contains("count 3"),
+        "{one}"
+    );
+    assert!(
+        one.find("modifier @c").unwrap() < one.find("modifier @d").unwrap(),
+        "{one}"
+    );
+    assert_eq!(expanded_problems(&out), "");
+}
+
+#[test]
+fn a_root_override_s_sub_object_lines_are_checked_as_those_sub_objects() {
+    let yard = "collection @yard \"Yard\" {\n  use @post @x count=2 {}\n  override @x.2 { modifier @b array { cont 7 } }\n  override @x.1 { modifier @e arrays {} }\n}\n";
+    let mut map = SourceMap::new();
+    let texts = [("post.noll", STACKED), ("yard.noll", yard)];
+    let parses: Vec<(FileId, Parse)> = texts
+        .iter()
+        .map(|(name, text)| (map.add(*name, *text), parse(text)))
+        .collect();
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    let found = map.render_all(&check(schema(), &files));
+    assert!(
+        found.contains("`cont`") && found.contains("write `count`"),
+        "{found}"
+    );
+    assert!(
+        found.contains("`arrays` is not a kind of modifier"),
+        "{found}"
+    );
+    assert!(!found.contains("has no parameter `modifier`"), "{found}");
+}

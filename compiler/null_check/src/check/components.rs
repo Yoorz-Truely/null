@@ -82,6 +82,11 @@ pub(crate) struct Scope {
     pub degrees: HashMap<String, i8>,
 }
 
+/// The lines of a root object's own a placement or an override may give besides its
+/// properties: its modifiers, constraints and pose bones, each checked as that sub-object, and
+/// its material slots (task 1d-03i).
+const ROOT_LINES: [&str; 4] = ["modifier", "constraint", "bone", "material"];
+
 /// The type names a parameter with no default may give (section 8): a unit's dimension, a
 /// number, a whole number, `on-off`, or a kind of datablock.
 const TYPE_NAMES: [(&str, Dimension); 6] = [
@@ -800,8 +805,18 @@ impl Checker<'_> {
                 }
             } else if let Some(p) = object_props.iter().find(|p| p.name == a.name) {
                 self.property(file, &a, p, false);
+            } else if ROOT_LINES.contains(&a.name.as_str()) {
+                // The root's own stacks and slots, laid over the copy's (task 1d-03i): a line
+                // replaces the root's of its handle in its place, or is added.
+                match a.name.as_str() {
+                    "modifier" => self.family_member(file, &a, "Modifier"),
+                    "constraint" => self.family_member(file, &a, "Constraint"),
+                    "bone" => self.pose_bone(file, &a),
+                    _ => self.reference(file, &a, "material"),
+                }
             } else {
                 let mut names: Vec<&str> = comp.params.iter().map(|p| p.name.as_str()).collect();
+                names.extend(ROOT_LINES);
                 names.extend(object_props.iter().map(|p| p.name.as_str()));
                 let near = closest(&a.name, names.iter().copied()).map(str::to_string);
                 let message = match &near {
