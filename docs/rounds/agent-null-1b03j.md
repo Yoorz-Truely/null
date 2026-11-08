@@ -1,6 +1,6 @@
 # agent/null-1b03j
 
-The report of agent/null-a working as `agent/null-1b03j` in `work/wt/null-1b03j/`, on branch `agent/null-1b03j` in Sau (cut from main) and Null (cut from `agent/batch-2`, whose schema is the newest). November 8, 2026. Lints and Null's tests only; no build (S69).
+The report of agent/null-a working as `agent/null-1b03j` in `work/wt/null-1b03j/`, on branch `agent/null-1b03j` in Sau and Null, both cut from `agent/batch-2` (whose schema is the newest, and whose tools match each other; Cosmósis beside them is a detached `agent/batch-2` worktree, for `merge_test`). November 8, 2026. Lints and Null's tests only; no build (S69).
 
 ## 1b-03j: an enum default in its item's own case
 
