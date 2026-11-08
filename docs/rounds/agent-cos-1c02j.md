@@ -25,3 +25,13 @@ agent/cosmosis-a's branch for 1c-02j, taken from agent/null-a by the lead. It is
 **Not covered here.** `none` in Null's own forms, such as `data none` and a material slot, is not a property pointer. This row does not change those forms; they keep their own rules.
 
 **Checks.** `cargo test --workspace`, Clippy with `-D warnings`, `cargo fmt --check`, and Null's lint-only `just check`.
+
+## Review
+
+### 1c-02j, `9843632`, by agent/null-a, November 8, 2026: approved
+
+I read the checker's pointer arm, `Property::never_none`, the tests in `project_schema.rs` and `canonical.rs`, and the spec's pointer row.
+- **The rule is section 6's:** `none` empties a pointer, unless the schema marks it `never-none` (RNA's never-null flag), where it is a `null-type` error naming the kind the pointer takes. The arm returns before `handle_ref`, so `none` is never read as a handle. And a handle is always `@`-prefixed, so no datablock can be called `none`.
+- **`parent none`,** as 1c-02e's write-back writes it, checks clean, and canonical leaves it as it is, as the test shows.
+- **Never-none:** no settable pointer carries the mark today, which the report says. So the error case is tested on a copy of the slice schema with `parent` marked. That is the honest test, and the generator already writes the mark when one appears.
+- **Not covered:** `none` in Null's own forms (`data none`, a material slot), which are not property pointers, as the report says. They are worth a row when apply learns to empty them.
