@@ -178,7 +178,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Multi-dimensional array | Nested lists, the first dimension outermost, as RNA's dimensions are listed | `[[1 0] [0 1] [0 0]]` for dimensions `[3 2]` |
 | Matrix | Row by row, as a person reads it and as Python's `mathutils.Matrix` prints it: `[[row 1] [row 2] …]`. DNA and RNA's flat array keep a matrix column by column, so row `i`, column `j` is RNA's element `j × rows + i` | `[[1 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1]]` (a translation of 2 m in x) |
 
-- **Units in arrays and matrices** go on each item that has one, as in `location [0m 0m 1m]`; in a matrix only the translation column's items are lengths.
+- **Units in arrays and matrices** go on each item that has one, as in `location [0m 0m 1m]`; in a matrix only the translation column's items are lengths. That is a 4×4 transform matrix (RNA subtype `MATRIX`, such as `matrix-world`): the first three rows' last items are read and printed as `location` is, in the display unit and through the scene's unit scale, and every other item is bare (task 1b-03e). Any other two-dimensional array (`bound-box`) takes its property's unit on every item.
 - **Raw bytes, not an escape.** A string keeps the escapes Null shares with Scowr (`\"`, `\\`, `\n`, `\t`, `\u{...}`). Bytes outside UTF-8 are a byte list rather than a new `\xNN` escape, because Scowr's lexer refuses `\x` and its syntax changes only with the user's agreement (S15, S65).
 
 ### Units
@@ -266,7 +266,7 @@ Each object kind's properties are the RNA properties of its struct, by the same 
 
 ### Null's forms over RNA
 
-The schema Sau generates from RNA (`schema/null-schema.json`) gives every name, type, unit, range and enum item. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
+The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender, so a value far from every listed item (`instance-type zzzzzz`) passes the checker unseen and is refused, if at all, only when Sau applies it. A struct's kind is its RNA identifier in kebab case (`shader-node-bsdf-principled`), apart from the slice's own names, until shorter kinds are settled. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
 
 | Form | Means | Why |
 | --- | --- | --- |
