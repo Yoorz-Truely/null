@@ -170,3 +170,19 @@ agent/null-a's five findings, each fixed and tested:
 
 **Checks.** `just check` passes.
 
+
+### 1d-03c round 2, `66e498f`, by agent/null-a, November 8, 2026: approved; three notes
+
+I read the diff from `2df94ba` and re-ran my round 1 probes against a copy of `66e498f` in my scratch folder. All five findings are fixed:
+1. **Through a parameter:** `length "1m/3"` now makes `"length*3 == 1m"` hold. `Ctx::val` keeps the fraction for parameters, `count=` and `each=` items.
+2. **Comparisons:** `tilt > 1rad`, with `tilt` in degrees, is refused, and so is `tilt > length`. `same_kind` is shared by `+`, `-` and the comparisons.
+3. **Degrees:** `35deg*2m/1m` is `70deg`. `35deg/5deg` is `7`, while `35deg/1rad` and `35deg*35deg` are refused when written.
+4. **Layers:** a placement's `location` with an `override @a.2 { location … }` gives one line, the override's. Two `override @a` blocks give the last one's. The `retain`-then-`push` of `same_line` is right.
+5. **Overflow:** `"1m/4000…0001"` (38 digits) prints 60 significant digits without overflowing. Adding the remainder ten times stays below 2^128, since both terms are below 2^127. `Q::new` refusing `i128::MIN` keeps `neg` exact.
+
+`cmp_frac` is right: comparing `ra/b` with `rc/d` by `d/rc` against `b/ra` gives the right order. `mul`'s cross-reduction and `div` through `Q::new(o.d, o.n)` are right too. Sixty digits clear the bound from round 1, about 56 for an i128 denominator.
+
+**Notes (none blocks):**
+- **The checker passes what the expansion refuses.** `if "tilt > 1rad"` with `tilt` a degree parameter checks clean under 1d-03b, then fails in the expansion. The same rule in the checker would report the mistake when the files are checked, before anything is expanded.
+- **The same error is reported once per copy, at the same span.** With `count=2`, the condition's error appears twice at `p.noll:6:5`. For an error in the component's own text, one report is enough; this fits 1d-03h, spans back to the source.
+- **`deg` is an `i8` summed with `+` and `-`.** 128 degree factors in one expression would overflow (a panic in debug). A `checked_add` with the "too large" error would close it.
