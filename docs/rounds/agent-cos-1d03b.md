@@ -150,3 +150,23 @@ I read `expand.rs`, the `check_flat` change, `Unit::exact_factor`, section 8's n
 - **An override of a nested sub-object** (`override @a/@spine/@ik`, a bone's constraint) is refused by the 1d-03b checker ("a copy of `@r` makes no `@spine`"). `emit` would not find it either, since a child's override path is built from the datablock owner, not from the sub-object it is in. Bones are sub-objects (section 7), so both need the nested path, here or in a row of its own.
 - **`Q::cmp` falls back to f64** on overflow, so a condition between two near-equal large values can come out wrong. A comparison done by long division, or in i256, would be exact.
 - **The nesting limit (S76)** is fine as a guard. An explicit work stack instead of recursion would remove it later.
+
+## 1d-03c, round 2: exact through parameters, comparisons and degrees; overrides in layers
+
+agent/null-a's five findings, each fixed and tested:
+
+1. **A parameter stays exact.** The placement's values, the overrides', `count=` and the items of `each=` are kept as values (`Ctx::val`), never re-read from their printed decimals. A test places `length "1m/3"`: `"length*3 == 1m"` holds, and `scale` prints sixty 3s.
+2. **A condition compares one kind in one unit.** Two numbers compare only when they have the same dimension and their angles are in the same unit. `"tilt > 1rad"` with a tilt in degrees is "degrees and radians do not compare exactly", a length against an angle is refused, and `"tilt > 20deg"` holds for `30deg`. Unit and expansion tests cover this.
+3. **Degrees are tracked as a power.** `Val::Num` carries `deg`, the power of its angle held in degrees, through every `*` and `/`. So `35deg*2m/1m` is `70deg` and `35deg/5deg` is `7`. Printing refuses a value whose degrees are left in any power other than an angle's (`35deg*35deg`, `35deg/1rad`), and adding or comparing a degree value with a radian one is refused.
+4. **Overrides are laid in layers.** The component's lines come first, then the placement's, then each override in order. A line replaces the line of its name in every earlier layer, matched by name and handle for `modifier`, `constraint` and `bone`. The test is a placement's `rotation-euler` with two overrides of copy 2: copy 1 keeps the placement's, copy 2 has one line, the last override's, and the expanded project checks clean.
+5. **No overflow.** `Q::decimal` finds each digit by adding the remainder ten times and reducing as it goes, so nothing overflows whatever the denominator. `Q::new` refuses `i128::MIN`, so negation is exact, and `Q::mul` cross-reduces before multiplying. A test prints `1m/40000000000000000000000000000000000001`, and dividing it by the same number again is the error "too large to compute exactly", not a panic.
+
+**The notes:**
+- **60 significant digits**, as the lead asked, so the one rounding holds for every i128 fraction (S59). The spec says so.
+- **`Q::cmp` is exact** for every pair, comparing integer parts and then the remainders' reciprocals, as Euclid's algorithm runs. The f64 fallback is gone, and a test compares two fractions near 1 with denominators near i128::MAX.
+- **An override of a nested sub-object** (`@a/@spine/@ik`) is still not reached, here or in the 1d-03b checker. It needs paths through sub-objects in both, so it fits a row of its own, or 1d-03h's mapping work.
+
+**One more change.** A word with no names in it is now computed in any scope, so `tilt 35deg*2m/1m` in a placement's block works like it does inside a component.
+
+**Checks.** `just check` passes.
+

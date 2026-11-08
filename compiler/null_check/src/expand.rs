@@ -8,9 +8,10 @@
 //!   datablocks a copy makes are paths from its root (`@plank.7/@plank-mesh`), as the checker
 //!   resolves them (1d-03b). The root joins the scene or collection the placement is in, and so
 //!   does every copy made inside it.
-//! - Arithmetic is exact: numbers are kept as fractions in their dimension's internal unit
-//!   (degrees as degrees), and written as decimals, exactly where a decimal holds the value, else
-//!   to 36 significant digits, so the one rounding into the property's type is the reader's (S59).
+//! - Arithmetic is exact: numbers are kept as fractions in their dimension's internal unit, an
+//!   angle in degrees as degrees through every step, and a parameter keeps its fraction. They are
+//!   written as decimals, exactly where a decimal holds the value, else to 60 significant digits,
+//!   so the one rounding into the property's type is the reader's (S59).
 //! - A recursion that does not count down is an error, and so is an expansion past 1,000,000
 //!   datablocks, at the line that asked for them, never a hang.
 //!
@@ -45,28 +46,48 @@ pub struct Expanded {
     pub text: String,
 }
 
-/// An exact fraction, its denominator positive and the two coprime.
+/// An exact fraction, its denominator positive and the two coprime. `i128::MIN` is never held,
+/// so every negation is exact.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Q {
     n: i128,
     d: i128,
 }
 
-fn gcd(a: i128, b: i128) -> i128 {
-    let (mut a, mut b) = (a.unsigned_abs(), b.unsigned_abs());
+/// The most significant digits a value is written to where no decimal holds it exactly: with
+/// any i128 denominator, enough that the one rounding into a float64 is the reader's (S59).
+const DIGITS: usize = 60;
+
+fn gcd(a: u128, b: u128) -> u128 {
+    let (mut a, mut b) = (a, b);
     while b != 0 {
         (a, b) = (b, a % b);
     }
-    i128::try_from(a.max(1)).unwrap_or(1)
+    a.max(1)
+}
+
+/// `a/b` against `c/d`, `b` and `d` positive, exactly: by their integer parts, then their
+/// remainders' reciprocals in reverse, as Euclid's algorithm runs.
+fn cmp_frac(a: u128, b: u128, c: u128, d: u128) -> Ordering {
+    let (qa, ra, qc, rc) = (a / b, a % b, c / d, c % d);
+    match qa.cmp(&qc) {
+        Ordering::Equal => match (ra, rc) {
+            (0, 0) => Ordering::Equal,
+            (0, _) => Ordering::Less,
+            (_, 0) => Ordering::Greater,
+            _ => cmp_frac(d, rc, b, ra),
+        },
+        other => other,
+    }
 }
 
 impl Q {
     fn new(n: i128, d: i128) -> Option<Q> {
-        if d == 0 {
+        if d == 0 || n == i128::MIN || d == i128::MIN {
             return None;
         }
-        let g = gcd(n, d);
-        let s = if d < 0 { -1 } else { 1 };
+        let g = gcd(n.unsigned_abs(), d.unsigned_abs()) as i128;
+        let s = d.signum();
         Some(Q {
             n: s * (n / g),
             d: s * (d / g),
@@ -94,22 +115,46 @@ impl Q {
     }
 
     fn mul(self, o: Q) -> Option<Q> {
-        Q::new(self.n.checked_mul(o.n)?, self.d.checked_mul(o.d)?)
+        // Cross-reduced first, so a product that fits is never refused.
+        let (g1, g2) = (
+            gcd(self.n.unsigned_abs(), o.d.unsigned_abs()) as i128,
+            gcd(o.n.unsigned_abs(), self.d.unsigned_abs()) as i128,
+        );
+        Q::new(
+            (self.n / g1).checked_mul(o.n / g2)?,
+            (self.d / g2).checked_mul(o.d / g1)?,
+        )
     }
 
     fn div(self, o: Q) -> Option<Q> {
-        Q::new(self.n.checked_mul(o.d)?, self.d.checked_mul(o.n)?)
+        if o.n == 0 {
+            return None;
+        }
+        self.mul(Q::new(o.d, o.n)?)
     }
 
     fn cmp(self, o: Q) -> Ordering {
-        // Both denominators are positive.
-        match (self.n.checked_mul(o.d), o.n.checked_mul(self.d)) {
-            (Some(a), Some(b)) => a.cmp(&b),
-            _ => (self.n as f64 / self.d as f64).total_cmp(&(o.n as f64 / o.d as f64)),
+        match (self.n.signum(), o.n.signum()) {
+            (a, b) if a != b => a.cmp(&b),
+            (0, _) => Ordering::Equal,
+            (1, _) => cmp_frac(
+                self.n.unsigned_abs(),
+                self.d.unsigned_abs(),
+                o.n.unsigned_abs(),
+                o.d.unsigned_abs(),
+            ),
+            _ => cmp_frac(
+                o.n.unsigned_abs(),
+                o.d.unsigned_abs(),
+                self.n.unsigned_abs(),
+                self.d.unsigned_abs(),
+            ),
         }
     }
 
-    /// A decimal: exact where the denominator is of 2s and 5s, else 36 significant digits.
+    /// A decimal: exact where the denominator is of 2s and 5s, else `DIGITS` significant digits.
+    /// The long division never overflows: each digit is found by adding the remainder ten times,
+    /// reduced as it goes, and the remainder and the denominator are below 2^127.
     fn decimal(self) -> String {
         let (mut n, d) = (self.n.unsigned_abs(), self.d.unsigned_abs());
         let whole = n / d;
@@ -124,10 +169,16 @@ impl Q {
         } else {
             whole.to_string().len()
         };
-        while n != 0 && significant < 36 {
-            n *= 10;
-            let digit = (n / d) as u8;
-            n %= d;
+        while n != 0 && significant < DIGITS {
+            let (mut r, mut digit) = (0u128, 0u8);
+            for _ in 0..10 {
+                r += n;
+                if r >= d {
+                    r -= d;
+                    digit += 1;
+                }
+            }
+            n = r;
             out.push(char::from(b'0' + digit));
             if significant > 0 || digit != 0 {
                 significant += 1;
@@ -140,11 +191,12 @@ impl Q {
 /// A computed value.
 #[derive(Clone, Debug, PartialEq)]
 enum Val {
-    /// A number in its dimension's internal unit, or in degrees (`deg`).
+    /// A number in its dimension's internal unit, but for the power of its angle `deg` held in
+    /// degrees (`35deg` is 35 with `deg` 1; `35deg*2m` keeps it, `35deg/1deg` is a number).
     Num {
         q: Q,
         dim: Dim,
-        deg: bool,
+        deg: i8,
     },
     Bool(bool),
     Word(String),
@@ -157,7 +209,7 @@ impl Val {
         Val::Num {
             q: Q::int(n),
             dim: Dim::NONE,
-            deg: false,
+            deg: 0,
         }
     }
 
@@ -165,17 +217,23 @@ impl Val {
     fn text(&self) -> Result<String, String> {
         Ok(match self {
             Val::Num { q, dim, deg } => {
-                let unit = if *deg {
-                    "deg"
-                } else if *dim == Dim::NONE {
-                    ""
-                } else {
-                    dim.named()
+                let unit = match deg {
+                    0 if *dim == Dim::NONE => "",
+                    0 => dim
+                        .named()
                         .and_then(|d| d.units().first())
                         .map(|u| u.suffix())
                         .ok_or_else(|| {
                             format!("the value is {}, which no property takes", dim.describe())
-                        })?
+                        })?,
+                    1 if *dim == Dim::of(Dimension::Angle) => "deg",
+                    _ => {
+                        return Err(format!(
+                            "the value is {} with degrees in it, which has no exact form: \
+                             write its angles in one unit",
+                            dim.describe()
+                        ));
+                    }
                 };
                 format!("{}{unit}", q.decimal())
             }
@@ -184,13 +242,25 @@ impl Val {
         })
     }
 
-    /// A value given as text (a default, a placement's, an override's).
+    /// A value written as a plain word (a default, an item of a list): a number, `on` or
+    /// `off`, a handle, or a word.
     fn read(text: &str) -> Val {
         match text {
             "on" => Val::Bool(true),
             "off" => Val::Bool(false),
             t if t.starts_with('@') => Val::Handle(t.to_string()),
             t => literal(t).unwrap_or_else(|| Val::Word(t.to_string())),
+        }
+    }
+
+    /// The kind, as a message names it.
+    fn kind(&self) -> String {
+        match self {
+            Val::Num { dim, deg, .. } if *deg != 0 => format!("{} in degrees", dim.describe()),
+            Val::Num { dim, .. } => dim.describe(),
+            Val::Bool(_) => "`on` or `off`".into(),
+            Val::Word(w) => format!("the word `{w}`"),
+            Val::Handle(h) => format!("the handle `{h}`"),
         }
     }
 }
@@ -239,7 +309,7 @@ fn literal(text: &str) -> Option<Val> {
         return Some(Val::Num {
             q,
             dim: Dim::NONE,
-            deg: false,
+            deg: 0,
         });
     }
     let u = Unit::from_suffix(unit, Dimension::None)?;
@@ -247,15 +317,44 @@ fn literal(text: &str) -> Option<Val> {
         return Some(Val::Num {
             q,
             dim: Dim::of(Dimension::Angle),
-            deg: true,
+            deg: 1,
         });
     }
     let (n, d) = u.exact_factor()?;
     Some(Val::Num {
         q: q.mul(Q::new(i128::try_from(n).ok()?, i128::try_from(d).ok()?)?)?,
         dim: Dim::of(u.dimension()),
-        deg: false,
+        deg: 0,
     })
+}
+
+const TOO_LARGE: &str = "the value is too large to compute exactly";
+
+/// Two numbers of one kind, for adding or comparing: the same dimension, their angles in the
+/// same unit.
+fn same_kind(a: &Val, b: &Val, what: &str) -> Result<(Q, Q), String> {
+    match (a, b) {
+        (
+            Val::Num {
+                q: qa,
+                dim: da,
+                deg: ga,
+            },
+            Val::Num {
+                q: qb,
+                dim: db,
+                deg: gb,
+            },
+        ) if da == db && ga == gb => Ok((*qa, *qb)),
+        (Val::Num { dim: da, .. }, Val::Num { dim: db, .. }) if da == db => Err(format!(
+            "degrees and radians do not {what} exactly (by π/180): write both in one"
+        )),
+        _ => Err(format!(
+            "only values of one kind {what}: {} and {}",
+            a.kind(),
+            b.kind()
+        )),
+    }
 }
 
 fn eval(e: &Expr, scope: &HashMap<String, Val>) -> Result<Val, String> {
@@ -276,6 +375,24 @@ fn eval(e: &Expr, scope: &HashMap<String, Val>) -> Result<Val, String> {
             _ => Err("only a number is negated".into()),
         },
         Expr::Op(op, a, b) => {
+            let (a, b) = (eval(a, scope)?, eval(b, scope)?);
+            if matches!(op, '+' | '-') {
+                let what = if *op == '+' { "add" } else { "subtract" };
+                let (qa, qb) = same_kind(&a, &b, what)?;
+                let Val::Num { dim, deg, .. } = a else {
+                    unreachable!()
+                };
+                let q = if *op == '+' {
+                    qa.add(qb)
+                } else {
+                    qa.add(qb.neg())
+                };
+                return Ok(Val::Num {
+                    q: q.ok_or(TOO_LARGE)?,
+                    dim,
+                    deg,
+                });
+            }
             let (
                 Val::Num {
                     q: qa,
@@ -287,30 +404,16 @@ fn eval(e: &Expr, scope: &HashMap<String, Val>) -> Result<Val, String> {
                     dim: db,
                     deg: gb,
                 },
-            ) = (eval(a, scope)?, eval(b, scope)?)
+            ) = (a, b)
             else {
-                return Err("only numbers are computed with".into());
+                return Err("only numbers are multiplied and divided".into());
             };
-            let angle = Dim::of(Dimension::Angle);
-            // Degrees and radians do not mix exactly (by π/180).
-            if (ga && db == angle && !gb) || (gb && da == angle && !ga) {
-                return Err("degrees and radians do not mix exactly: write both in one".into());
-            }
-            let big = || "the value is too large to compute exactly".to_string();
-            let (q, dim) = match op {
-                '+' | '-' if da != db => return Err("only values of one kind add".into()),
-                '+' => (qa.add(qb).ok_or_else(big)?, da),
-                '-' => (qa.add(qb.neg()).ok_or_else(big)?, da),
-                '*' => (qa.mul(qb).ok_or_else(big)?, da.times(db)),
+            let (q, dim, deg) = match op {
+                '*' => (qa.mul(qb).ok_or(TOO_LARGE)?, da.times(db), ga + gb),
                 _ if qb.n == 0 => return Err("a division by zero".into()),
-                _ => (qa.div(qb).ok_or_else(big)?, da.over(db)),
+                _ => (qa.div(qb).ok_or(TOO_LARGE)?, da.over(db), ga - gb),
             };
-            // Degrees stay degrees only while the result is an angle (`2*35deg`).
-            Ok(Val::Num {
-                q,
-                dim,
-                deg: (ga || gb) && dim == angle,
-            })
+            Ok(Val::Num { q, dim, deg })
         }
     }
 }
@@ -324,16 +427,15 @@ fn holds(c: &expr::Condition, scope: &HashMap<String, Val>) -> Result<bool, Stri
         }
     };
     let (a, b) = (side(&c.left)?, side(&c.right)?);
-    let ord = match (&a, &b) {
-        (Val::Num { q: x, .. }, Val::Num { q: y, .. }) => x.cmp(*y),
-        _ => {
-            return match c.op {
-                "==" => Ok(a == b),
-                "!=" => Ok(a != b),
-                _ => Err("only numbers are ordered".into()),
-            };
-        }
-    };
+    if !matches!((&a, &b), (Val::Num { .. }, Val::Num { .. })) {
+        return match c.op {
+            "==" => Ok(a == b),
+            "!=" => Ok(a != b),
+            _ => Err("only numbers are ordered".into()),
+        };
+    }
+    let (x, y) = same_kind(&a, &b, "compare")?;
+    let ord = x.cmp(y);
     Ok(match c.op {
         "==" => ord == Ordering::Equal,
         "!=" => ord != Ordering::Equal,
@@ -354,20 +456,10 @@ struct Ctx {
 }
 
 impl Ctx {
-    /// `v` as written in the expanded text.
+    /// `v` as written in the expanded text: an expression computed, a local handle made the
+    /// copy's, anything else as written.
     fn value(&self, v: &Value<'_>) -> Result<String, String> {
         match v {
-            Value::Word(t) => self.word(t.text),
-            Value::Str(t) | Value::Raw(t) => {
-                let text = v.as_string().unwrap_or_default();
-                // A quoted expression of the parameters in scope; any other string is a string.
-                match expr::parse(&text, true) {
-                    Ok(e) if !matches!(e, Expr::Name(_)) && names_known(&e, &self.values) => {
-                        eval(&e, &self.values)?.text()
-                    }
-                    _ => Ok(t.text.to_string()),
-                }
-            }
             Value::List(_) => {
                 let items = v
                     .items()
@@ -377,27 +469,60 @@ impl Ctx {
                 Ok(format!("[{}]", items.join(" ")))
             }
             Value::Missing(_) => Ok(String::new()),
+            _ => match self.computed(v)? {
+                Some(val) => val.text(),
+                None => Ok(v.text().to_string()),
+            },
         }
     }
 
-    fn word(&self, w: &str) -> Result<String, String> {
-        if let Some(h) = self.handles.get(w) {
-            return Ok(h.clone());
+    /// `v` as a value, exactly, for a parameter, a count or a list's item: what
+    /// [`Ctx::computed`] makes of it, else read as written.
+    fn val(&self, v: &Value<'_>) -> Result<Val, String> {
+        Ok(match self.computed(v)? {
+            Some(val) => val,
+            None => match v {
+                Value::Word(t) => Val::read(t.text),
+                other => Val::Word(other.text().to_string()),
+            },
+        })
+    }
+
+    /// What the copy makes of `v`, where it makes anything: a local handle, or an expression
+    /// of the names in scope (a word, or a quoted one with an operator); `None` for a value
+    /// that stays as written.
+    fn computed(&self, v: &Value<'_>) -> Result<Option<Val>, String> {
+        match v {
+            Value::Word(t) => {
+                let w = t.text;
+                if let Some(h) = self.handles.get(w) {
+                    return Ok(Some(Val::Handle(h.clone())));
+                }
+                // A path from a local handle (`@plank-mesh/@bevel`).
+                if let Some((head, rest)) = w.split_once('/')
+                    && let Some(h) = self.handles.get(head)
+                {
+                    return Ok(Some(Val::Handle(format!("{h}/{rest}"))));
+                }
+                if expr::is_expression(w)
+                    && let Ok(e) = expr::parse(w, false)
+                    && names_known(&e, &self.values)
+                {
+                    return eval(&e, &self.values).map(Some);
+                }
+                Ok(None)
+            }
+            Value::Str(_) | Value::Raw(_) => {
+                let text = v.as_string().unwrap_or_default();
+                match expr::parse(&text, true) {
+                    Ok(e) if !matches!(e, Expr::Name(_)) && names_known(&e, &self.values) => {
+                        eval(&e, &self.values).map(Some)
+                    }
+                    _ => Ok(None),
+                }
+            }
+            _ => Ok(None),
         }
-        // A path from a local handle (`@plank-mesh/@bevel`).
-        if let Some((head, rest)) = w.split_once('/')
-            && let Some(h) = self.handles.get(head)
-        {
-            return Ok(format!("{h}/{rest}"));
-        }
-        if !self.values.is_empty()
-            && expr::is_expression(w)
-            && let Ok(e) = expr::parse(w, false)
-            && names_known(&e, &self.values)
-        {
-            return eval(&e, &self.values)?.text();
-        }
-        Ok(w.to_string())
     }
 }
 
@@ -423,6 +548,13 @@ fn text_in<'a>(node: Node<'a>, span: Span) -> &'a str {
 /// The lines that may repeat in a datablock, which an override's line of the same name replaces
 /// only where its handle is the same, and is added to otherwise.
 const REPEATED: [&str; 3] = ["modifier", "constraint", "bone"];
+
+/// Whether line `a` laid over a block replaces line `b` there: the same name, and for a line
+/// that repeats, the same handle.
+fn same_line(a: Node<'_>, b: Node<'_>) -> bool {
+    let name = a.name();
+    name == b.name() && (!REPEATED.contains(&name.as_ref()) || first_word(a) == first_word(b))
+}
 
 /// A line laid over a datablock, with what names mean where it was written.
 type Over<'a> = (Node<'a>, Ctx);
@@ -542,15 +674,16 @@ impl<'a> Ex<'a, '_> {
             }
         }
         let children = self.lines(file, node, ctx);
-        // An override's line replaces the copy's line of its name; one that repeats
-        // (`modifier`), the copy's of its name and handle; else it is added.
-        let replaced = |c: &Node<'a>| {
-            let name = c.name();
-            over.iter().any(|(o, _)| {
-                o.name() == name
-                    && (!REPEATED.contains(&name.as_ref()) || first_word(*o) == first_word(*c))
-            })
-        };
+        // The layers in order (the placement's lines, then each override's): a line replaces
+        // the copy's line, and an earlier layer's, of its name; one that repeats (`modifier`),
+        // those of its name and handle; else it is added.
+        let mut layers: Vec<Over<'a>> = Vec::new();
+        for (o, octx) in over {
+            layers.retain(|(p, _)| !same_line(*p, *o));
+            layers.push((*o, octx.clone()));
+        }
+        let over = layers.as_slice();
+        let replaced = |c: &Node<'a>| over.iter().any(|(o, _)| same_line(*o, *c));
         let kept: Vec<Node<'a>> = children.into_iter().filter(|c| !replaced(c)).collect();
         if kept.is_empty() && over.is_empty() && node.block().is_none() {
             let _ = writeln!(out, "{pad}{line}");
@@ -607,10 +740,8 @@ impl<'a> Ex<'a, '_> {
         // The copies, each with `n` and the item where it is a pattern's.
         let mut copies: Vec<(String, Vec<(String, Val)>)> = Vec::new();
         if let Some(c) = prop("count") {
-            let count = match ctx.value(&c).map(|t| literal(&t)) {
-                Ok(Some(Val::Num { q, dim, .. })) if dim == Dim::NONE && q.d == 1 && q.n >= 0 => {
-                    q.n
-                }
+            let count = match ctx.val(&c) {
+                Ok(Val::Num { q, dim, deg: 0 }) if dim == Dim::NONE && q.d == 1 && q.n >= 0 => q.n,
                 _ => return, // the checker says so
             };
             // Each copy makes at least its component's own datablocks.
@@ -633,8 +764,8 @@ impl<'a> Ex<'a, '_> {
                 return; // the checker says so
             };
             for (i, v) in list.items().iter().enumerate() {
-                let value = match ctx.value(v) {
-                    Ok(t) => Val::read(&t),
+                let value = match ctx.val(v) {
+                    Ok(t) => t,
                     Err(m) => {
                         self.error(file, v.span(), m);
                         continue;
@@ -689,9 +820,9 @@ impl<'a> Ex<'a, '_> {
                 continue;
             }
             let Some(v) = l.args().next() else { continue };
-            match ctx.value(&v) {
-                Ok(text) => {
-                    values.insert(name, Val::read(&text));
+            match ctx.val(&v) {
+                Ok(value) => {
+                    values.insert(name, value);
                 }
                 Err(m) => self.error(file, v.span(), m),
             }
@@ -980,24 +1111,45 @@ mod tests {
     }
 
     #[test]
-    fn decimals_are_exact_or_36_significant_digits() {
+    fn decimals_are_exact_or_60_significant_digits() {
         assert_eq!(q(1, 4).decimal(), "0.25");
         assert_eq!(q(-5, 1).decimal(), "-5");
         assert_eq!(q(7, 50).decimal(), "0.14");
-        assert_eq!(q(1, 3).decimal(), format!("0.{}", "3".repeat(36)));
-        assert_eq!(q(1, 3000).decimal(), format!("0.000{}", "3".repeat(36)));
-        assert_eq!(q(10, 3).decimal(), format!("3.{}", "3".repeat(35)));
+        assert_eq!(q(1, 3).decimal(), format!("0.{}", "3".repeat(60)));
+        assert_eq!(q(1, 3000).decimal(), format!("0.000{}", "3".repeat(60)));
+        assert_eq!(q(10, 3).decimal(), format!("3.{}", "3".repeat(59)));
+        // A denominator above u128::MAX / 10 is divided without overflow.
+        let big = i128::MAX - 1;
+        let d = q(1, big).decimal();
+        assert!(
+            d.starts_with(
+                "0.00000000000000000000000000000000000000587747175411143753984368268611122838"
+            ),
+            "{d}"
+        );
+        assert_eq!(q(big - 1, big).decimal().len(), 2 + 60);
+    }
+
+    #[test]
+    fn comparisons_are_exact_however_large() {
+        let a = q(i128::MAX - 2, i128::MAX - 1);
+        let b = q(i128::MAX - 3, i128::MAX - 2);
+        assert_eq!(a.cmp(b), Ordering::Greater);
+        assert_eq!(b.cmp(a), Ordering::Less);
+        assert_eq!(a.neg().cmp(b.neg()), Ordering::Less);
+        assert_eq!(a.cmp(a), Ordering::Equal);
+        assert_eq!(q(-1, 2).cmp(q(1, 3)), Ordering::Less);
     }
 
     #[test]
     fn literals_are_exact_in_the_internal_unit() {
         let len = Dim::of(Dimension::Length);
-        let num = |q, dim| Some(Val::Num { q, dim, deg: false });
+        let num = |q, dim| Some(Val::Num { q, dim, deg: 0 });
         assert_eq!(literal("25cm"), num(q(1, 4), len));
         assert_eq!(literal("-1e3"), num(Q::int(-1000), Dim::NONE));
         assert_eq!(literal("2.5e-1m"), num(q(1, 4), len));
         assert_eq!(literal("1in"), num(q(254, 10000), len));
-        assert!(matches!(literal("35deg"), Some(Val::Num { deg: true, .. })));
+        assert!(matches!(literal("35deg"), Some(Val::Num { deg: 1, .. })));
         assert_eq!(literal("liquid"), None);
         assert_eq!(literal("-"), None);
     }
@@ -1015,9 +1167,26 @@ mod tests {
         assert_eq!(get("length*0.7", false).as_deref(), Ok("1.68m"));
         assert_eq!(get("(n - 1) * 25cm", true).as_deref(), Ok("1.5m"));
         assert_eq!(get("2*35deg", false).as_deref(), Ok("70deg"));
+        // Degrees are kept through a step that is no angle.
+        assert_eq!(get("35deg*2m/1m", false).as_deref(), Ok("70deg"));
+        assert_eq!(get("35deg/5deg", false).as_deref(), Ok("7"));
         assert!(get("35deg + 1rad", true).is_err());
+        assert!(get("35deg/1rad", false).is_err());
+        assert!(get("35deg*35deg", false).is_err());
         assert!(get("length/0", false).is_err());
         assert!(get("length + 1", true).is_err());
         assert!(get("length*length", false).is_ok_and(|t| t.starts_with("5.76")));
+    }
+
+    #[test]
+    fn conditions_compare_one_kind_in_one_unit() {
+        let mut scope = HashMap::new();
+        scope.insert("tilt".to_string(), literal("30deg").unwrap());
+        scope.insert("length".to_string(), literal("1m").unwrap());
+        let holds_ = |text: &str| holds(&expr::parse_condition(text).unwrap(), &scope);
+        assert_eq!(holds_("tilt > 20deg"), Ok(true));
+        assert!(holds_("tilt > 1rad").is_err());
+        assert!(holds_("tilt > length").is_err());
+        assert_eq!(holds_("length > 99cm"), Ok(true));
     }
 }

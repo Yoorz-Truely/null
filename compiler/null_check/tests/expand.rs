@@ -279,3 +279,113 @@ fn a_mistake_in_the_expanded_project_is_found_at_its_copy() {
         "{found}"
     );
 }
+
+/// A small component with a length and a tilt, placed by `yard`.
+const SIGN: &str = r#"component @sign "Sign" {
+  param length 1m
+  param tilt 0deg
+  object @sign "Sign" {
+    if "length*3 == 1m" { hide-render }
+    if "tilt > 20deg" { hide-viewport }
+    rotation-euler [0deg tilt 0deg]
+    scale [length/1m 1 1]
+  }
+}
+"#;
+
+fn signs(yard: &str) -> (String, String) {
+    let (out, problems) = run(&[("sign.noll", SIGN), ("yard.noll", yard)], false);
+    (out[1].text.clone(), problems)
+}
+
+#[test]
+fn a_parameter_stays_exact_through_its_placement() {
+    // A third of a metre, given by the placement, is a third, not 60 digits of it.
+    let (text, problems) =
+        signs("collection @yard \"Yard\" {\n  use @sign @a { length \"1m/3\" }\n}\n");
+    assert_eq!(problems, "");
+    let a = block(&text, "object @a");
+    assert!(a.contains("  hide-render\n"), "{a}");
+    assert!(
+        a.contains(&format!("scale [0.{} 1 1]", "3".repeat(60))),
+        "{a}"
+    );
+}
+
+#[test]
+fn a_condition_compares_one_kind_in_one_unit() {
+    let (text, problems) = signs("collection @yard \"Yard\" {\n  use @sign @a { tilt 30deg }\n}\n");
+    assert_eq!(problems, "");
+    assert!(
+        block(&text, "object @a").contains("hide-viewport"),
+        "{text}"
+    );
+    // Degrees against radians is no exact comparison.
+    let sign = SIGN.replace("tilt > 20deg", "tilt > 1rad");
+    let (_, problems) = run(
+        &[
+            ("sign.noll", &sign),
+            (
+                "yard.noll",
+                "collection @yard \"Yard\" {\n  use @sign @a { tilt 30deg }\n}\n",
+            ),
+        ],
+        false,
+    );
+    assert!(
+        problems.contains("degrees and radians do not compare exactly"),
+        "{problems}"
+    );
+}
+
+#[test]
+fn degrees_survive_a_step_that_is_no_angle() {
+    let (text, problems) =
+        signs("collection @yard \"Yard\" {\n  use @sign @a { tilt 35deg*2m/1m }\n}\n");
+    assert_eq!(problems, "");
+    assert!(
+        block(&text, "object @a").contains("rotation-euler [0deg 70deg 0deg]"),
+        "{text}"
+    );
+}
+
+#[test]
+fn overrides_are_laid_in_layers_the_last_replacing() {
+    // The component's line, then the placement's, then each override's in order: one line.
+    let yard = r#"collection @yard "Yard" {
+  use @sign @a count=2 { rotation-euler [1deg 0deg 0deg] }
+  override @a.2 { rotation-euler [2deg 0deg 0deg] }
+  override @a.2 { rotation-euler [3deg 0deg 0deg] }
+}
+"#;
+    let (out, problems) = run(&[("sign.noll", SIGN), ("yard.noll", yard)], true);
+    assert_eq!(problems, "");
+    let text = &out[1].text;
+    let one = block(text, "object @a.1");
+    let two = block(text, "object @a.2");
+    assert_eq!(one.matches("rotation-euler").count(), 1, "{one}");
+    assert!(one.contains("rotation-euler [1deg 0deg 0deg]"), "{one}");
+    assert_eq!(two.matches("rotation-euler").count(), 1, "{two}");
+    assert!(two.contains("rotation-euler [3deg 0deg 0deg]"), "{two}");
+    assert_eq!(expanded_problems(&out), "");
+}
+
+#[test]
+fn a_value_beyond_exact_reach_is_an_error_never_a_panic() {
+    // A denominator over u128::MAX / 10 prints; a product beyond i128 is an error.
+    let (text, problems) = signs(
+        "collection @yard \"Yard\" {\n  use @sign @a { length \"1m/40000000000000000000000000000000000001\" }\n}\n",
+    );
+    assert_eq!(problems, "");
+    assert!(
+        block(&text, "object @a").contains("scale [0.0000000000000000000000000000000000000"),
+        "{text}"
+    );
+    let (_, problems) = signs(
+        "collection @yard \"Yard\" {\n  use @sign @a { length \"1m/40000000000000000000000000000000000001 / 40000000000000000000000000000000000001\" }\n}\n",
+    );
+    assert!(
+        problems.contains("too large to compute exactly"),
+        "{problems}"
+    );
+}
