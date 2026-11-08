@@ -1,0 +1,10 @@
+// actions/lamp-flicker.noll
+action @lamp-flicker "LampFlicker" {
+  slot @lamp light "Lamp" {
+    fcurve energy {
+      key 1 800W interpolation=bezier
+      key 6 620W
+      key 11 800W
+    }
+  }
+}

@@ -189,7 +189,7 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 
 ## 6. Values
 
-- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59). A value outside a property's hard range, an infinity included, is written and read as it is, since a `.blend` can hold one in DNA though RNA clamps what is set: the checker says so in a `null-range` note, not an error, and Blender clamps it when Sau sets it (the lead's call on task 1c-02b).
+- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59), except in a `raw` block, where a float may be written as its bits (section 19). A value outside a property's hard range, an infinity included, is written and read as it is, since a `.blend` can hold one in DNA though RNA clamps what is set: the checker says so in a `null-range` note, not an error, and Blender clamps it when Sau sets it (the lead's call on task 1c-02b).
 - **Units** follow the RNA unit of each property, as the table under "Units" below lists them. A bare number is Blender's internal unit (Blender units, radians, frames, seconds, watts). Writing a unit a property cannot take is an error.
 - **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): every factor in the table is an exact rational number except π/180, which is computed as precisely as the rounding needs, and the scene's unit scale and frame rate enter as the exact values of the floats Blender stores. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
 - **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, the IEC 61966-2-1 sRGB curve, exactly rounded once into each channel's type from a fixed table of the 256 channel values, with no floating-point `pow` (Sau's decision S62), alpha 1 for a four-channel colour; and printed back in that form only if it converts to the same bits. Blender's colour picker converts hex through its colour management, which differs from the exact curve for most values, so a colour set there prints back as a list of floats, not `#rrggbb`.
@@ -208,8 +208,8 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
 | Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is every item an enum's items at run time give that is not one the schema lists (an attribute's or a UV map's name), so it is never read as a misspelling of a listed one | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none. Another order, or an item twice, is an error whose fix is the schema's order: the order is part of the written form, so the same set is always the same text | `delimit [normal material]` (a decimate modifier), `delimit []` |
-| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
-| Pointer | A handle (section 7); `none` for an empty pointer where the property allows one. A struct the owner holds that is not a datablock, and that no form of Null's flattens (an add-on's settings, such as a scene's Cycles settings, or a struct such as `render`), is a block of that struct's properties. A property a flat form already sets is an error in such a block, with a fix that moves it there: a scene's `fps` is never `render { fps 30 }`, and its unit settings are `units`, never `unit-settings { … }` (S70: one spelling per property) | `camera @shot-cam`, `parent none`, `cycles { samples 64 }` |
+| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). The list is taken wherever a string goes, a datablock's display name included (`object @pur [80 252 114]`, `Pür` in Latin-1), and is held to the field's length in bytes as a string is (task 1c-02g). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
+| Pointer | A handle (section 7); `none` for an empty pointer where the property allows one. The schema marks a pointer Blender never lets be empty `never-none` (RNA's never-null flag), and `none` there is an error (Sau's task 1c-02j). A struct the owner holds that is not a datablock, and that no form of Null's flattens (an add-on's settings, such as a scene's Cycles settings, or a struct such as `render`), is a block of that struct's properties. A property a flat form already sets is an error in such a block, with a fix that moves it there: a scene's `fps` is never `render { fps 30 }`, and its unit settings are `units`, never `unit-settings { … }` (S70: one spelling per property) | `camera @shot-cam`, `parent none`, `cycles { samples 64 }` |
 | Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
 | Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
 | Multi-dimensional array | Nested lists, the first dimension outermost, as RNA's dimensions are listed | `[[1 0] [0 1] [0 0]]` for dimensions `[3 2]` |
@@ -300,6 +300,25 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 
 Blender gives a modifier its `persistent_uid` from a hash of its name when it is created, and a node its `identifier` at random, so neither is a handle: the handle is still made from the name, and the map ties the two together. A node socket is the one sub-object never renamed by a person outside node groups, so its handle is its name.
 
+### The handle map
+
+The project's map of handles to persistent IDs is `.sau/ids.noll`: Null text that Sau writes, kept in Git with the project (Sau's decisions S61 (2) and S66; task 1b-01f). Opened from its text, a project gives every datablock the same ID every time, on every machine. It is not a project file the checker reads as datablocks (section 4's examples are), so its example is fenced as text.
+
+```text
+// Sau's map of handles to persistent IDs (decisions S61 (2) and S66). Sau writes this file;
+// keep it in Git with the project.
+ids {
+  mesh @cube-mesh "1f0c39a2d64e5b7780c1aa0e95f3d2b4"
+  object @cube "4b43ea435eaf647774ed7d63bbb80432"
+}
+```
+
+- **One `ids` block** holds one entry per handle: the datablock's kind (section 8), its handle, and its ID as a string of 32 hexadecimal digits, the 16 bytes Blender keeps in order. Sau writes them in lower case; upper case reads the same. All zeros means no ID and is not an entry.
+- **Sorted** by kind and then handle, so a change shows as the lines it adds or removes. Sau rewrites the whole file, atomically, after an apply that changed it, and never through a link. A comment written by hand is not kept.
+- **What applying does with it.** A handle the map holds takes that ID: the datablock with it in the file, or a new one given it. A handle it does not hold gets a new random ID, which the next write records. With the map gone, a project still opens, with new IDs and a new map.
+- **What is left out.** An entry of another form, a handle given twice and an ID given twice are reported and left out, the first of two kept; the handle then gets a new ID.
+- **Sub-objects later.** Sub-objects Blender identifies only by name keep their handles here too, keyed by their owner's ID (S61 (3), the table above; task 1b-02b). Their form is reserved as a block on the owner's entry, `object @rig "…" { bone @spine "Spine.002" }`, which a reader of the map today ignores.
+
 ## 8. The objects
 
 Every one of Blender's datablock types that holds project data has a kind, generated from RNA (Sau's tasks 1b-03b and 1b-03c), and so does every node, modifier, constraint, strip and other struct of a family. One rule names them all, with no exceptions beyond the slice's core (Sau's decision S67):
@@ -315,7 +334,7 @@ Each object kind's properties are the RNA properties of its struct, by the same 
 
 ### Null's forms over RNA
 
-The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender, so a value far from every listed item (`instance-type zzzzzz`) passes the checker unseen and is refused, if at all, only when Sau applies it. A struct's kind follows S67's rule above (`bsdf-principled`), the slice's own names kept. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
+The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. A string whose field Blender fixes gives its length in bytes, the closing NUL included, as `max-length` (Sau's task 1b-03h; `ID.name` is 256), and the checker refuses a longer one, a display name included; a string of any length has none. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender, so a value far from every listed item (`instance-type zzzzzz`) passes the checker unseen and is refused, if at all, only when Sau applies it. A struct's kind follows S67's rule above (`bsdf-principled`), the slice's own names kept. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
 
 | Form | Means | Why |
 | --- | --- | --- |
@@ -392,7 +411,7 @@ Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6
 - **Overrides** (S33). `override @plank.7 { … }`, beside the `use` line, gives one copy other parameters or properties. `override @plank.7/@plank-mesh { … }` reaches a datablock the copy made. An edit in Sau to a placed copy is written as an override on it by default, and to the component itself only on request (1d-03f), as Figma's instances and main components are edited.
 - **Recursion that counts down** (S38, S74 (5)). A component may place itself, directly or through others, only when one whole-number parameter is marked `{ countdown }`, every such placement passes it a smaller value, and the placements sit under an `if` that holds only while it is above 0. The checker refuses any other recursion.
 
-**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
+**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. The short forms are written in full first (section 17, S77), so a component's lines are read as their full forms. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
 
 How the flat project is written (task 1d-03c):
 - **Components are taken out**, and each scene or collection that places copies is written with a member line for each copy's root (`object @plank.7`), and for each copy made inside one (`object @tree/@left`). The copies' datablocks follow it in its file, in placement order, each copy's in the component's order, under their handles: `object @plank.7 "Plank"`, `mesh @plank.7/@plank-mesh "Plank"`. Every other line is as written.
@@ -763,7 +782,7 @@ Files in `checks/` state what must be true of the scene and of renders: a polygo
 
 ## 15. Canonical form
 
-The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
+The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, which Null's `format` fuzz target holds it to on any text, with the layout keeping every token and construct (task 1d-02d). Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
 
 The layout is fixed (settled November 7, 2026, task 1a-07):
 
@@ -829,26 +848,27 @@ Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and
 
 ### Short forms
 
-Task 1d-03d, November 8, 2026 (Sau's decision S35: the abstract form first, the full form always available). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::expand` writes a project's files with every short form in full, which is what the checker and Sau's apply read it as. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
+Tasks 1d-03d and 1d-03j, November 8, 2026 (Sau's decisions S35, the abstract form first and the full form always available, and S77). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::full_form` writes a project's files with all eight short forms below in full, which is what the checker and Sau's apply read it as. A component's block takes them as a file does, its datablocks as datablocks and its `if` and `else` blocks as the lines they hold. Sau's load writes the full form first and then expands components (`null_check::expand`, section 8), as S77 settles. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
 
 | Short form | Full form | Where |
 | --- | --- | --- |
 | `object "Pier"`: the handle left out | `object @pier "Pier"`, the handle made from the name | A datablock (section 7) |
 | `modifier @bevel bevel`: the quoted name left out | `modifier @bevel bevel "bevel"`, the handle without `@` | A modifier, constraint, pose bone, node or attribute (sections 8, 9 and 10) |
 | `modifier @bevel bevel width=4mm`: settings on the line | `modifier @bevel bevel { width 4mm }` | A datablock, modifier, constraint or pose bone (section 5). Other lines' `key=value`s (a key's `interpolation=`, an f-curve's `index=`, a primitive's settings, `slot=`) are part of the line, not settings |
-| `hide-render`: a bare boolean | `hide-render on` | Any boolean (section 5) |
+| `hide-render`: a bare boolean | `hide-render on` | A boolean of the line's owner: its datablock's, sub-object's, struct block's or node's struct (section 5). A line that is no boolean of its owner, such as a parameter's `{ countdown }`, is not one |
 | `units metric scale=1 length=m rotation=deg` | `units { system metric; scale-length 1; length-unit meters; system-rotation degrees }` | A project or scene (section 8) |
 | `action @bob`: `slot=` left out | `action @bob slot=@buoy` | The line that plays an action with one slot (section 11) |
 | An action's f-curves in its slots' blocks | `layer @layer "Layer" { strip @strip keyframe { channels @buoy { … } } }`, with the slot lines kept | An action with one layer and one keyframe strip (section 11, S71 (3)). `Layer` is Blender's name for a first layer. A strip has no name, so its handle is its kind, with `-2` added where the action already has a sub-object of that handle |
-| `parent @box` in `material @clay`: a path's owner left out | `@clay/@box` | A path in its owner's block (section 7). Lines name their own datablock's nodes and sub-objects this way, so expansion leaves them as written. The index of paths reads both forms as the same, and write-back writes the short one in the owner's block |
+| `parent @box` and `@noise.fac` in `material @clay`: a path's owner left out | `parent @clay/@box`, `@clay/@noise.fac` | A link or a frame in a datablock's `nodes` block, naming one of its nodes (section 7). The checker reads a tree's links and frames either way, and a path from another datablock names none of this tree's nodes. The index of paths reads both forms as the same |
 
 Write-back keeps each form in these ways:
 - A value is changed where it is written: on the line (`width=5mm`), as a unit word in `units` (`length=cm` for `centimeters`), or in a slot's block for a strip's channels.
 - A bare boolean stays bare while it is on and becomes `hide-render off` when it is not.
 - `slot=` stays left out while the slot is the action's only one.
 - A handle that is made from the name stays left out.
+- A path stays written the way it is, from its owner or not.
 
-Every example in this section and in sections 8, 10 and 11, expanded, checks clean, and expanding it again changes nothing (`null_print`'s `short` test).
+Every example in this section and in sections 8, 10 and 11, in full form, checks clean, and writing it in full again changes nothing. Its components' copies check clean too (`null_print`'s `short` test).
 
 ```null
 scene @harbour "Harbour" {
@@ -872,7 +892,7 @@ action @bob "Bob" {
 
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a value's, since Blender clamps it), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`. The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`. The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
 
 How the messages are worded (task 1d-02e):
 - **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.
@@ -888,8 +908,30 @@ The snapshots show what each fix makes of the text, as well as its words.
 Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists the data RNA does not reach. `sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
 
 - everything RNA reaches is written as named Null properties;
-- data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
-- runtime-only data is skipped, and the list of what counts as runtime is part of the spec.
+- data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink (the form is below);
+- runtime-only data is skipped, and the list of what counts as runtime is part of the spec;
+- a value outside its property's hard range is clamped when Sau sets it through RNA, as Blender's interface clamps (section 6, "Numbers"); so is an infinity in a property whose range is the default, ±`FLT_MAX`, which becomes `FLT_MAX` with its sign. Such a value survives the conversion only where the datablock's `raw` block carries its field (Sau's task 1d-05b).
+
+**The `raw` block** (Sau's task 1d-05b) holds a datablock's DNA fields that no RNA property reads and no rule over DNA's facts leaves out (Sau's tasks 1b-04a and 1b-04b). Which fields a struct has is the raw table, `schema/null-raw.json`, which Sau's build writes with the other schemas: per DNA struct, each such field of the struct or of a struct embedded in it, by its path, its DNA type and its array dimensions. A field behind a pointer or in a list is not in it yet.
+
+```null
+object @beacon "Beacon" {
+  location [0m 0m 1m]
+  raw {
+    restore_mode 0
+    col_mask 255
+    collision_boundtype 4
+    constinv [[1 0 0 0] [0 1 0 0] [0 0 1 0] [0 0 0 0x7fa00001]]
+  }
+}
+```
+
+(`restore_mode`, an `int`; `col_mask`, an `unsigned short`, written 0 to 65535; `collision_boundtype`, a `char`; and `constinv`, a `float[4][4]`, are `Object` fields of Blender 5.3's SDNA that no RNA property reads.)
+
+- **One line per field,** its flat path in the code's names (`transflag`, `r.mode` for `mode` of the embedded `r`), which keep DNA's own spelling: inside a `raw` block, at any depth, names are not held to kebab-case. The `raw` line itself is.
+- **Each value as its DNA type reads.** An integer in decimal, held to its type's range; `char`, `uchar` and `bool` as the byte's value, 0 to 255, the same on every platform. A float or double as the shortest decimal that reads back to its bits, `inf`, `-inf` or `nan`; a NaN other than the quiet one `nan` reads as (`0x7fc00000` for a float), its sign and payload included, as its bits instead: `0x` and exactly 8 lowercase hexadecimal digits for a float, 16 for a double. Bits are for such a NaN alone: any other value written as bits is an error whose fix is its decimal, or `nan`. Outside a `raw` block a float's bits are an error.
+- **An array as a list of exactly its length,** nested for each dimension; a `char` array as the list of every byte, those after its closing NUL included.
+- **Exact.** Bytes are written and set as DNA holds them, bit for bit, through no RNA setter: a `raw` field's value is never clamped (the line above). The checker refuses a field the table does not list for the datablock's struct, a value its type cannot hold and a list of another length. Sau prints every raw field of a datablock until the raw table carries DNA's defaults.
 
 Correctness is checked by a field-by-field comparison of the original and the round-tripped `.blend` (by DNA structure, not by bytes, since a `.blend` holds memory addresses), and by rendering both. Through Blender's importers, any format Blender reads (glTF, FBX, OBJ, USD, Alembic, PLY, STL) converts into Null the same way.
 

@@ -40,6 +40,11 @@ pub struct Schema {
     /// Index into `structs` by kind, made by [`Schema::from_json`].
     #[serde(skip)]
     by_kind: HashMap<String, usize>,
+    /// The raw table, the fields each DNA struct's `raw` block takes (section 19, Sau's task
+    /// 1d-05b), when given ([`Schema::with_raw`]); without it a `raw` block's lines are not
+    /// checked against DNA.
+    #[serde(skip)]
+    pub raw: Option<crate::raw::RawTable>,
 }
 
 /// One add-on's section of the project's schema (task 1b-03g).
@@ -117,6 +122,10 @@ pub struct Property {
     /// The struct a pointer or collection refers to.
     #[serde(default)]
     pub target: Option<String>,
+    /// A pointer Blender never lets be empty (RNA's `PROP_NEVER_NULL`): `none` is an error there
+    /// (Sau's task 1c-02j).
+    #[serde(default, rename = "never-none")]
+    pub never_none: bool,
     /// Whether RNA lets it be set.
     #[serde(default)]
     pub readonly: bool,
@@ -155,6 +164,10 @@ pub struct Range {
 pub struct Item {
     /// Null's name, such as `xyz`.
     pub name: String,
+    /// RNA's identifier, such as `XYZ`, where the schema gives it (the project's does): what
+    /// Sau sets through the bridge (task 1c-02d).
+    #[serde(default)]
+    pub rna: Option<String>,
     /// Whether the name is free text, not an identifier (a colour space's), so it is written
     /// as a string (S16).
     #[serde(default)]
@@ -205,6 +218,12 @@ pub struct Primitive {
 }
 
 impl Schema {
+    /// The schema with its raw table (`schema/null-raw.json`, section 19).
+    pub fn with_raw(mut self, raw: crate::raw::RawTable) -> Schema {
+        self.raw = Some(raw);
+        self
+    }
+
     /// Reads a schema file's text.
     pub fn from_json(text: &str) -> Result<Schema, serde_json::Error> {
         let mut schema: Schema = serde_json::from_str(text)?;
@@ -316,6 +335,7 @@ impl Property {
             range: None,
             items: None,
             target: None,
+            never_none: false,
             readonly: false,
             items_at_run_time: false,
             flags: false,

@@ -66,11 +66,13 @@ struct Order {
 
 impl Order {
     fn key(&self, name: &str) -> usize {
-        if let Some(i) = self.names.iter().position(|n| n == name) {
-            return i;
+        // `last` first: a node group's `nodes` is also its struct's RNA property, which would
+        // put it before the interface lines section 10 writes first (the 1d-08a review).
+        if let Some(i) = self.last.iter().position(|n| n == name) {
+            return usize::MAX - self.last.len() + i;
         }
-        match self.last.iter().position(|n| n == name) {
-            Some(i) => usize::MAX - self.last.len() + i,
+        match self.names.iter().position(|n| n == name) {
+            Some(i) => i,
             None => usize::MAX - self.last.len() - 1,
         }
     }
@@ -579,7 +581,7 @@ fn ends_in_line_comment(node: SyntaxNode<'_>) -> bool {
     })
 }
 
-/// `text` with every run of line feeds, and the spaces between them, made one line feed.
+/// `text` with every run of line feeds, and the whitespace between them, made one line feed.
 fn no_blank_lines(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut pending = String::new();
@@ -593,7 +595,9 @@ fn no_blank_lines(text: &str) -> String {
                 newline = true;
                 pending.clear();
             }
-            ' ' | '\t' | '\r' if newline => pending.push(c),
+            // Any whitespace the lexer reads as such, a vertical tab's included (task 1d-02d's
+            // fuzzing found one keeping a blank line alive for one pass).
+            c if newline && c.is_whitespace() => pending.push(c),
             _ => {
                 out.push_str(&pending);
                 pending.clear();

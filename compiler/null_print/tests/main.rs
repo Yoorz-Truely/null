@@ -3,6 +3,8 @@
 //! 9. The files keep their names, so their snapshots and proptest regressions stay where
 //! they were. A new test file must be listed here: `every_test_file_is_a_module` fails otherwise.
 
+#[path = "byte_strings.rs"]
+mod byte_strings;
 #[path = "canonical.rs"]
 mod canonical;
 #[path = "defaults.rs"]
@@ -24,6 +26,7 @@ mod write;
 
 /// The test files of this folder, each a module above.
 const MODULES: &[&str] = &[
+    "byte_strings.rs",
     "canonical.rs",
     "defaults.rs",
     "format.rs",

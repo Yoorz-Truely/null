@@ -82,3 +82,55 @@ fn an_integer_past_32_bits_is_an_error_not_a_note() {
         "{found:#?}"
     );
 }
+
+const BOOLS: &str = r#"{
+  "format": 1,
+  "structs": [
+    {"kind": "id", "rna": "ID", "properties": []},
+    {"kind": "thing", "rna": "Thing", "base": "ID", "properties": [
+      {"name": "lock", "type": "bool", "array": [3]},
+      {"name": "mask", "type": "bool", "array": "dynamic", "min-length": 1},
+      {"name": "hidden", "type": "bool"}
+    ]}
+  ],
+  "nodes": [],
+  "primitives": []
+}"#;
+
+#[test]
+fn a_boolean_array_is_a_list_of_on_and_off() {
+    // Sau's 1c-02e: `lock-location [on off on]`, as the spec's arrays are written.
+    let schema = Schema::from_json(BOOLS).unwrap();
+    let found = |body: &str| {
+        let file = parse(&thing(body));
+        check(&schema, &[(FileId(0), &file)])
+    };
+    for ok in [
+        "lock [on off on]",
+        "mask [off]",
+        "mask [on on off on]",
+        "hidden",
+        "hidden off",
+    ] {
+        assert!(found(ok).is_empty(), "{ok}: {:#?}", found(ok));
+    }
+    for (bad, says) in [
+        ("lock [on off]", "takes 3 values, each on or off"),
+        ("lock on", "as a list such as [off off off]"),
+        ("lock [on maybe on]", "`lock` is on or off"),
+        ("mask []", "this list has 0"),
+        ("hidden [on]", "`hidden` is on or off"),
+    ] {
+        let errors = found(bad);
+        assert_eq!(errors.len(), 1, "{bad}: {errors:#?}");
+        assert_eq!(errors[0].code, codes::TYPE);
+        assert!(
+            errors[0].message.contains(says),
+            "{bad}: {}",
+            errors[0].message
+        );
+    }
+    // A fix still reaches each item.
+    let yes = found("lock [on yes on]");
+    assert_eq!(yes[0].fixes[0].edits[0].replacement, "on");
+}

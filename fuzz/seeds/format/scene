@@ -1,0 +1,12 @@
+scene @main "Main" {
+  frame-start 1
+  frame-end 240
+  fps 24
+  camera @shot-cam
+
+  collection @harbor "Harbor" {
+    object @pier
+    object @lamp
+    object @shot-cam
+  }
+}
