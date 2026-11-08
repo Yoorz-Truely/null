@@ -1,0 +1,10 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { rotation-mode xyy }\n
+case.noll:1:31 error[null-enum]: `xyy` is not a value of `rotation-mode`: it takes `quaternion`, `xyz`, `xzy`, `yxz`, `yzx`, `zxy`, `zyx`, `axis-angle`
+  fix: write `xyz`
+--- object @o "O" { empty-display-type cubee }\n
+case.noll:1:36 error[null-enum]: `cubee` is not a value of `empty-display-type`: it takes `plain-axes`, `arrows`, `single-arrow`, `circle`, `cube`, `sphere`, `cone`, `image`
+  fix: write `cube`

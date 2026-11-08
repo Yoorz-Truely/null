@@ -1,0 +1,9 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" {\n  location [0m 0m 1m\n}\n
+case.noll:2:12 error[null-syntax]: this [ is never closed; add ] after the last value
+  fix: add ] after the last value
+--- object @o "O" {\n  name = "x"\n}\n
+case.noll:2:8 error[null-syntax]: expected a key before =, such as frame-start=1

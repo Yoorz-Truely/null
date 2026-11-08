@@ -1,0 +1,15 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @Big_Cube "O"\n
+case.noll:1:8 error[null-name]: `@Big_Cube` is not a kebab-case handle: `@`, then lower-case words joined by `-`
+  fix: write `@big-cube`
+--- object @o "O" { rotation-mode XYZ }\n
+case.noll:1:31 error[null-name]: `XYZ` is not kebab-case: `rotation-mode`'s values are written in lower case, `xyz`
+  fix: write `xyz`
+--- object @o "O" { pass_index 1 }\n
+case.noll:1:17 error[null-name]: `pass_index` is not kebab-case: a node name is lower-case words joined by `-`
+  fix: write `pass-index`
+case.noll:1:17 error[null-unknown-property]: an object has no `pass_index`; did you mean `pass-index`?
+  fix: write `pass-index`

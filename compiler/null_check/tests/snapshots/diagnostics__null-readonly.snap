@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { mode edit }\n
+case.noll:1:17 error[null-readonly]: `mode` is read-only in Blender, so it is not written

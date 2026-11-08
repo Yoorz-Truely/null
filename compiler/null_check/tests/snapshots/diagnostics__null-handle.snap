@@ -1,0 +1,12 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { parent @lamp }\nobject @lamb "Lamb"\n
+case.noll:1:24 error[null-handle]: no object is called `@lamp`; did you mean `@lamb`?
+  fix: write `@lamb`
+--- object @o "O" { data mesh @nothing }\n
+case.noll:1:27 error[null-handle]: no mesh is called `@nothing`
+--- object @o "O"\nobject @o "Again"\n
+case.noll:2:8 error[null-handle]: `@o` is defined twice as an object; a handle is unique within its kind
+  case.noll:1:8: first defined here
