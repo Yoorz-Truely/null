@@ -225,16 +225,15 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
             .unwrap_or(names.len());
         names.insert(at, (*form).to_string());
     }
-    // A sub-object line stands where RNA's collection of it stands (`modifier` at `modifiers`,
-    // `constraint` at `constraints`, an action's `slot` at `slots`; task 1d-02b).
-    let plurals: Vec<(String, String)> = names
-        .iter()
-        .filter_map(|n| n.strip_suffix('s').map(|one| (one.to_string(), n.clone())))
-        .filter(|(one, _)| !names.contains(one))
-        .collect();
-    for (one, many) in plurals {
-        if let Some(at) = names.iter().position(|n| *n == many) {
-            names.insert(at, one);
+    // A sub-object line (section 7's kinds) stands where RNA's collection of it stands: `modifier`
+    // at `modifiers`, `constraint` at `constraints`, an action's `slot` at `slots` (task 1d-02b;
+    // a named list, after 1d-02b's review, not a guess from plurals).
+    for (line, collections) in SUB_OBJECT_COLLECTIONS {
+        if names.iter().any(|n| n == line) {
+            continue;
+        }
+        if let Some(at) = names.iter().position(|n| collections.contains(&n.as_str())) {
+            names.insert(at, (*line).to_string());
         }
     }
     if kind == "scene" {
@@ -361,6 +360,24 @@ fn zone_order(tree: &str) -> Order {
         ..Order::default()
     }
 }
+
+/// Section 7's sub-object lines, each with the RNA collections that hold them, by Null name.
+const SUB_OBJECT_COLLECTIONS: &[(&str, &[&str])] = &[
+    ("modifier", &["modifiers"]),
+    ("constraint", &["constraints"]),
+    ("bone", &["bones"]),
+    ("bone-collection", &["collections"]),
+    ("shape-key", &["key-blocks"]),
+    ("vertex-group", &["vertex-groups"]),
+    ("uv-map", &["uv-layers"]),
+    ("attribute", &["attributes"]),
+    ("view-layer", &["view-layers"]),
+    ("slot", &["slots"]),
+    ("layer", &["layers"]),
+    ("strip", &["strips"]),
+    ("track", &["nla-tracks"]),
+    ("marker", &["timeline-markers"]),
+];
 
 /// A `units` block's order: `UnitSettings`', with the short names standing for the full ones.
 fn units_order(schema: &Schema) -> Order {

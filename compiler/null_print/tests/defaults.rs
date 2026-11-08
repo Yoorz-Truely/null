@@ -101,3 +101,48 @@ fn the_default_is_a_new_datablocks_and_a_matrix_is_row_by_row() {
     assert!(is_default(&d, &roughness));
     assert!(!is_default(&Typed::F32(-0.0), &roughness) || d == Typed::F32(-0.0));
 }
+
+#[test]
+fn every_float32_default_in_the_schema_is_its_shortest_decimal() {
+    // `default_of` reads a float32 default as `as_f64() as f32`, which is exact only while the
+    // schema prints each float32 default as the shortest decimal that reads back to it (the
+    // generator's `f32`); a longer decimal of the float's exact value would still read right,
+    // but one that is not that float's would round once more. This pins the form (1d-02b's review).
+    let json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let mut seen = 0;
+    let mut wrong = Vec::new();
+    for s in json["structs"].as_array().unwrap() {
+        for p in s["properties"].as_array().unwrap() {
+            if p["type"] != "float32" {
+                continue;
+            }
+            for key in ["default", "new"] {
+                let mut values = Vec::new();
+                match &p[key] {
+                    serde_json::Value::Number(n) => values.push(n.clone()),
+                    serde_json::Value::Array(xs) => {
+                        values.extend(xs.iter().filter_map(|x| x.as_number().cloned()))
+                    }
+                    _ => {}
+                }
+                for n in values {
+                    seen += 1;
+                    let x = n.as_f64().unwrap();
+                    let f = x as f32;
+                    // The decimal written is the float32's shortest, so it reads back as that
+                    // float32 exactly, through f64 or directly.
+                    if f64::from(f) != x && format!("{f}").parse::<f64>().unwrap() != x {
+                        wrong.push(format!("{}.{} {key} {n}", s["rna"], p["name"]));
+                    }
+                }
+            }
+        }
+    }
+    assert!(seen > 1000, "{seen} float32 defaults");
+    assert!(
+        wrong.is_empty(),
+        "{} not shortest float32: {:?}",
+        wrong.len(),
+        &wrong[..wrong.len().min(10)]
+    );
+}
