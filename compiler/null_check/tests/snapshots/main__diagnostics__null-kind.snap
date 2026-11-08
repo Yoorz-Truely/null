@@ -3,7 +3,7 @@ source: compiler/null_check/tests/diagnostics.rs
 expression: out
 ---
 --- objeet @o "O"\n
-case.noll:1:1 error[null-kind]: `objeet` is not a kind of datablock the schema knows: `object`, `project`, `blend`, `text`, `camera`, `curve`, `curves`, `image`, `key`, `light`, `plane`, `sphere` and 48 more
+case.noll:1:1 error[null-kind]: `objeet` is not a kind of datablock the schema knows: `object`, `project`, `blend`, `text`, `camera`, `curve`, `curves`, `image`, `key`, `light`, `plane`, `sphere` and 49 more
   fix: write `object`
   `write `object`` gives: object @o "O"\n
 --- mesh @m "M" { primitive cuboid size=1m }\n

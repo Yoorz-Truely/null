@@ -4,12 +4,15 @@ use null_syntax::ast::Value;
 use null_syntax::{Diagnostic, FileId, Span, closest};
 use null_value::{Dimension, ReadError, Scene, read_in, read_int, unit_of};
 
+use crate::check::components::{Want, expression};
 use crate::codes;
 use crate::schema::Property;
 
 /// Where diagnostics go.
 pub(crate) struct Out<'o> {
     pub file: FileId,
+    /// Inside a component or a placement: the names a value may use (task 1d-03b).
+    pub scope: Option<&'o crate::check::components::Scope>,
     pub list: &'o mut Vec<Diagnostic>,
     /// The scene whose block is being checked: its frame rate, for seconds written on a frame
     /// property (task 1c-01c). `None` outside a scene.
@@ -154,6 +157,10 @@ pub(crate) fn check_float(
     p: &Property,
     out: &mut Out<'_>,
 ) {
+    // An expression of a component's parameters (task 1d-03b).
+    if expression(value, name, Want::Dim(dimension), out) {
+        return;
+    }
     let Some(word) = value.as_word() else {
         out.error(
             codes::TYPE,
@@ -205,6 +212,9 @@ pub(crate) fn check_int(
     p: &Property,
     out: &mut Out<'_>,
 ) -> Option<i64> {
+    if expression(value, name, Want::Whole, out) {
+        return None;
+    }
     let Some(word) = value.as_word() else {
         out.error(
             codes::TYPE,
@@ -653,6 +663,7 @@ pub(crate) fn check_bool(args: &[Value<'_>], name: &str, span: Span, out: &mut O
     match args {
         [] => {}
         [v] if matches!(v.as_word(), Some("on" | "off")) => {}
+        [v] if expression(v, name, Want::Bool, out) => {}
         [v] => {
             let fix = match v.as_word() {
                 Some("true" | "yes" | "1") => Some("on"),

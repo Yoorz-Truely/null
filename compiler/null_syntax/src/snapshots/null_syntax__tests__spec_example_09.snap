@@ -16,3 +16,4 @@ expression: "v0::render(&items)"
  10         attribute: fluid-type flow
  13   datablock: mesh @plank-mesh "Plank"
  14     attribute: primitive cube size=1m scale=[length/1m 0.2 0.04]
+ 19 datablock: material @water "Water"
