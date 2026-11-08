@@ -490,6 +490,7 @@ mod tests {
     fn a_value_of_the_wrong_type_or_shape_is_refused() {
         for (ty, dims, text, says) in [
             ("short", &[][..], "32768", "out of its range"),
+            ("ushort", &[][..], "-1", "out of its range"),
             ("char", &[][..], "-1", "out of its range"),
             ("int", &[][..], "1.5", "is not one"),
             ("float", &[][..], "0x7fa0", "8 hexadecimal digits"),

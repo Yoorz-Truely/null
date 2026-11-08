@@ -842,14 +842,14 @@ object @buoy "Buoy" {
   location [0m 0m 1m]
   raw {
     restore_mode 0
-    col_mask -1
+    col_mask 255
     collision_boundtype 4
     constinv [[1 0 0 0] [0 1 0 0] [0 0 1 0] [0 0 0 0x7fa00001]]
   }
 }
 ```
 
-(`restore_mode`, an `int`; `col_mask`, a `short`, so its sixteen bits all set are -1; `collision_boundtype`, a `char`; and `constinv`, a `float[4][4]`, are `Object` fields of Blender 5.3's SDNA that no RNA property reads.)
+(`restore_mode`, an `int`; `col_mask`, an `unsigned short`, written 0 to 65535; `collision_boundtype`, a `char`; and `constinv`, a `float[4][4]`, are `Object` fields of Blender 5.3's SDNA that no RNA property reads.)
 
 - **One line per field,** its flat path in the code's names (`transflag`, `r.mode` for `mode` of the embedded `r`), which keep DNA's own spelling: inside a `raw` block, at any depth, names are not held to kebab-case. The `raw` line itself is.
 - **Each value as its DNA type reads.** An integer in decimal, held to its type's range; `char`, `uchar` and `bool` as the byte's value, 0 to 255, the same on every platform. A float or double as the shortest decimal that reads back to its bits, `inf`, `-inf` or `nan`; a NaN other than the quiet one `nan` reads as (`0x7fc00000` for a float), its sign and payload included, as its bits instead: `0x` and exactly 8 lowercase hexadecimal digits for a float, 16 for a double. Bits are for such a NaN alone: any other value written as bits is an error whose fix is its decimal, or `nan`. Outside a `raw` block a float's bits are an error.
