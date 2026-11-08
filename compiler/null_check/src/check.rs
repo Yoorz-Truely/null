@@ -1098,11 +1098,16 @@ impl<'s> Checker<'s> {
             };
             let inputs: Vec<&Property> = def.inputs.iter().collect();
             let names: Vec<&str> = inputs.iter().map(|p| p.name.as_str()).collect();
-            for v in &args[2..] {
+            // After the kind, the node's Blender name in quotes may follow (spec section 7: the
+            // quoted string is Blender's name, which may change freely; Sau's task 1b-02d).
+            for (i, v) in args.iter().enumerate().skip(2) {
+                if i == 2 && matches!(v, Value::Str(_) | Value::Raw(_)) {
+                    continue;
+                }
                 self.out(file).error(
                     codes::TYPE,
                     v.span(),
-                    "a node's inputs are written as `name value` lines or `name=value`",
+                    "a node's line is `node @handle kind \"Name\"`; its inputs are written as `name value` lines or `name=value`",
                 );
             }
             let mut given = HashSet::new();
