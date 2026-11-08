@@ -6,7 +6,7 @@
 //! Structs are found by RNA identifier and by kind through indexes made once at load, since the
 //! project's schema has about 1,350 of them (task 1b-03e).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::Deserialize;
 use serde_json::Value as Json;
@@ -26,12 +26,43 @@ pub struct Schema {
     pub nodes: Vec<NodeDef>,
     /// Mesh primitives: the add operators and their settings.
     pub primitives: Vec<Primitive>,
+    /// Add-ons' settings, each its own section (task 1b-03g): Cycles' render, object, light and
+    /// world settings. Their structs are read as Blender's are; their properties on Blender's
+    /// structs (`Scene.cycles`) are added to those structs'.
+    #[serde(default)]
+    pub addons: BTreeMap<String, Addon>,
+    /// Add-ons' properties on Blender's structs, by owner, made by [`Schema::from_json`].
+    #[serde(skip)]
+    attached: HashMap<String, Vec<Property>>,
     /// Index into `structs` by RNA identifier, made by [`Schema::from_json`].
     #[serde(skip)]
     by_rna: HashMap<String, usize>,
     /// Index into `structs` by kind, made by [`Schema::from_json`].
     #[serde(skip)]
     by_kind: HashMap<String, usize>,
+}
+
+/// One add-on's section of the project's schema (task 1b-03g).
+#[derive(Clone, Debug, Deserialize)]
+pub struct Addon {
+    /// Its Python module, such as `cycles`.
+    pub module: String,
+    /// Its version: Blender's, for an add-on bundled with Blender.
+    pub version: String,
+    /// The properties it adds to Blender's structs.
+    pub attached: Vec<Attached>,
+    /// The structs it defines.
+    pub structs: Vec<Struct>,
+}
+
+/// An add-on's property on one of Blender's structs, such as `Scene.cycles`.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Attached {
+    /// The struct it is on, by RNA identifier.
+    pub owner: String,
+    /// The property.
+    #[serde(flatten)]
+    pub property: Property,
 }
 
 /// One datablock type of the project's schema.
@@ -153,6 +184,13 @@ impl Schema {
     /// Reads a schema file's text.
     pub fn from_json(text: &str) -> Result<Schema, serde_json::Error> {
         let mut schema: Schema = serde_json::from_str(text)?;
+        let addons: Vec<Addon> = schema.addons.values().cloned().collect();
+        for addon in addons {
+            schema.structs.extend(addon.structs);
+            for a in addon.attached {
+                schema.attached.entry(a.owner).or_default().push(a.property);
+            }
+        }
         for (i, s) in schema.structs.iter().enumerate() {
             schema.by_rna.entry(s.rna.clone()).or_insert(i);
             schema.by_kind.entry(s.kind.clone()).or_insert(i);
@@ -170,15 +208,30 @@ impl Schema {
         self.by_kind.get(kind).map(|&i| &self.structs[i])
     }
 
-    /// `rna`'s properties and those of every struct it extends, its own first.
+    /// `rna`'s properties and those of every struct it extends, its own first, with what add-ons
+    /// add to each (`Scene.cycles`).
     pub fn properties_of<'a>(&'a self, rna: &str) -> Vec<&'a Property> {
         let mut out = Vec::new();
         let mut at = self.struct_by_rna(rna);
         while let Some(s) = at {
             out.extend(s.properties.iter());
+            out.extend(self.attached.get(&s.rna).into_iter().flatten());
             at = s.base.as_deref().and_then(|b| self.struct_by_rna(b));
         }
         out
+    }
+
+    /// Whether the struct `rna` is a datablock type, which a pointer names by its handle; any
+    /// other a pointer holds is written as a block of its properties.
+    pub fn is_datablock_struct(&self, rna: &str) -> bool {
+        let mut at = self.struct_by_rna(rna);
+        while let Some(s) = at {
+            if s.rna == "ID" {
+                return true;
+            }
+            at = s.base.as_deref().and_then(|b| self.struct_by_rna(b));
+        }
+        rna == "ID"
     }
 
     /// The node of kind `kind` in a tree of type `tree` (`ShaderNodeTree`).

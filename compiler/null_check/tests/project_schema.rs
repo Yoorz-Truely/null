@@ -231,3 +231,67 @@ fn a_material_takes_the_node_kinds_a_shader_tree_takes() {
     });
     assert!(switch.is_some());
 }
+
+#[test]
+fn cycles_settings_are_their_own_section_and_check_as_blocks() {
+    // Task 1b-03g: Cycles' settings, from its own section, written as blocks of the structs a
+    // scene, object, light or world holds (spec, section 6, "Pointer").
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let cycles = &schema.addons["cycles"];
+    assert_eq!(cycles.module, "cycles");
+    assert!(
+        cycles
+            .attached
+            .iter()
+            .any(|a| a.owner == "Scene" && a.property.name == "cycles")
+    );
+    let render = "\
+scene @main \"Main\" {
+  cycles {
+    samples 64
+    device gpu
+    use-denoising
+    time-limit 30s
+  }
+  frame-start 1
+}
+
+object @cube \"Cube\" {
+  cycles { use-motion-blur off }
+}
+
+light @lamp \"Lamp\" {
+  type point
+  cycles { max-bounces 8 }
+}
+
+world @sky \"Sky\" {
+  cycles { sampling-method automatic }
+}
+";
+    let found = errors(&schema, &[render]);
+    assert!(found.is_empty(), "{found:#?}");
+    // A misspelt Cycles setting is found, with its fix.
+    let misspelt = errors(
+        &schema,
+        &["scene @main \"Main\" {\n  cycles { sampels 64 }\n}\n"],
+    );
+    assert_eq!(misspelt.len(), 1, "{misspelt:#?}");
+    assert_eq!(misspelt[0].code, codes::UNKNOWN_PROPERTY);
+    assert_eq!(misspelt[0].fixes[0].edits[0].replacement, "samples");
+    // A value out of Cycles' range is refused.
+    let range = errors(
+        &schema,
+        &["scene @main \"Main\" {\n  cycles { samples 0 }\n}\n"],
+    );
+    assert_eq!(range.len(), 1, "{range:#?}");
+    assert_eq!(range[0].code, codes::RANGE);
+    // Without the section (the slice's schema), `cycles` is no property of a scene.
+    let slice = Schema::from_json(SLICE).unwrap();
+    let without = errors(
+        &slice,
+        &["scene @main \"Main\" {\n  cycles { samples 64 }\n}\n"],
+    );
+    assert_eq!(without.len(), 1, "{without:#?}");
+    assert_eq!(without[0].code, codes::UNKNOWN_PROPERTY);
+}

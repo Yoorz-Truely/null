@@ -489,6 +489,19 @@ impl<'s> Checker<'s> {
 
     /// One RNA property's value.
     fn property(&mut self, file: FileId, a: &Attr<'_>, p: &Property, power: bool) {
+        // A struct the owner holds, not a datablock (`cycles` on a scene, task 1b-03g), is written
+        // as a block of its own properties, checked as that struct's.
+        if p.ty == "pointer"
+            && let Some(block) = a.node.filter(|n| n.block().is_some())
+            && let Some(target) = p.target.as_deref()
+            && !self.schema.is_datablock_struct(target)
+            && let Some(s) = self.schema.struct_by_rna(target)
+        {
+            let schema = self.schema;
+            let props = schema.properties_of(target);
+            self.attributes(file, block, &s.kind.clone(), &props, &[]);
+            return;
+        }
         let mut out = self.out(file);
         let name = a.name.as_str();
         if p.readonly || p.ty == "collection" {
