@@ -42,3 +42,8 @@ The report of agent/null-a working as `agent/null-1a17` on Null's row 1a-17, in 
 **Checked.** Null's `just check` passes (lint-only). There is no code change.
 
 ## Review
+
+## Fixes after review (`33f6f4a`)
+
+- **Section 17.** Edit mode and sculpt mode writing their data on leaving, and after a pause, is now marked as later: phase 3 of Sau's roadmap, two-way editing with VS Code. The slice writes back transforms only.
+- **Section 22, row 1.** The 21.5% is now said to be of short degree values read into a float64. It never happens for the slice's float32 rotations, and S59 holds every type to the exact rule all the same.

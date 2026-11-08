@@ -390,7 +390,9 @@ Every edit in Sau's interface (a drag, a slider, an operator, a node link) ends 
 
 A file is written atomically, beside itself and then renamed over it, so an editor or the watcher sees the old text or the new, never half. It is written only while its text is the one Sau last read. A file changed outside Sau is left alone and read again, and live reload applies the outside save. If Sau held a change that it could not write, the file's value then wins. Merging the two by value, so that both writers' edits to different values stay and the user is asked only when both changed the same one (Sau's decision S40), comes later.
 
-Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back each file's text from before the steps it crosses, byte for byte, where the file still holds exactly what Sau wrote; redo does the same forwards. A file edited outside Sau since then keeps the editor's text. Edit mode and sculpt mode write their data when the mode is left, and while inside, after a short pause.
+Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back each file's text from before the steps it crosses, byte for byte, where the file still holds exactly what Sau wrote; redo does the same forwards. A file edited outside Sau since then keeps the editor's text.
+
+Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
 
 ## 18. Diagnostics
 
@@ -426,7 +428,7 @@ Phase 1a built Sau's slice on this draft (Sau's roadmap; tasks 1a-01 to 1a-16, N
 
 | Change | Section | Why | From |
 | --- | --- | --- | --- |
-| A value with a unit is converted exactly and rounded once, never in float64 arithmetic | 6 | float64 arithmetic rounds twice and differs for 21.5% of short degree values | 1a-04, S59 (1) |
+| A value with a unit is converted exactly and rounded once, never in float64 arithmetic | 6 | float64 arithmetic rounds twice: for 21.5% of short degree values read into a float64, it gives other bits than the exact rule. It never does for the slice's float32 rotations, but S59 holds every type to the exact rule | 1a-04, S59 (1) |
 | NaN is written `nan`, without sign or payload, the one value that does not read back to the same bits | 6 | A NaN's sign and payload have no decimal form | S59 (2) |
 | A node ends only at a line feed, `;` or `}`, so a one-line block is `{ width 4mm; segments 3 }` | 4, 5 | Scowr's syntax: the first draft's `{ width 4mm segments 3 }` was one attribute with three values | S59 |
 | `at`, `to` and `len` before a value are read as two arguments | 5 | Scowr's lexer makes them keyword attributes, and Scowr's syntax is shared unchanged | 1a-01 |
