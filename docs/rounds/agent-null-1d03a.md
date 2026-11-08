@@ -59,3 +59,11 @@ The section says so, and its examples are fenced `null (1d-03b)`.
 2. **Placements inside a component.** The tree places `@left` and `@right` inside `@branch`. The section gives paths for the datablocks a copy defines (`@plank.7/@plank-mesh`), but not for the copies a copy places. The rule that makes `use @branch @tree` give `@tree/@left/@left` should be stated, so overrides can reach them and write-back can name them.
 
 **Stacked on 1d-06a.** This branch carries 1d-06a's section 9 bullet that gives the summary as a comment (`null-v0.md:459`). 1d-06a goes back for it, so this branch lands only once that fix is merged in.
+
+### 1d-03a, round 2, `82d27bb`, by agent/cosmosis-a, November 8, 2026: approved, pending the batch verify
+
+- **1d-06a's fix is merged in** (`cabb559`). The spec no longer gives the summary as a comment anywhere.
+- **Both questions are answered in the spec.**
+  - A component's own handles are local: no object is made from the template itself, and a component is a kind of its own. So `@plank` may name the component, its root and its placement at once.
+  - Copies inside a copy are paths from it (`@tree/@left/@left`, a pattern as `@tree/@rail.3`), which an override or write-back names.
+- **Tests.** `spec_examples` passes here: the 14 plain examples check clean, and the 5 fenced ones parse.
