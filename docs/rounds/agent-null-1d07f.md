@@ -122,3 +122,42 @@ agent/null-a had stopped, so the lead gave me this row's fix. The Sau worker rev
 
 **Checks:** `just check` passes.
 
+
+### 1d-07f round 2, `f7a5409`, by agent/sau-y, November 8, 2026: sent back for one fix; the round's own changes approved
+
+I read `driver.rs`, the checker's `driver_expression`, `tests/scale.rs` and section 11's change. I also ran `compile_in` on Python drivers from a probe crate (in my scratchpad) built against this branch.
+
+**Approved as they stand.**
+- **The disagreement.** It is reported at the number, under `null-unit`, once, as a value's is. An angle is untouched by it.
+- **Seconds on a property that counts frames.** They are read as frames through the scene's frame rate, and refused outside every scene. This is the value's rule (1c-01h). Following it rather than taking the project's one scene is right: a driver and a value in the same place read the same way.
+- **Whitespace** is Blender's six `isspace` characters.
+- **`00` is a number and `01` is Python**, as Blender's octal check reads `tokenbuf`. `01e5` and `00.5` pass, since Blender sets `is_float` for them.
+- **`ExprError::unit`**, and the two diagnostics moving to `null-unit`.
+- **The API for 1d-07j (Sau's apply, printer and write-back).**
+  - `Context { scene, in_scene, frames, disagreement }` and `compile_in` / `reads_as_in` are what apply and write-back need.
+  - `frames` comes from the driven property through the public `unit_dimension(p) == Some(Frames)`.
+  - `disagreement` is `None` in Sau, since Sau applies only a project that checks.
+  - `Compiled { expression, python }` is enough for the printer to tell a simple expression from Python.
+
+**The fix: a Python driver's own numbers and strings are refused as units.** The tokenizer reads a letter right after a number as a unit everywhere, inside quotes too. It does so before it knows the expression is Python. So drivers Blender runs through Python are errors in Null:
+
+| Driver (from a `.blend`) | `compile_in` gives |
+|---|---|
+| `a + 0x1F` | error: `x` is not a unit |
+| `a + 0b11`, `a * 0o7` | error: `b`, `o` is not a unit |
+| `a * 1_000` | error: `_` is not a unit |
+| `a * 1j` | error: `j` is not a unit |
+| `a & 0x1F` | error at `1F`: a unit in Python |
+| `obj['2m']`, as in `bpy.data.objects['3D Text'].location.x` | error: a unit in Python, inside a string |
+
+The last row is the one that matters most. A Python driver naming an object or a custom property whose name holds a digit before a letter (`'3D Text'`, `["2x"]`) cannot be written in Null at all. 1d-07j's printer and `sau convert` would then turn a working `.blend` driver into a project that does not check.
+
+Two parts:
+1. **Text in quotes is a string's.** A `'` or `"` makes the expression Python, as it does now, and nothing between it and its closing quote is tokenized. That covers Python's escapes and `'''`/`"""`, and `r''`, `b''`, `f''` prefixes run into the quote.
+2. **Python's own number forms make the expression Python, not a unit error.** These are a `0x`, `0b` or `0o` prefix (either case), a `_` between digits, and a `j`/`J` suffix. A suffix that is none of these and no unit stays the error it is, so `2mtr` is still caught as a misspelt unit.
+
+A test with each row of the table would pin it. A Python driver whose text holds `2m` outside quotes (`a & 2m`) should keep its error, as now.
+
+**Notes (none blocks):**
+1. **`in_scene` for Sau.** Sau must pass the same `in_scene` and `scene` the checker used for the driver's datablock, or `reads_as_in` can disagree with the check. The checker's place (a scene's datablock, else outside every scene with `Outside::scale()`) is private. A public way to ask it, such as the `Context` the checker would build for a datablock's driver, would keep the two from drifting. Until then, 1d-07j builds it the way write-back reads values: the datablock's own scene, or the agreed scale outside.
+2. **`a & 0x1F`'s message** points at `1F`, not at `0x1F`. The fix above removes it, but the span shows the tokenizer splits a number from its suffix at the letter.
