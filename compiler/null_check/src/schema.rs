@@ -131,6 +131,9 @@ pub struct Property {
     /// (task 1c-02b); none where it is not, or the schema does not say.
     #[serde(default, rename = "max-length")]
     pub max_length: Option<usize>,
+    /// Whether a node's input socket takes several links, as a list (a join's `geometry`).
+    #[serde(default, rename = "multi-input")]
+    pub multi_input: bool,
 }
 
 /// A property's ranges.
@@ -310,6 +313,7 @@ impl Property {
             items_at_run_time: false,
             flags: false,
             max_length: None,
+            multi_input: false,
         }
     }
 
