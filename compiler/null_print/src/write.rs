@@ -114,10 +114,7 @@ pub(crate) fn write_at(
     display: Option<Unit>,
     scene: Option<Scene>,
 ) -> Result<Vec<Edit>, WriteError> {
-    let words: Vec<Word> = match values {
-        Values::F32(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
-        Values::F64(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
-    };
+    let words = Word::all(values, scene);
     if words.is_empty() {
         return Err(WriteError::NoValues);
     }
@@ -139,13 +136,21 @@ type InUnit = Box<dyn Fn(Unit) -> Option<String>>;
 type Same = Box<dyn Fn(&str, Dimension) -> bool>;
 
 /// A value to write, with its type erased: how it prints and whether a word reads to it.
-struct Word {
+pub(crate) struct Word {
     bare: String,
     in_unit: InUnit,
     same: Same,
 }
 
 impl Word {
+    /// Each of `values`, in `scene` (`None`: no one unit scale).
+    pub(crate) fn all(values: Values<'_>, scene: Option<Scene>) -> Vec<Word> {
+        match values {
+            Values::F32(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
+            Values::F64(v) => v.iter().map(|&x| Word::new(x, scene)).collect(),
+        }
+    }
+
     fn new<F: Float>(x: F, scene: Option<Scene>) -> Word {
         // With no one scale, a scaled unit never fits and never reads back.
         let unscaled = move |d: Dimension| scene.is_some() || d.scale_power() == 0;
@@ -172,7 +177,7 @@ impl Word {
 }
 
 /// The handle a datablock node has: written, or made from its display name (S18).
-fn handle_of(node: Node<'_>) -> Option<String> {
+pub(crate) fn handle_of(node: Node<'_>) -> Option<String> {
     let mut args = node.args();
     let first = args.next()?;
     if let Some(w) = first.as_word().filter(|w| w.starts_with('@')) {
@@ -193,7 +198,7 @@ fn find_value<'a>(node: Node<'a>, attr: &str) -> Option<Value<'a>> {
     })
 }
 
-fn replace(value: Value<'_>, words: &[Word], dimension: Dimension) -> Vec<Edit> {
+pub(crate) fn replace(value: Value<'_>, words: &[Word], dimension: Dimension) -> Vec<Edit> {
     match (value, words) {
         (Value::Word(t), [w]) => edit_word(t.text, t.span, w, dimension)
             .into_iter()
@@ -236,7 +241,7 @@ fn edit_word(old: &str, span: Span, w: &Word, dimension: Dimension) -> Option<Ed
     })
 }
 
-fn printed(words: &[Word], unit: Option<Unit>) -> String {
+pub(crate) fn printed(words: &[Word], unit: Option<Unit>) -> String {
     match words {
         [w] => w.print(unit),
         _ => {
@@ -274,14 +279,23 @@ fn insert(
 ) -> Edit {
     let unit = display.filter(|u| u.dimension() == dimension);
     let value = printed(words, unit);
+    insert_text(text, node, attr, Some(&value))
+}
+
+/// The edit that adds `attr value` (or the bare line `attr`, for `None`) as a line in `node`'s
+/// block, or `attr=value` on its line where it has no block.
+pub(crate) fn insert_text(text: &str, node: Node<'_>, attr: &str, value: Option<&str>) -> Edit {
     let Some(block) = node.block() else {
         // No block: `attr=value` at the end of the node's line, before any comment.
         return Edit {
             span: Span::empty(node.code_span().end),
-            replacement: format!(" {attr}={value}"),
+            replacement: format!(" {attr}={}", value.unwrap_or("on")),
         };
     };
-    let line = format!("{attr} {value}");
+    let line = match value {
+        Some(v) => format!("{attr} {v}"),
+        None => attr.to_string(),
+    };
     let nl = line_ending(text);
     let children: Vec<_> = node.children().collect();
     let inner = format!("{}  ", indent_at(text, node.span().start));

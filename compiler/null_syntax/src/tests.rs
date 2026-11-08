@@ -19,7 +19,8 @@ fn spec_examples() -> Vec<&'static str> {
 #[test]
 fn every_spec_example_parses_clean_and_prints_back() {
     let examples = spec_examples();
-    assert_eq!(examples.len(), 5, "section 4 has five example files");
+    // Section 4 has five example files; sections 8, 10 and 11 have their own (task 1d-07a).
+    assert!(examples.len() >= 5, "{} examples", examples.len());
     for text in examples {
         let file = parse(text);
         assert!(
@@ -121,4 +122,82 @@ fn scowrs_keyword_attributes_reach_null_as_keywords() {
         .filter_map(|c| c.as_node())
         .find(|c| c.kind() == NodeKind::Keyword);
     assert!(keyword.is_some(), "{:#?}", file.root());
+}
+
+/// Every fenced example of the specification, those of forms not built yet (`null (<task>)`)
+/// included, in order.
+fn all_spec_examples() -> Vec<&'static str> {
+    let spec = include_str!("../../../docs/spec/null-v0.md");
+    spec.split("```null")
+        .skip(1)
+        .map(|b| {
+            let body = b.split_once('\n').map_or("", |x| x.1);
+            &body[..body.find("```").expect("an unclosed example in the spec")]
+        })
+        .collect()
+}
+
+#[test]
+fn every_spec_example_is_read_as_v0_constructs_and_prints_back() {
+    // Task 1d-02a: each example parses with no error, prints back byte for byte from its tree,
+    // and is read as Null's constructs, one snapshot each.
+    let examples = all_spec_examples();
+    assert!(examples.len() >= 19, "{} examples", examples.len());
+    let mut seen = std::collections::BTreeSet::new();
+    for (i, text) in examples.iter().enumerate() {
+        let file = parse(text);
+        assert!(
+            file.errors().is_empty(),
+            "example {}: {:?}",
+            i + 1,
+            file.errors()
+        );
+        assert_eq!(file.print(), *text, "example {}", i + 1);
+        let items = v0::outline(&file);
+        fn all(items: &[v0::Item], out: &mut std::collections::BTreeSet<&'static str>) {
+            for i in items {
+                out.insert(i.what);
+                all(&i.children, out);
+            }
+        }
+        all(&items, &mut seen);
+        insta::assert_snapshot!(format!("spec_example_{:02}", i + 1), v0::render(&items));
+    }
+    // Every construct the spec writes is in some example (`raw` blocks, which have none yet, are
+    // read in v0's own tests).
+    for construct in [
+        "project",
+        "datablock",
+        "sub-object",
+        "node tree",
+        "node",
+        "link",
+        "zone",
+        "zone item",
+        "zone output",
+        "layout",
+        "position",
+        "interface socket",
+        "f-curve",
+        "key",
+        "channels",
+        "plays",
+        "driver",
+        "driver variable",
+        "driver target",
+        "data file",
+        "data file reference",
+        "component",
+        "parameter",
+        "placement",
+        "pattern",
+        "condition",
+        "otherwise",
+        "override",
+    ] {
+        assert!(
+            seen.contains(construct),
+            "no example has a {construct}: {seen:?}"
+        );
+    }
 }

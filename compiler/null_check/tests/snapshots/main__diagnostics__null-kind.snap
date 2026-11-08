@@ -1,0 +1,16 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- objeet @o "O"\n
+case.noll:1:1 error[null-kind]: `objeet` is not a kind of datablock the schema knows: `object`, `project`, `blend`, `text`, `camera`, `curve`, `curves`, `image`, `key`, `light`, `plane`, `sphere` and 48 more
+  fix: write `object`
+  `write `object`` gives: object @o "O"\n
+--- mesh @m "M" { primitive cuboid size=1m }\n
+case.noll:1:25 error[null-kind]: `cuboid` is not a primitive: `cube`, `plane`, `circle`, `grid`, `uv-sphere`, `ico-sphere`, `cylinder`, `cone`, `torus`, `monkey`
+  fix: write `cube`
+  `write `cube`` gives: mesh @m "M" { primitive cube size=1m }\n
+--- material @m "M" {\n  nodes {\n    node @a bsdf-principle\n  }\n}\n
+case.noll:3:13 error[null-kind]: `bsdf-principle` is not a node kind a shader tree takes: `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse`, `volume-principled`, `bsdf-hair`, `bsdf-toon`, `bsdf-translucent`, `bsdf-transparent`, `bsdf-anisotropic`, `bsdf-glass`, `bsdf-metallic`, `bsdf-refraction` and 133 more
+  fix: write `bsdf-principled`
+  `write `bsdf-principled`` gives: material @m "M" {\n  nodes {\n    node @a bsdf-principled\n  }\n}\n

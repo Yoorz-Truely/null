@@ -97,10 +97,41 @@ pub(crate) fn reword(
                     })
                 }),
             ),
-            None => ("expected a key before =, such as frame-start=1".into(), fix),
+            None => match spaced_key(parse, error.span) {
+                // `name = "x"`: the key is there, with spaces around its `=` (1d-02c's review).
+                Some((name, gap)) => (
+                    format!(
+                        "`=` takes no spaces: write `{name}=…` on its owner's line, or `{name} …` \
+                         as a line of its own"
+                    ),
+                    fix.or_else(|| {
+                        Some(SyntaxFix {
+                            message: format!("write `{name}` and its value as a line of its own"),
+                            span: gap,
+                            replacement: " ".into(),
+                        })
+                    }),
+                ),
+                None => ("expected a key before =, such as frame-start=1".into(), fix),
+            },
         },
         _ => (error.message.clone(), fix),
     }
+}
+
+/// Where `=` at `at` has spaces before it and a node's name before those: the name, and the span
+/// from the name's end to the value after the `=` and its spaces.
+fn spaced_key(parse: &Parse, at: Span) -> Option<(String, Span)> {
+    let text = parse.text();
+    let before = text.get(..at.start)?;
+    let name_end = before.trim_end_matches([' ', '\t']).len();
+    if name_end == at.start {
+        return None;
+    }
+    let name = node_named_before(parse, Span::new(name_end, at.end))?;
+    let after = text.get(at.end..)?;
+    let value_start = at.end + (after.len() - after.trim_start_matches([' ', '\t']).len());
+    Some((name, Span::new(name_end, value_start)))
 }
 
 /// The name of the node whose name ends where `at` starts, if there is one.

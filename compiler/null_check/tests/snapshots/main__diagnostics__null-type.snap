@@ -1,0 +1,10 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { pass-index "three" }\n
+case.noll:1:28 error[null-type]: `pass-index` takes a whole number, not `"three"`
+--- object @o "O" { location [0m 0m] }\n
+case.noll:1:26 error[null-type]: `location` takes 3 lengths, as a list such as [0m 0m 0m]; this list has 2
+--- object @o "O" { hide-render maybe }\n
+case.noll:1:29 error[null-type]: `hide-render` is on or off: write it bare for on, or `on` or `off`, not `maybe`

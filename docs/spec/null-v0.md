@@ -1,6 +1,6 @@
 # Null: Sau's project language
 
-Draft v0, November 6, 2026. Phase 1a's slice (Sau's roadmap) was built on it by November 8, 2026; what the slice changed in this draft, and why, is section 22. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
+Draft v0, November 6, 2026. Phase 1a's slice (Sau's roadmap) was built on it by November 8, 2026; what the slice changed in this draft, and why, is section 22. On November 8, 2026 the draft was made complete for v0 (task 1d-01a): every section was read against the implementation and says what is built, or which task or phase builds it; every example checks clean; section 20 has nothing open. Freezing it, after which changes go through RFCs, is task 1d-01c. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
 
 Null is the source code of a Sau project. A project is a folder of Null files, media and data files, laid out by Cosmósis (`Cosmosis/docs/spec/cosmosis-v0.md`). Sau reads the folder, shows it, renders it and edits it. People and AI change a project by editing its files directly, and every change appears live. Sau's own edits are written back into the same files.
 
@@ -49,16 +49,17 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 | Compiled or interpreted? | Loaded: parsed, checked and applied to Blender's model incrementally on every save | Applying only what changed is what makes reload fast. Rendering is the build. |
 | Typed? | Statically and strongly, by the schema generated from RNA, with units as part of each type | Every mistake is caught before it reaches the scene. Units stop a length being used as an angle. |
 | High-level or low-level? | Both, by levels (section 9): intent (a cube with a bevel) down to exact vertex arrays | People and AI edit intent; exactness is never lost. |
-| Turing-complete? | No, on purpose: total (Sau's decision S38). Patterns applied any number of times in one line, loops over counts and lists, conditions, arithmetic, parameters, and recursion that counts down to an end. Unbounded computation belongs to geometry nodes, drivers and generators | Every file always finishes loading, means one thing, and can be diffed and written back. Abstraction keeps files short. |
+| Turing-complete? | No, on purpose: total (Sau's decision S38). Patterns applied any number of times in one line, loops over counts and lists, conditions, arithmetic, parameters, and recursion that counts down to an end (section 8, "Components, parameters and patterns"). Unbounded computation belongs to geometry nodes, drivers and generators | Every file always finishes loading, means one thing, and can be diffed and written back. Abstraction keeps files short. |
 | Garbage-collected? | No. The toolchain is Rust and the engine Blender's C++ | Nothing pauses the viewport. |
 
 ## 4. A first look
+
+A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes. An example of a form the checker does not read yet, or one abbreviated with `…`, is fenced `null (<task>)`, naming the task that builds the form; it is still parsed and formatted, and joins the full check when it is complete and built.
 
 ```null
 // project.noll
 project "Harbor at Dusk" {
   units metric scale=1 length=m rotation=deg
-  color-management view=agx look=none
   scene @main
 }
 ```
@@ -71,19 +72,22 @@ scene @main "Main" {
   fps 24
   camera @shot-cam
   world @dusk
-
-  render cycles {
-    samples 512
-    resolution [1920 1080]
-    denoise on
+  render {
+    engine cycles
+    resolution-x 1920
+    resolution-y 1080
   }
+  cycles { samples 512; use-denoising }
 
   collection @harbor "Harbor" {
     object @pier
-    object @lamp
-    collection @boats
+    object @harbor-lamp
+    object @shot-cam
+    collection @boats "Boats"
   }
 }
+
+world @dusk "Dusk" { color [0.02 0.03 0.06] }
 ```
 
 ```null
@@ -96,14 +100,39 @@ object @pier "Pier" {
 
   modifier @array array {
     count 12
-    relative-offset [1 0 0]
+    relative-offset-displace [1 0 0]
   }
   modifier @bevel bevel { width 4mm; segments 3 }
   material @weathered-oak
 }
 
 mesh @pier-deck "PierDeck" {
-  primitive cube size=1m scale=[1.2 3 0.08]     // level 1: a procedure
+  primitive cube size=1m scale=[1.2 3 0.08] // level 1: a procedure
+}
+```
+
+```null
+// objects/shot-cam.noll
+object @shot-cam "ShotCam" {
+  location [9m -12m 3m]
+  rotation-euler [80deg 0deg 37deg]
+  data camera @shot-cam-lens
+}
+
+camera @shot-cam-lens "ShotCam" { lens 50mm }
+```
+
+```null
+// objects/harbor-lamp.noll
+object @harbor-lamp "Lamp" {
+  location [0.5m -8m 2.5m]
+  data light @harbor-lamp-light
+}
+
+light @harbor-lamp-light "Lamp" {
+  type point
+  energy 800W
+  action @lamp-flicker slot=@lamp
 }
 ```
 
@@ -111,9 +140,12 @@ mesh @pier-deck "PierDeck" {
 // materials/weathered-oak.noll
 material @weathered-oak "Weathered Oak" {
   nodes {
-    node @tex image-texture { image @oak-diffuse interpolation=cubic }
+    node @tex tex-image {
+      image @oak-diffuse
+      interpolation "Cubic"
+    }
     node @bsdf bsdf-principled {
-      base-color @tex.color             // a link: the socket takes another node's output
+      base-color @tex.color // a link: the socket takes another node's output
       roughness 0.62
     }
     node @out output-material { surface @bsdf.bsdf }
@@ -121,17 +153,21 @@ material @weathered-oak "Weathered Oak" {
   layout { @tex [-420 0]; @bsdf [-160 0]; @out [120 0] }
 }
 
-image @oak-diffuse "oak_diffuse.png" { source media/3f9a…c1.png colorspace=srgb }
+image @oak-diffuse "oak_diffuse.png" {
+  filepath "//media/oak_diffuse.png"
+  colorspace-settings { name "sRGB" }
+}
 ```
 
 ```null
 // actions/lamp-flicker.noll
 action @lamp-flicker "LampFlicker" {
-  slot light @lamp-light
-  fcurve energy {
-    key 1  800W interpolation=bezier
-    key 6  620W
-    key 11 800W
+  slot @lamp light "Lamp" {
+    fcurve energy {
+      key 1 800W interpolation=bezier
+      key 6 620W
+      key 11 800W
+    }
   }
 }
 ```
@@ -227,7 +263,7 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 - **Made from the name.** A new sub-object's handle is its Blender name in kebab-case, as for datablocks (S18): `Spine.002` gives `spine-002`, `Base Color` gives `base-color`.
 - **Unique within its owner, across kinds.** No two sub-objects of one owner share a handle, whatever their kinds, so `@pier/@bevel` names one thing without saying whether it is a modifier or a constraint. Blender lets a modifier and a constraint of one object share a name; the second then gets `-2` (`@bevel-2`), as Blender itself numbers names. A duplicate handle within an owner is an error.
 - **Paths.** `/` steps from an owner to a sub-object, and may step again where a sub-object owns others (`@rig/@spine-002/@ik`, a bone's constraint on the object's pose). `.` followed by a name names a socket of a node (`@bsdf.roughness`); `.` followed by a number is a copy made by a pattern (`@plank.7`, Sau's decision S61 (6)). Nothing else uses `.`. A path starts at a datablock handle; inside the owner's own block the owner may be left out (`@bevel`). There a path starts at that owner's own sub-objects first, so a datablock elsewhere with the same handle never shadows them, and the owner is that one datablock, its kind and handle (an object and a mesh may both be `@pier`); a path whose first step names none of the owner's sub-objects is read as written, from a datablock; once it names one, the path stays the owner's and its errors are the owner's.
-- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` in a `nodes` block. The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy and a package's datablock parse, and resolve once patterns (task 1d-03) and packages (task 1d-04) are read. Each kind's own properties are checked once its form is specified (task 1d-07). Task 1b-02c.
+- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy and a package's datablock parse, and resolve once patterns (task 1d-03) and packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
 - **What keeps identity across a rename.** Where Blender keeps an identity of its own that survives renaming, Sau maps the handle to it. Where Blender identifies the sub-object only by its name, Sau keeps the handle through the project's map, `.sau/ids.noll`, keyed by the owner's persistent ID (Sau's decision S61 (3), task 1b-02b). Either way a rename in Sau changes the quoted name and keeps the handle and every reference.
 
 | Sub-object | Owner | Blender's own identity (checked in Blender 5.3's DNA) | Kept by |
@@ -272,7 +308,7 @@ The schema Sau generates from RNA gives every name, type, unit, range and enum i
 | `project "Name" { units …; scene @s }` | The project: its name, its units, its scenes. No RNA struct | A project is Cosmósis's, not Blender's |
 | `units metric scale=1 length=m rotation=deg` | A scene's `UnitSettings`: the argument is `system`; `scale` is `scale-length`; `length` is `length-unit`, written as a unit (`m`, `cm`, `mm`, `km`, `in`, `ft`) or an item (`meters`); `rotation` is `system-rotation`, as `deg` or `rad` or an item. The full names may be child lines instead. In `project` it applies to every scene | Short forms first (S35); RNA's `unit-settings` is read-only |
 | `object @h` and `collection @h` in a `scene` or `collection` | Members: objects and child collections of the scene's master collection, or of the collection. A `collection` line with a display name or a block defines the collection there | RNA's `objects` and `children` are read-only collections |
-| `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
+| `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`, `armature`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
 | `material @h` in an `object` | One material slot, in order; the first is the active material | RNA keeps materials in slots |
 | `primitive <kind> settings…` in a `mesh` | The mesh as made by Blender's add operator of that kind (`cube`, `uv-sphere`, …) with the operator's settings by their names. `size` is one length, and a primitive's proportions come from the operator's `scale` (unitless, default `[1 1 1]`), which shapes the mesh: `primitive cube size=1m scale=[1.2 3 0.08]` is a 1.2 m by 3 m by 0.08 m box with its object's scale left at 1, so the object's modifiers (a 4 mm bevel stays 4 mm) and children are not squashed. The cube, UV sphere, ico sphere, cylinder and cone take `scale`; the plane, circle, grid, monkey and torus do not (Blender 5.3's operators ignore it or have none) | Level 1 geometry (section 9); the operators are RNA's |
 | `vertices [[x y z] …]` and `polygons [[0 1 2] …]` in a `mesh` | Level 0 data: each vertex's `co`, and each polygon's `vertices`, three or more indices of existing vertices | A collection of one-value structs is written as a list of the values. The name is RNA's `polygons`, not `faces` (S16) |
@@ -286,45 +322,416 @@ A property's default, which the formatter omits (section 15), is its value in a 
 
 Handles are kebab-case wherever they appear, defined or referenced (S16, S18). Enum values are the items' kebab-case names; `XYZ` is an error whose fix is `xyz`.
 
+### Modifiers, constraints and pose bones
+
+Task 1d-07a. An object's modifiers, constraints and pose bones are sub-objects (section 7), written in its block:
+
+- `modifier @h <kind> "Name" { … }` is one modifier, in stack order. Its kind is a modifier's (S67: `bevel`, `array`, `subsurf`, `nodes`), and its block holds that kind's properties and those every modifier has (`show-viewport`, `show-render`). A geometry nodes modifier (`nodes`) names its group with `node-group`, and its group's inputs are its lines by their handles (section 10).
+- `constraint @h <kind> "Name" { … }` is one constraint, in stack order, of a constraint kind (`damped-track`, `copy-location`, `kinematic` for inverse kinematics).
+- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (1d-07h).
+
+The quoted name is Blender's and may be left out, the handle then standing for it.
+
+```null
+object @lid "Lid" {
+  data mesh @lid-mesh
+  modifier @bevel bevel "Bevel" { width 4mm; segments 3 }
+  modifier @stacked nodes "Stacked" {
+    node-group @stack-up
+    count 3
+  }
+  constraint @aim damped-track "Aim" {
+    target @dial
+    track-axis track-negative-z
+  }
+}
+
+mesh @lid-mesh "Lid" { primitive cube size=1m }
+
+object @rig "Rig" {
+  data armature @rig-bones
+  bone @spine "Spine" {
+    rotation-mode xyz
+    constraint @reach kinematic "IK" {
+      target @lid
+      chain-count 2
+    }
+  }
+}
+
+armature @rig-bones "Rig"
+```
+
+### Components, parameters and patterns
+
+Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6) and S74). Parsing and checking these forms is 1d-03b, and expanding them 1d-03c, so the examples are fenced `null (1d-03b)`. A component is a part made once and placed many times, as a React component is (S19). Each placement may differ from the others in any regard, and each copy keeps a handle of its own.
+
+- **A component** is a top-level `component @h "Name" { … }` in any file. Its block holds its parameters and the datablocks it makes. The first `object` in it is its **root**, the object a placement puts in the scene; the rest (its data, materials made for it, child objects) come with it. A datablock the component names but does not define (`material @oak`) is the project's, shared by every placement, never copied.
+- **Parameters** are `param <name> <default>`, typed by the default: a length (`2.4m`), an angle, a number, a whole number, `on` or `off`, a handle of a kind (`param finish material @oak`), or a word from a list (`param state solid { one-of [solid liquid] }`). A parameter with no default (`param length length`, naming its type) must be given by every placement. Names are kebab-case and local to the component.
+- **Arithmetic.** Wherever a value goes, a word may be an expression over numbers with units, parameter names and `+`, `*` and `/`, with the usual precedence: `length/1m`, `n*25cm`, `width*0.5`. Subtraction, grouping and comparisons are written as a quoted expression, with spaces around each operator: `"length - 10cm"`, `"(n - 1) * 25cm"`, `"state == liquid"`. A `-` inside a word is part of a name, since names are kebab-case, and Scowr reserves `( )` (S15, S74 (3)). Units follow section 6: an expression's value is computed exactly and rounded once into the property's type (S59), and a length times a length is an error where a length goes.
+- **Placement.** `use @component @handle { … }`, in a scene or a collection, places one copy. Its root object becomes `@handle` and joins that scene or collection. The block gives parameters by name and sets the root object's own properties (`location`, `rotation-euler`, `parent`); a name is a parameter's first. A component from a package is placed the same way, `use @cosmosis-materials:oak-plank @deck` (S54).
+- **Patterns.** `use @component @handle count=N { … }` places N copies in one line (S34). The copies' handles are `@handle.1` to `@handle.N`, counted as the pattern counts (S61 (6)), and in the block `n` is the copy's number. `use … each=[v1 v2 …] as=<name>` places one copy per item of a list, the item named `<name>` in the block, the copies numbered in the list's order.
+- **The handles a copy makes.** The root is `@handle` or `@handle.n`. Every other datablock the component defines is found through it as a path (S74 (4)): `@plank.7/@plank-mesh` is copy 7's mesh. A copy's sub-objects keep the component's handles (`@plank.7/@fluid`).
+  - **A component's own handles are local.** Inside its block, `@plank` names the component's root and `@plank-mesh` its mesh. They are not the project's handles, and the component's datablocks exist only through placements: no object `@plank` is made from the template itself. So the pier's component, its root and its placement may all be `@plank` (a component is a kind of its own, and handles are unique per kind).
+  - **Copies inside a copy** are found through it as paths, as its other datablocks are. In `use @branch @tree`, the root is `@tree`, its own `use @branch @left` makes `@tree/@left`, and that copy's makes `@tree/@left/@left`. A pattern inside a copy gives `@tree/@rail.3`. An override or a write-back names a nested copy by that path (`override @tree/@left/@right { length 40cm }`).
+- **Conditions.** `if "<condition>" { … }`, in a component's block or any block inside it, holds lines that apply only when the condition, a comparison of parameters, holds. `else { … }` may follow. A condition is known when the component is placed, so each copy is plain data.
+- **Overrides** (S33). `override @plank.7 { … }`, beside the `use` line, gives one copy other parameters or properties. `override @plank.7/@plank-mesh { … }` reaches a datablock the copy made. An edit in Sau to a placed copy is written as an override on it by default, and to the component itself only on request (1d-03f), as Figma's instances and main components are edited.
+- **Recursion that counts down** (S38, S74 (5)). A component may place itself, directly or through others, only when one whole-number parameter is marked `{ countdown }`, every such placement passes it a smaller value, and the placements sit under an `if` that holds only while it is above 0. The checker refuses any other recursion.
+
+**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
+
+**Why every file finishes loading** (S38). Null is total, not Turing-complete:
+- a pattern's `count=` is a whole number and its `each=` a list, both known before expansion;
+- a condition only picks between lines;
+- recursion is allowed only on a `countdown` parameter that every recursive placement makes smaller and that stops at 0, so every chain of placements ends.
+
+Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
+
+The pier of twenty planks, plank 7 liquid:
+
+```null (1d-03b)
+// components/plank.noll
+component @plank "Plank" {
+  param length 2.4m
+  param state solid { one-of [solid liquid] }
+  object @plank "Plank" {
+    data mesh @plank-mesh
+    if "state == solid" { material @weathered-oak }
+    else {
+      material @water
+      modifier @fluid fluid { fluid-type flow }
+    }
+  }
+  mesh @plank-mesh "Plank" {
+    primitive cube size=1m scale=[length/1m 0.2 0.04]
+  }
+}
+```
+
+```null (1d-03b)
+// objects/pier.noll
+collection @pier "Pier" {
+  use @plank @plank count=20 {
+    location [0m n*25cm 0.35m]
+  }
+  override @plank.7 { state liquid }
+}
+```
+
+A tree whose branches count down:
+
+```null (1d-03b)
+component @branch "Branch" {
+  param depth 4 { countdown }
+  param length 1m
+  object @branch "Branch" {
+    data mesh @segment
+  }
+  mesh @segment "Segment" { primitive cylinder radius=length*0.05 depth=length }
+  if "depth > 0" {
+    use @branch @left {
+      depth "depth - 1"
+      length length*0.7
+      parent @branch
+      location [0m 0m length]
+      rotation-euler [0deg 35deg 0deg]
+    }
+    use @branch @right {
+      depth "depth - 1"
+      length length*0.7
+      parent @branch
+      location [0m 0m length]
+      rotation-euler [0deg -35deg 0deg]
+    }
+  }
+}
+```
+
 ## 9. Geometry as source
 
 The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geometry is written at one of three levels, and each level renders to the one below exactly:
 
 | Level | What it is | Written as | Edited by |
 | --- | --- | --- | --- |
-| 0. Data | Exact attribute arrays: positions, edges, faces, corners, UVs, normals, weights, creases, colours, any named attribute | Inline lists for small meshes; a content-addressed data file in `data/` for large ones, referenced from the text | The viewport's edit mode, sculpting, and tools; rarely by hand |
+| 0. Data | Exact attribute arrays: positions, edges, faces, corners, UVs, normals, weights, creases, colours, any named attribute | Inline lists up to 2,000 elements; a larger array in a Null text file of its own, one element per line, referenced from the text (S23) | The viewport's edit mode, sculpting, and tools; rarely by hand |
 | 1. Procedure | Primitives with parameters, modifier stacks, geometry-node graphs, curves and their profiles | Ordinary Null nodes | Hand, AI and Blender's editors alike |
-| 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and a residual data file | As level 1; the residual keeps the result exact |
+| 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and its residual, written as level 0 data | As level 1; the residual keeps the result exact |
 
-- **The threshold** between inline and data files is a Cosmósis setting (proposed default: 2,000 elements). `sau convert --inline` writes everything as text whatever its size.
-- **Data files** are a documented, versioned binary layout of named attribute arrays, named by the SHA-256 of their contents, so the same data is stored once and Git sees a changed hash rather than a binary diff of an unchanged mesh. Their text summary (counts, bounds, attribute names) is printed in the Null file as comments and checked on load.
+- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. `sau convert --inline` writes everything inline whatever its size. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
+- **The summary.** The line that names the file gives the array's `count=` and `bounds=` as values (S74 (1)). They are checked on load, and a summary that disagrees with the data is an error (1d-06b).
+- **Binary only as a cache, or by choice.** Sau keeps a binary copy of large arrays in `.sau/` as a cache. The cache is rebuilt when the text changes and is never the source (1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
-- **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is.
+- **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is. Lifting is phase 4b of Sau's roadmap; v0 writes levels 0 and 1.
+
+### Level 0: attribute arrays
+
+Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Null's checker reads and checks these forms (task 1d-06b): each array's length against its domain (points, edges, faces, corners), each value by its type, and a data file against the line that names it, its `count=` and `bounds=` included. The examples below are abbreviated with `…`, so they stay fenced `null (1d-06b)`; complete ones are in `null_check`'s tests. A mesh's level 0 data is its attribute arrays, one line each in its block, in the order below.
+
+- **`vertices [[x y z] …]`**: each vertex's position (the `position` attribute, point domain), lengths as `location` is written (section 6).
+- **`edges [[a b] …]`**: each edge's two vertex indices, in Blender's order. It is written only when the mesh needs it: an edge no polygon has (a loose edge), or an edge attribute, whose values follow this order. Otherwise Blender makes the edges from the polygons, and the line is left out.
+- **`polygons [[a b c …] …]`**: each polygon's vertex indices, three or more, in its corners' order. A mesh's corners are these lists read in order, so a corner attribute has one value for each index written here.
+- **`attribute @h <domain> <type> "Name" [values]`**: any other attribute, a sub-object of the mesh (section 7).
+  - Its domain is `point`, `edge`, `face` or `corner`, and its type one of `Attribute`'s `data-type` items (`float`, `int`, `boolean`, `float-vector`, `float2`, `float4`, `float-color`, `byte-color`, `quaternion`, `float4x4`, `int8`, `int16-2d`, `int32-2d`, `string`).
+  - There is one value per element of the domain, each written as its type's single value is (section 6): a number; `on` or `off`; a list such as `[x y z]` or `[r g b a]`; a `byte-color`'s four integers 0 to 255 as Blender stores them; a `float4x4` row by row; a `quaternion` as `[w x y z]`.
+  - The quoted name is Blender's and may be left out when the handle is its kebab-case form. A built-in name that is not kebab-case keeps its quotes (`attribute @crease-edge edge float "crease_edge" […]`).
+  - Blender's internal attributes (`.edge_verts`, `.corner_vert` and the others whose names start with `.`) are never written: `edges` and `polygons` are they.
+- **`uv-map @h "Name" [[u v] …]`**: a UV map, one `[u v]` per corner, with its settings in a block (`active-render`).
+- **`vertex-group @h "Name" { weights [[index weight] …] }`**: a vertex group, a sub-object of the mesh as Blender 5.3 keeps it (section 7), with its weights: only the vertices in the group, by index, in increasing order.
+- **Colours, creases, bevel weights, sharp edges and faces, seams and custom normals** are attributes like any other, by Blender's names: `crease_vert`, `crease_edge`, `bevel_weight_vert`, `bevel_weight_edge`, `sharp_edge`, `sharp_face`, `custom_normal`, and a colour attribute of type `float-color` or `byte-color` on `point` or `corner`.
+
+**Inline up to 2,000 elements.** An array of up to 2,000 elements (vertices, edges, polygons, corners, weights, or an attribute's values) is written inline, as above. A list may span lines, and the formatter puts one element on each line once it does not fit on one.
+
+**Larger arrays in a Null text file of their own.** A larger one is written in a file beside the one that holds the mesh, named after the mesh and the array (`rock.vertices.noll`), one element per line. It is not named by its content's hash, so an edit is a readable diff of the lines it changed (S23, S74 (2)):
+
+- The mesh's line names the file, and gives its summary as values, which the checker holds the file to: `count=`, the number of elements, and `bounds=`, the smallest and largest value of each component. The smallest and largest are taken by IEEE 754's total order, so `-0` is below `0` and the summary is the same bits in any order of the elements; NaNs are left out, and an array whose component holds only NaNs has no `bounds=` (Sau's decision S75). A summary that disagrees with the file is an error (1d-06b). It is written as values, not a comment, because a checked value belongs in the syntax tree, and a comment that changed what loads would be the only one in Null (Sau's decision S74 (1)).
+- The file holds one node: `array`, the owner's kind and handle, the array's name or handle, and the list:
+
+```null (1d-06b)
+// meshes/rock.noll
+mesh @rock "Rock" {
+  vertices file="rock.vertices.noll" count=12480 bounds=[[-1.2m -0.9m 0m] [1.3m 1m 2.1m]]
+  polygons file="rock.polygons.noll" count=12476
+  attribute @crease-edge edge float "crease_edge" file="rock.crease-edge.noll" count=24954 bounds=[0 1]
+  uv-map @uv-map "UVMap" file="rock.uv-map.noll" count=49904 bounds=[[0 0] [1 1]] { active-render }
+  vertex-group @base "Base" { weights [[0 1] [1 1] [2 0.5]] }
+}
+```
+
+```null (1d-06b)
+// meshes/rock.vertices.noll
+array mesh @rock vertices [
+  [-1.2m 0.4m 0m]
+  [-1.1m 0.5m 0.02m]
+  …
+]
+```
+
+- A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it. Null's checker matches a data file to its line by the `array` node's owner and array name, and reports a line whose file is missing and a data file no line names (1d-06b); that the path names that file is Cosmósis's to check, since it knows the files' paths.
+- Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
+- `sau convert --inline` writes every array inline whatever its size.
+
+**Binary only as a cache, or by choice.** Sau keeps a binary copy of each large array in `.sau/` as a cache, rebuilt when its text changes, never the source (1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
+
+Shape keys, curves, point clouds and Grease Pencil drawings take the same forms for their own arrays (1d-06f).
 
 ## 10. Node trees
 
-Shader, geometry, compositor and texture node trees are written as their nodes and links:
+Shader, geometry and compositor node trees are written as their nodes and links (task 1d-07a). Texture node trees wait for a row of their own (1d-07b).
 
-- A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, its kind named by section 8's rule (`bsdf-principled`).
-- A link is a socket value that names another node's output: `base-color @tex.color`. A socket with no line takes its default.
-- Group nodes reference a node tree (`shader`, `geometry`, `compositor` or `texture-node-tree`, by S67); group interfaces list their inputs and outputs with types and defaults.
-- Zones (repeat, simulation, for-each) are blocks containing their nodes.
-- **Layout is kept apart.** Node positions, frames, colours and widths live in the tree's trailing `layout` block, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout.
+- **Where a tree is.** A material's, a world's and a light's tree is its `nodes` block, a shader tree. A node group is a datablock of its tree's kind (S67): `shader`, `geometry` or `compositor`. It holds its interface, its `nodes` and its `layout`, as below. A scene's compositor is the `compositor` group its `compositing-node-group` names, and a geometry nodes modifier names its group with `node-group` (section 8).
+- **A node** is `node @handle <kind> "Name" { … }`:
+  - Its kind is named by section 8's rule (`tex-noise`, `bsdf-principled`, `transform`), and a node is read in its tree, since the schema gives each node the trees that take it.
+  - Its handle is unique in the tree. The quoted name is the node's Blender name and may be left out; then the name is the handle without `@` (Sau's task 1b-02d).
+  - Its block holds its **settings**: the node struct's own properties (`operation`, `interpolation`), and of the properties every node has, `label`, `mute`, `hide`, `parent`, `color`, `use-custom-color`, `color-tag`, `show-options`, `show-preview` and `show-texture`.
+  - It also holds its **inputs**, by the names the schema gives its sockets, each a value of the socket's type or a link. Where a setting and an input share a name, the name is the input's. A socket with no line takes its default.
+  - A node's position and width are the `layout` block's, never its own lines.
+- **A link** is a socket value that names another node's output: `base-color @ramp.color`. A socket that takes several links (a join's `geometry`) takes a list of them, `[@a.geometry @b.geometry]`. A geometry, shader, bundle or closure socket has no value of its own, so it takes only links.
+- **Frames.** A frame is a node, `node @box frame "Box"`, and a node drawn in it says `parent @box`.
+- **A group's interface** is its `input`, `output` and `panel` lines, in the interface's order:
+  - `input @h <socket-type> "Name" { … }` and `output @h <socket-type> "Name" { … }`. The socket type is an interface socket's kind (`float`, `float-distance`, `int`, `vector`, `geometry`, `object`, and the schema's others), and the block holds that type's settings (`default-value`, `min-value`, `max-value`, `description`, `hide-value` and the rest).
+  - `panel @h "Name" { default-closed; <input and output lines> }`.
+  - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
+- **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+  - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
+  - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
+  - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
+  - the nodes inside the zone.
+
+  Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
+- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+
+A material, with a frame:
+
+```null
+material @clay "Clay" {
+  nodes {
+    node @noise tex-noise { scale 4 }
+    node @ramp val-to-rgb { fac @noise.fac }
+    node @box frame "Surface" { label "Surface" }
+    node @bsdf bsdf-principled "Skin" {
+      parent @box
+      base-color @ramp.color
+      roughness 0.6
+    }
+    node @out output-material { surface @bsdf.bsdf }
+  }
+  layout { @noise [-600 0]; @ramp [-350 0]; @box [-120 60]; @bsdf [-100 0]; @out [200 0] }
+}
+```
+
+A geometry node group with an interface, a panel and a repeat zone, used by a group node and by a modifier (section 8):
+
+```null
+geometry @stack-up "Stack Up" {
+  is-modifier
+  input @geometry geometry "Geometry"
+  input @count int "Count" {
+    default-value 4
+    min-value 1
+  }
+  panel @spacing "Spacing" {
+    input @gap float-distance "Gap" { default-value 10cm }
+  }
+  output @stacked geometry "Geometry"
+  nodes {
+    node @in group-input
+    zone @loop repeat "Repeat" {
+      repeat-item @geometry geometry "Geometry"
+      iterations @in.count
+      geometry @in.geometry
+      node @lift transform {
+        geometry @loop.geometry
+        translation [0m 0m 1m]
+      }
+      node @join join-geometry { geometry [@loop.geometry @lift.geometry] }
+      output { geometry @join.geometry }
+    }
+    node @out group-output { stacked @loop.geometry }
+  }
+  layout { @in [-500 0]; @loop [-300 0] [400 0]; @lift [-100 -120]; @join [150 0]; @out [600 0] }
+}
+
+geometry @tower "Tower" {
+  is-modifier
+  input @base geometry "Base"
+  output @tower-out geometry "Tower"
+  nodes {
+    node @in group-input
+    node @stack group "Stack Up" {
+      node-tree @stack-up
+      geometry @in.base
+      count 6
+      gap 20cm
+    }
+    node @out group-output { tower-out @stack.stacked }
+  }
+}
+```
+
+A compositor group, which a scene uses as its compositor:
+
+```null
+compositor @grade "Grade" {
+  input @image color "Image"
+  output @graded color "Image"
+  nodes {
+    node @in group-input
+    node @contrast bright-contrast {
+      image @in.image
+      contrast 10
+    }
+    node @out group-output { graded @contrast.image }
+  }
+}
+
+scene @shot "Shot" { compositing-node-group @grade }
+```
 
 ## 11. Animation and drivers
 
-- Actions follow Blender's slotted, layered model: slots name what they animate; f-curves name the property by its RNA path; keys are `key <frame> <value>` with interpolation, handles and easing as properties.
-- Frames are exact as Blender stores them (float32, so sub-frames are allowed and print exactly).
-- Drivers are written on the property they drive: `energy driver="var * 800" { var single-prop @lamp-light.energy }`. Driver expressions stay in Blender's simple-expression subset where possible, so they evaluate without Python.
-- NLA strips, markers, shape-key animation and armature poses are ordinary nodes.
+Task 1d-07a. Actions follow Blender's slotted, layered model, and everything that plays them is written on the datablock that plays.
+
+- **An action** holds its slots: `slot @h <kind> "Name"`, the handle first as every sub-object line's (S71), one for each datablock it animates, of the datablock kind it animates (`object`, `light`, `material`). Its handle is the slot's own; Blender keeps it in `ActionSlot::handle` (section 7).
+- **F-curves.** `fcurve <path> index=N { … }` animates one property:
+  - The path is a property of the slot's kind of datablock: `energy`, `location`. A light's slot reaches its light type's properties too.
+  - `index=` picks an array's item, and is required for an array.
+  - A sub-object's property is written as its path and the property (`fcurve @bevel width`), and a node socket as `@bsdf.roughness`. Their keys are bare, in the internal unit, until the checker resolves them through the datablocks that play the action (S71, 1d-07g).
+  - The f-curve's block holds its settings (`extrapolation`, `color-mode`, `auto-smoothing`, `mute`, `lock`, `hide`), its keys and its modifiers.
+- **Keys** are `key <frame> <value>`, then the key's settings as `name=value`: `interpolation`, `easing`, `type`, `handle-left-type`, `handle-right-type`, `back`, `amplitude`, `period`, and `handle-left` and `handle-right` as `[frame value]`.
+  - A frame is a number of frames, exact as Blender stores it (float32, so sub-frames are allowed and print exactly). An action is outside every scene, so a frame is never written in seconds (section 6).
+  - The value is written as the property's own: `800W` for a light's energy, `1.5m` for a location.
+- **An f-curve's modifiers** are `modifier @h <kind> "Name" { … }` lines in its block, of the f-curve modifier kinds (`noise`, `cycles`, `generator`, `limits`, `stepped`, …).
+- **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first; S71). Its full form writes them under layers instead, and never both:
+  - `layer @h "Name" { strip @h keyframe { channels @slot { fcurve … } } }`;
+  - each `channels` block holds one slot's f-curves in that strip.
+- **What plays.** On any datablock that can be animated:
+  - `action @a slot=@s` plays action `@a` through its slot `@s`, which must animate that kind of datablock. `slot=` may be left out when the action has one slot.
+  - NLA tracks are `track @h "Name" { strip @h "Name" { action @a slot=@s; frame-start 1; repeat 2; blend-type add; … } }`, in the stack's order, each strip with `NlaStrip`'s settings.
+- **Drivers** are written on the property they drive, which then takes no value of its own:
+  - `driver=` is the expression in quotes (a scripted driver), or one of `average`, `sum`, `min` and `max`. `index=` picks an array's item, and `use-self=on` lets the expression read its own datablock.
+  - The block holds the variables, `var <name> <type> { target … }`. A variable's name is the name the expression uses (letters, digits and `_`), a plain word, not a handle (S71), and its type is one of `single-prop`, `transforms`, `rotation-diff`, `loc-diff` and `context-prop`.
+  - `target @handle <property>` reads one property of a datablock. A transforms target reads its datablock's transform, with `transform-type=`, `transform-space=` and `rotation-mode=`. The two kinds of difference take two targets each.
+  - Driver expressions stay in Blender's simple-expression subset where possible, so they evaluate without Python. Null's own expression syntax is task 1d-07f.
+
+A light flickering by a short-form action with a noise modifier:
+
+```null
+action @flicker "Lamp Flicker" {
+  slot @lamp light "Lamp" {
+    fcurve energy {
+      key 1 800W interpolation=bezier
+      key 6 620W
+      key 11 800W
+      modifier @wobble noise "Wobble" {
+        strength 40
+        scale 2
+      }
+    }
+  }
+}
+
+light @lamp-light "Lamp" {
+  type point
+  energy 800W
+  action @flicker slot=@lamp
+}
+```
+
+The full form, layered, played twice by an NLA strip:
+
+```null
+action @hop "Hop" {
+  use-cyclic
+  slot @ball object "Ball"
+  layer @base "Base" {
+    strip @keys keyframe {
+      channels @ball {
+        fcurve location index=2 {
+          extrapolation linear
+          key 1 0m
+          key 12 1.5m interpolation=sine easing=ease-out
+          key 24 0m handle-left=[20 0.4] handle-right=[28 0.4]
+        }
+      }
+    }
+  }
+}
+
+object @ball "Ball" {
+  track @moves "Moves" {
+    strip @hop-twice "Hop" {
+      action @hop slot=@ball
+      frame-start 1
+      repeat 2
+      blend-type add
+    }
+  }
+}
+```
+
+A driver: a lamp whose power follows a dial's turn:
+
+```null
+object @dial "Dial" { rotation-euler [0deg 0deg 45deg] }
+
+light @dial-lamp "Dial Lamp" {
+  type point
+  energy driver="spin * 100" {
+    var spin transforms {
+      target @dial transform-type=rot-z transform-space=world-space
+    }
+  }
+}
+```
 
 ## 12. Media and caches
 
-Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
+Task 1d-05f builds this section; the slice references no media. Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
 
 ## 13. Generators (optional)
 
-A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.
+Phase 5 of Sau's roadmap; not part of v0's implementation. A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.
 
 ## 14. Checks
 
@@ -332,7 +739,7 @@ Files in `checks/` state what must be true of the scene and of renders: a polygo
 
 ## 15. Canonical form
 
-The formatter prints one form: canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
+The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
 
 The layout is fixed (settled November 7, 2026, task 1a-07):
 
@@ -360,6 +767,8 @@ The canonical order (task 1c-01e, `null_print::canonical`):
 - **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them. A comment at a line's end stays on that line, and so does one after a block's `{` or after a `;`.
 - **Blank lines.** There are none between the lines of a block. Between datablocks, a file keeps at most one.
 - **Files that do not parse** keep their order, and only get the layout.
+- **Every construct has its order** (task 1d-02b): a modifier's or a constraint's settings in its kind's struct's order, and a pose bone's constraints the same; a sub-object line where RNA's collection of it stands (`modifier` at `modifiers`); a node in any tree by that tree's node of its kind; a zone's items, then its input lines, then `output`, then its nodes; a group's interface lines as written, then `nodes`, then `layout`; an f-curve's settings in `FCurve`'s order, its keys as written, its modifiers by their kind; an NLA strip in `NlaStrip`'s; a component's parameters first, then its datablocks, each in its own kind's order. What is meaning by its order stays as written: a tree's nodes, a group's interface, an action's keys, a component's datablocks and placements.
+- **Defaults left out** (`null_print::without_defaults`, task 1d-02b). A line of its own whose value is its property's default (the schema's `new`, else RNA's `default`) goes, in a datablock, a struct block, a modifier or a constraint. A line keeps its value when it has a comment on it or just above it, shares a line with others, has a `key=value`, or is of a unit read through the scene (lengths, areas, volumes, masses, velocities, accelerations, powers, frames in seconds), which this pass does not read. Settings a project pins are kept once pinning exists. `sau fmt` leaves defaults out once Cosmósis calls it, with its corpus formatted again in the same change.
 
 
 ## 16. Live reload
@@ -394,13 +803,65 @@ Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back ea
 
 Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
 
+### Short forms
+
+Task 1d-03d, November 8, 2026 (Sau's decision S35: the abstract form first, the full form always available). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::expand` writes a project's files with every short form in full, which is what the checker and Sau's apply read it as. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
+
+| Short form | Full form | Where |
+| --- | --- | --- |
+| `object "Pier"`: the handle left out | `object @pier "Pier"`, the handle made from the name | A datablock (section 7) |
+| `modifier @bevel bevel`: the quoted name left out | `modifier @bevel bevel "bevel"`, the handle without `@` | A modifier, constraint, pose bone, node or attribute (sections 8, 9 and 10) |
+| `modifier @bevel bevel width=4mm`: settings on the line | `modifier @bevel bevel { width 4mm }` | A datablock, modifier, constraint or pose bone (section 5). Other lines' `key=value`s (a key's `interpolation=`, an f-curve's `index=`, a primitive's settings, `slot=`) are part of the line, not settings |
+| `hide-render`: a bare boolean | `hide-render on` | Any boolean (section 5) |
+| `units metric scale=1 length=m rotation=deg` | `units { system metric; scale-length 1; length-unit meters; system-rotation degrees }` | A project or scene (section 8) |
+| `action @bob`: `slot=` left out | `action @bob slot=@buoy` | The line that plays an action with one slot (section 11) |
+| An action's f-curves in its slots' blocks | `layer @layer "Layer" { strip @strip keyframe { channels @buoy { … } } }`, with the slot lines kept | An action with one layer and one keyframe strip (section 11, S71 (3)). `Layer` is Blender's name for a first layer. A strip has no name, so its handle is its kind, with `-2` added where the action already has a sub-object of that handle |
+| `parent @box` in `material @clay`: a path's owner left out | `@clay/@box` | A path in its owner's block (section 7). Lines name their own datablock's nodes and sub-objects this way, so expansion leaves them as written. The index of paths reads both forms as the same, and write-back writes the short one in the owner's block |
+
+Write-back keeps each form in these ways:
+- A value is changed where it is written: on the line (`width=5mm`), as a unit word in `units` (`length=cm` for `centimeters`), or in a slot's block for a strip's channels.
+- A bare boolean stays bare while it is on and becomes `hide-render off` when it is not.
+- `slot=` stays left out while the slot is the action's only one.
+- A handle that is made from the name stays left out.
+
+Every example in this section and in sections 8, 10 and 11, expanded, checks clean, and expanding it again changes nothing (`null_print`'s `short` test).
+
+```null
+scene @harbour "Harbour" {
+  units metric scale=1 length=m rotation=deg
+  object @buoy
+}
+object "Buoy" {
+  hide-render
+  modifier @round bevel width=4mm segments=3
+  action @bob
+}
+action @bob "Bob" {
+  slot @buoy object "Buoy" {
+    fcurve location index=2 {
+      key 1 0m
+      key 24 0.2m interpolation=sine
+    }
+  }
+}
+```
+
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a value's, since Blender clamps it), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a value's, since Blender clamps it), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`. The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
+
+How the messages are worded (task 1d-02e):
+- **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.
+- **One mistake gives one error.** A known property written in another case (`pass_index`) gives `null-name` with its fix, and no `null-unknown-property` beside it.
+- **`key = value`** says that `=` takes no spaces. The fix writes `key value` as a line of its own.
+- **A read-only property** says that a file cannot set it. The fix removes its line.
+- **A range note** gives the value Blender clamps to (`Blender clamps it to 0 when it is set`), or says that its clamp leaves a NaN as it is.
+
+The snapshots show what each fix makes of the text, as well as its words.
 
 ## 19. Converting `.blend` files
 
-`sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
+Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists the data RNA does not reach. `sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
 
 - everything RNA reaches is written as named Null properties;
 - data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
@@ -410,9 +871,13 @@ Correctness is checked by a field-by-field comparison of the original and the ro
 
 ## 20. Open questions
 
-1. The inline threshold for level 0 data (section 9).
-2. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Cosmósis, section 3).
-3. The check vocabulary (section 14), settled in phase 8.
+None is open for v0 (task 1d-01a, November 8, 2026). The draft's three were settled or given to a later phase:
+
+1. **The inline threshold** for level 0 data is 2,000 elements (Sau's decision S23; section 9).
+2. **Object data used by one object** is written in that object's file, and in a file of its own when it is shared (S36: "data used once lives in the file that uses it"; Cosmósis, section 2). The layout is free, so this is the default `sau convert` writes, not a rule the checker enforces.
+3. **The check vocabulary** (section 14) is phase 8's.
+
+Questions raised after v0 is frozen (task 1d-01c) go through RFCs, as Scowr's do.
 
 ## 21. What building Null takes
 

@@ -1,0 +1,7 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  2 project: project "Harbor at Dusk"
+  3   attribute: units metric scale=1 length=m rotation=deg
+  4   attribute: scene @main

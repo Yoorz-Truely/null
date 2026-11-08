@@ -329,3 +329,101 @@ fn a_cycles_block_is_ordered_by_cycles_struct() {
         "{out}"
     );
 }
+
+const PROJECT: &str = include_str!("../../../schema/null-schema-project.json");
+
+fn project_schema() -> &'static Schema {
+    static S: std::sync::OnceLock<Schema> = std::sync::OnceLock::new();
+    S.get_or_init(|| Schema::from_json(PROJECT).unwrap())
+}
+
+/// Every fenced example of the spec, those of forms not built yet included (task 1d-02b).
+fn spec_examples() -> Vec<String> {
+    let spec = include_str!("../../../docs/spec/null-v0.md");
+    spec.split("```null")
+        .skip(1)
+        .map(|b| {
+            let body = b.split_once('\n').map_or("", |x| x.1);
+            format!("{}\n", &body[..body.find("\n```").unwrap()])
+        })
+        .collect()
+}
+
+#[test]
+fn every_spec_example_is_canonical_twice_over_and_loses_nothing() {
+    // Task 1d-02b: every construct (sub-objects, node trees, zones, groups, actions, drivers, data
+    // files, components) comes out of `canonical` with every word and comment it had, and a
+    // second pass changes nothing.
+    for (i, text) in spec_examples().iter().enumerate() {
+        let once = canonical(text, project_schema());
+        assert_eq!(tokens(&once), tokens(text), "example {}:\n{once}", i + 1);
+        assert_eq!(
+            canonical(&once, project_schema()),
+            once,
+            "example {} is not stable",
+            i + 1
+        );
+    }
+}
+
+#[test]
+fn sub_objects_zones_and_f_curves_are_ordered_by_their_own_structs() {
+    let schema = project_schema();
+    // A bevel's settings in `BevelModifier`'s order, whatever order they are written in.
+    let object =
+        "object @o \"O\" {\n  modifier @b bevel \"B\" {\n    segments 3\n    width 4mm\n  }\n}\n";
+    let out = canonical(object, schema);
+    assert!(
+        out.find("width").unwrap() < out.find("segments").unwrap(),
+        "{out}"
+    );
+    // A zone: its items first, then its input lines, then `output`, then its nodes.
+    let group = "geometry @g \"G\" {\n  nodes {\n    zone @loop repeat {\n      node @a transform\n      output { geometry @a.geometry }\n      iterations 4\n      repeat-item @geometry geometry \"Geometry\"\n    }\n  }\n}\n";
+    let out = canonical(group, schema);
+    let at = |w: &str| out.find(w).unwrap_or_else(|| panic!("{w} in {out}"));
+    assert!(at("repeat-item") < at("iterations"), "{out}");
+    assert!(at("iterations") < at("output {"), "{out}");
+    assert!(at("output {") < at("node @a"), "{out}");
+    // A group's `layout` last, after its `nodes`, its interface lines kept in order.
+    let group = "geometry @g \"G\" {\n  layout { @a [0 0] }\n  nodes {\n    node @a transform\n  }\n  output @out geometry \"Out\"\n  input @in geometry \"In\"\n}\n";
+    let out = canonical(group, schema);
+    assert!(
+        out.find("output @out").unwrap() < out.find("input @in").unwrap(),
+        "{out}"
+    );
+    assert!(
+        out.find("nodes {").unwrap() < out.find("layout {").unwrap(),
+        "{out}"
+    );
+    // An f-curve: its settings in `FCurve`'s order, its keys as written.
+    let action = "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 12 1m\n      key 1 0m\n      extrapolation linear\n    }\n  }\n}\n";
+    let out = canonical(action, schema);
+    assert!(
+        out.find("extrapolation").unwrap() < out.find("key 12").unwrap(),
+        "{out}"
+    );
+    assert!(
+        out.find("key 12").unwrap() < out.find("key 1 ").unwrap(),
+        "{out}"
+    );
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+
+    #[test]
+    fn a_shuffled_spec_example_is_stable_and_loses_nothing(seed in any::<u64>(), pick in any::<prop::sample::Index>()) {
+        // Generated trees (task 1d-02b): every example of the spec with its blocks' lines in
+        // another order.
+        let files = spec_examples();
+        let text = &files[pick.index(files.len())];
+        let mixed = shuffled(text, seed);
+        prop_assert_eq!(tokens(&mixed), tokens(text));
+        // Formatting twice changes nothing, and every word and comment survives. Lines whose
+        // order is meaning (a tree's nodes, a group's interface, keys, a component's datablocks)
+        // keep the shuffled order, so the result need not be the example's own.
+        let once = canonical(&mixed, project_schema());
+        prop_assert_eq!(tokens(&once), tokens(text));
+        prop_assert_eq!(canonical(&once, project_schema()), once);
+    }
+}
