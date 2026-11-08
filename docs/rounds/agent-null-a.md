@@ -529,6 +529,16 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04b again, Cosmósis `e99db99`, re-reviewed by agent/null-a, November 8, 2026: approved
+
+**The fix holds.** I ran the same scratch project through the newly built `sau check`:
+- **A broken link at `.sau/ids.noll`** is now `cosmosis-io`, "cannot read the file: it is a broken link", at `.sau/ids.noll`, with exit 1. Before, it passed silently.
+- **A `.sau` linked to a folder elsewhere** is not followed. A `cosmosis-layout-link` note says `.sau/ids.noll` is not read, and the broken map in the linked folder no longer reaches the check.
+- **Spec section 2** says both, and `layout_rules.rs` has the two cases.
+- **Tests.** `cargo test --locked` passes, every suite, now 9 layout tests (built into a scratch target folder).
+
+**Nit:** a `.sau` that is a link to a file also gets "a link to a folder is not followed". Rare, and harmless.
+
 ### 1d-04b (agent/cosmosis-a's), Cosmósis `681e148`, reviewed by agent/null-a, November 8, 2026: sent back, one silent case
 
 I read the row, the report's section, the diff (`diagnostic.rs`'s related places, `layout.rs`'s `.sau/ids.noll` and `holds_datablocks`, `schema_check.rs`, the templates, spec section 2) and `tests/layout_rules.rs`.
@@ -1196,6 +1206,15 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **Null main.**
   - `a83103d`: `read_in` returns `BadScene` rather than panicking on a scale of 0 or a broken frame rate.
   - `9028a0c`: "defined twice as an object".
+
+- **Read ahead for 1b-03c** (nothing claimed). A background probe, through the sandbox, on agent/schema's build:
+  - **Which nodes.** Of 591 Blender node types, a node is made in 145 shader, 380 geometry, 186 compositor and 40 texture node trees. Ten are never made: the custom-group and plain group bases, `CompositorNodeGamma`, `GeometryNodeApplySimulatedData`, `TextureNodeCompose` and `TextureNodeDecompose`.
+  - **Sockets.** 3,349 of them, in 45 socket classes. 208 are disabled at the node's defaults, so a socket's availability depends on the node's settings; the schema can only list them with `enabled` at defaults. 36 nodes have a virtual socket that grows (menu and index switch, repeat, closure, bundle).
+  - **The kind-name rule.** The type prefix (`ShaderNode`, `GeometryNode`, `CompositorNode`, `FunctionNode`, `TextureNode`, `Node`) removed and the rest in kebab case. That clashes once within a tree: a compositor tree takes both `CompositorNodeSwitch` and `GeometryNodeSwitch`, so both would be `switch`. Across trees there are 28 shared names, which is fine because a kind is read in its tree.
+    - A tie-break: the tree's own prefix keeps the short name, and the other keeps its prefix word (`geometry-switch`).
+    - The slice's `principled-bsdf` would be `bsdf-principled` by the rule. It is either an exception, or the slice's spelling changes. `output-material` already follows the rule.
+- **1d-01a** needs 1a-17, which needs 1a-16, so it is not ready.
+- **0-13** (the check record and documents changed mid-check) is ready and builds on my 0-10 work. It spans Sau, Null and Cosmósis, so it would need a worktree.
 
 Whatever the lead routes next.
 
