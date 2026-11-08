@@ -1,0 +1,18 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  2 datablock: object @pier "Pier"
+  3   attribute: location [0m -4m 0.35m]
+  4   attribute: rotation-euler [0deg 0deg 12deg]
+  5   attribute: scale [1 1 1]
+  6   attribute: data mesh @pier-deck
+  8   sub-object: modifier @array array
+  9     attribute: count 12
+ 10     attribute: relative-offset-displace [1 0 0]
+ 12   sub-object: modifier @bevel bevel
+ 12     attribute: width 4mm
+ 12     attribute: segments 3
+ 13   attribute: material @weathered-oak
+ 16 datablock: mesh @pier-deck "PierDeck"
+ 17   attribute: primitive cube size=1m scale=[1.2 3 0.08]

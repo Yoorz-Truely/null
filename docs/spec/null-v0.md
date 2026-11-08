@@ -107,7 +107,7 @@ object @pier "Pier" {
 }
 
 mesh @pier-deck "PierDeck" {
-  primitive cube size=1m scale=[1.2 3 0.08]     // level 1: a procedure
+  primitive cube size=1m scale=[1.2 3 0.08] // level 1: a procedure
 }
 ```
 
@@ -145,7 +145,7 @@ material @weathered-oak "Weathered Oak" {
       interpolation "Cubic"
     }
     node @bsdf bsdf-principled {
-      base-color @tex.color             // a link: the socket takes another node's output
+      base-color @tex.color // a link: the socket takes another node's output
       roughness 0.62
     }
     node @out output-material { surface @bsdf.bsdf }
@@ -164,8 +164,8 @@ image @oak-diffuse "oak_diffuse.png" {
 action @lamp-flicker "LampFlicker" {
   slot @lamp light "Lamp" {
     fcurve energy {
-      key 1  800W interpolation=bezier
-      key 6  620W
+      key 1 800W interpolation=bezier
+      key 6 620W
       key 11 800W
     }
   }

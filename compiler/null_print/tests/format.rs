@@ -123,3 +123,25 @@ proptest! {
         prop_assert_eq!(format(&b), b.clone());
     }
 }
+
+#[test]
+fn every_spec_example_is_already_formatted() {
+    // Task 1d-02a: each example of the spec, those of forms not built yet included, prints back
+    // byte for byte through the formatter, so the spec writes what `sau fmt` writes.
+    let spec = include_str!("../../../docs/spec/null-v0.md");
+    let mut n = 0;
+    for block in spec.split("```null").skip(1) {
+        let body = block.split_once('\n').map_or("", |x| x.1);
+        let text = format!(
+            "{}\n",
+            &body[..body.find("\n```").expect("an unclosed example")]
+        );
+        n += 1;
+        assert_eq!(
+            null_print::format(&text),
+            text,
+            "example {n} is not formatted"
+        );
+    }
+    assert!(n >= 19, "{n} examples");
+}
