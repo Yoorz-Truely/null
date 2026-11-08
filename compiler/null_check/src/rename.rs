@@ -11,6 +11,9 @@
 //! - inside a node tree: a node's or a zone's line, a link to a node's output (`@old.color`), a
 //!   frame named by `parent`, and the `layout` block's lines;
 //! - the slot an `action` line names with `slot=`, which is the action's;
+//! - a component's placement: the second word of `use @component @placement`, and the path an
+//!   `override` line starts at a placement (`@rig.2/@spine`); and inside a component's block,
+//!   the handle of a datablock the component defines (`object @rig` in `component @rig`);
 //! - a package's datablock (`@package:old`), and any string or comment.
 //!
 //! A definition written with only a display name (`object "Old"`, S18) gets the new handle
@@ -194,7 +197,7 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
                 edits: &mut edits,
                 count: 0,
             };
-            walker.node(node, Context::Datablock, true);
+            walker.node(node, Context::Datablock, true, false);
             references += walker.count;
         }
     }
@@ -249,7 +252,9 @@ struct Walker<'w> {
 }
 
 impl Walker<'_> {
-    fn node(&mut self, node: Node<'_>, cx: Context, top: bool) {
+    /// `node` walked for references: in `cx`, `top` for a file's own node, `in_component` for a
+    /// line right inside a component's block.
+    fn node(&mut self, node: Node<'_>, cx: Context, top: bool, in_component: bool) {
         let name = node.name();
         if cx == Context::Layout {
             return; // `@node [x y]`: every handle there is a node's.
@@ -267,13 +272,20 @@ impl Walker<'_> {
             }
         }
         // A line that defines a sub-object, a node or a zone: its own handle is not a reference.
+        // So does a datablock a component defines: its handle is the component's own.
         let own = !top
             && (SUB_KINDS.contains(&name.as_ref())
                 || (cx == Context::Tree
-                    && (name == "node" || name == "zone" || name.ends_with("-item"))));
+                    && (name == "node" || name == "zone" || name.ends_with("-item")))
+                || (in_component && defines(node)));
         for (i, v) in args.iter().enumerate() {
             if (top || own) && i == 0 {
                 continue; // The definition's own handle: renamed above, or not this datablock's.
+            }
+            // A placement: `use @component @placement`'s second word, and the path an
+            // `override` starts at one; neither names a datablock.
+            if (name == "use" && i == 1) || (name == "override" && i == 0) {
+                continue;
             }
             if cx == Context::Tree && name == "parent" {
                 continue; // A frame node.
@@ -292,7 +304,7 @@ impl Walker<'_> {
                 "layout" => Context::Layout,
                 _ => cx,
             };
-            self.node(child, child_cx, false);
+            self.node(child, child_cx, false, top && name == "component");
         }
     }
 
