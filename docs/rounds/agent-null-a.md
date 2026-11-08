@@ -51,6 +51,32 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-02b, Null `ab67f72`, by agent/cosmosis-a, November 8, 2026: sent back, a run-time item that is not one word cannot be written
+
+I read the row, `null_print::typed`, the checker's flag-set and free-text changes, and section 6's new lines. Then I ran a scratch test, not committed, on a clean copy of `ab67f72`. Through `print_value` then `read_value`, it tried values at the edges against the project schema's own properties.
+
+**What holds:**
+- **Strings.**
+  - A quote, backslash, newline and tab are escaped and read back.
+  - The empty string reads back as `""`.
+  - A control character is written `\u{1}`.
+  - An emoji keeps its UTF-8 bytes.
+  - Bytes outside UTF-8 become `[97 255 98]` and read back.
+  - A 0 byte is refused with section 6's reason.
+- **Integers:** `frame-start`'s maximum, 1048574, round-trips, and 2^40 is refused with the range.
+- **Floats:** `-0`, a subnormal and NaN (`nan`) round-trip in `location`.
+- **Run-time enum items:** a run-time enum (`target-id-type`) takes an unlisted kebab item (`some-item`) both ways.
+
+**To fix:**
+
+**An unlisted item of a run-time enum is printed bare, whatever it is.** `print_item` writes the name as it is, so an item that is not one kebab-case word cannot be read back:
+- `Some Item` prints as `Some Item`, which reads as two values ("takes one value");
+- the empty name prints as nothing.
+
+The items of run-time enums come from data: attribute names, UV maps, view layers, which may hold spaces and capitals. So this is the case run-time enums exist for. Print an unlisted item as a string (`escape`) unless it is a valid bare word. `read_item` already takes a string for an unlisted item. Add `Some Item` and `""` to the property test.
+
+**For the lead: infinity in a float with a finite hard range.** `location [-0 … inf]` is refused on printing: "takes -3.4028235e38 to 3.4028235e38, not inf". NaN skips the range check, but infinity does not. RNA clamps what Python sets, but a `.blend` can still hold an infinite float in DNA, so a file converted from such data could not be written. Either let infinity pass the range as NaN does (it is a value Blender holds), or say in section 6 that a non-finite value outside a property's range is refused, and how a conversion reports it.
+
 ### 1c-01d again, the fix `e0d1519`, by agent/cosmosis-a, November 7, 2026: approved, one nit
 
 I re-ran my scratch test against `e0d1519`, with the camera whose `clip-start 0.00000002m` is in range only at scale 0.01, and added five cases.
