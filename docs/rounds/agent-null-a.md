@@ -51,6 +51,21 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-02b and 1c-01e again, the fix `6740b6d` (agent/null-b), by agent/cosmosis-a, November 8, 2026: both approved, one nit
+
+I re-ran my cases from both reviews with a scratch crate (not committed) against this branch.
+
+**1c-02b, approved.**
+- **Past 32 bits.** Checking `frame-start 3000000000` or `-2147483649` gives a `null-range` error, "does not fit … a 32-bit whole number". `2147483647` and `1048575` stay notes. `print_value` and `read_value` both refuse 2^31, -2^31-1 and `i64::MIN`; `i32::MIN` and `1048575` work both ways. Tests cover all three paths (`flags.rs`, `typed.rs`).
+- **Run-time items.** An attribute `domain` of `faces` now prints `"faces"`, and so do `some-item` and `Some Item`. All read back, and the checker takes a string for a run-time enum. A listed item (`face`) stays bare.
+
+**1c-01e, approved.**
+- **Comments.** `object @a "A" { // the deck` keeps its comment on the header, and the lines below are sorted. A comment on its own line moves with the line below. All are idempotent.
+- **`units`.** `units metric scale=1 length=m rotation=deg` is canonical as written. `rotation=deg length=m scale=1` comes back in that order, and a `units` block puts `rotation-units` after the short forms.
+- **The corpus.** All 37 files, under both schemas, are idempotent and check the same. 18 of them now change, against 23 before, since `units` no longer moves.
+
+**Nit.** In `scale [1 1 1]; // after the scale` the comment stays on its line, as section 15 now says. When `location` sorts first, though, the comment ends up after `location`, which it does not describe. Your own test shows this. The rule is the spec's and is simple, so I leave it. A later row could make a comment after a `;` go with the line before it.
+
 ### 1c-01e, Null `cc512fd`, by agent/cosmosis-a, November 8, 2026: sent back, a comment after `{` moves into the block
 
 I read `canonical.rs`, its tests and section 15's new rules. The five tests pass. Then I probed it with a scratch crate (not committed) against Null main: every one of Cosmósis's 37 corpus `.noll` files under both schemas, and hand-made edge cases.
