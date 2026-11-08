@@ -503,11 +503,63 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
     null_value::read_srgb(word)
 }
 
-/// A string Blender can hold (spec, section 6): no 0 byte, since Blender's strings end at one,
-/// and within its field with the closing NUL where the field is fixed (`max-length`, task
-/// 1b-03h). Too long is an error, never cut.
-pub(crate) fn check_string(text: &str, span: Span, name: &str, p: &Property, out: &mut Out<'_>) {
-    if text.contains('\0') {
+/// A string Blender can hold (spec, section 6): written as a string, or, where it is not UTF-8,
+/// as the list of its bytes (S65, task 1c-02g). No 0 byte, since Blender's strings end at one, and
+/// within its field with the closing NUL where the field is fixed (`max-length`, task 1b-03h),
+/// counted in bytes either way. Too long is an error, never cut.
+pub(crate) fn check_string(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let span = value.span();
+    let bytes: Vec<u8> = match value {
+        Value::List(_) => {
+            let mut bytes = Vec::new();
+            for item in value.items() {
+                match item
+                    .as_word()
+                    .and_then(|w| read_int(w).ok())
+                    .and_then(|n| u8::try_from(n).ok())
+                {
+                    Some(b) => bytes.push(b),
+                    None => {
+                        return out.error(
+                            codes::TYPE,
+                            item.span(),
+                            format!(
+                                "`{name}`'s bytes are whole numbers 1 to 255, not `{}`",
+                                item.text()
+                            ),
+                        );
+                    }
+                }
+            }
+            if let Ok(text) = std::str::from_utf8(&bytes) {
+                // One spelling (S65): a string that is UTF-8 is always written as a string.
+                let fix = format!("{text:?}");
+                return out.error_fix(
+                    codes::TYPE,
+                    span,
+                    format!(
+                        "`{name}`'s bytes are valid UTF-8, so it is written as a string: {fix}"
+                    ),
+                    (!bytes.contains(&0)).then(|| (format!("write {fix}"), span, fix.clone())),
+                );
+            }
+            bytes
+        }
+        _ => match value.as_string() {
+            Some(text) => text.into_owned().into_bytes(),
+            None => {
+                return out.error(
+                    codes::TYPE,
+                    span,
+                    format!(
+                        "`{name}` takes a string, such as \"Name\", or the list of its bytes, not `{}`",
+                        value.text()
+                    ),
+                );
+            }
+        },
+    };
+    if bytes.contains(&0) {
         out.error(
             codes::TYPE,
             span,
@@ -515,7 +567,7 @@ pub(crate) fn check_string(text: &str, span: Span, name: &str, p: &Property, out
         );
     }
     if let Some(max) = p.max_length
-        && text.len() + 1 > max
+        && bytes.len() + 1 > max
     {
         out.error(
             codes::RANGE,
@@ -523,7 +575,7 @@ pub(crate) fn check_string(text: &str, span: Span, name: &str, p: &Property, out
             format!(
                 "`{name}` holds at most {} bytes, not {} (Blender's field is {max} with its closing NUL)",
                 max.saturating_sub(1),
-                text.len()
+                bytes.len()
             ),
         );
     }

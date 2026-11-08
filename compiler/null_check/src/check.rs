@@ -65,8 +65,8 @@ struct Attr<'a> {
 struct Header<'a> {
     handle: Option<(String, Span)>,
     name: Option<String>,
-    /// Where the display name is written, for a diagnostic on it.
-    name_span: Option<Span>,
+    /// The display name as written: a string, or the list of its bytes (S65).
+    name_value: Option<Value<'a>>,
     rest: Vec<Value<'a>>,
 }
 
@@ -112,16 +112,22 @@ fn props_of(node: Node<'_>) -> Vec<(SyntaxToken<'_>, Value<'_>)> {
 fn header(node: Node<'_>) -> Header<'_> {
     let mut handle = None;
     let mut name = None;
-    let mut name_span = None;
+    let mut name_value = None;
     let mut rest = Vec::new();
     for (i, v) in args_of(node).into_iter().enumerate() {
         match v {
             Value::Word(t) if i == 0 && t.text.starts_with('@') => {
                 handle = Some((t.text.to_string(), t.span))
             }
-            Value::Str(_) | Value::Raw(_) if name.is_none() => {
+            Value::Str(_) | Value::Raw(_) if name_value.is_none() => {
                 name = v.as_string().map(|s| s.into_owned());
-                name_span = Some(v.span());
+                name_value = Some(v);
+            }
+            // A name that is not UTF-8, as the list of its bytes (S65, task 1c-02g).
+            Value::List(_)
+                if name_value.is_none() && handle.is_some() && i == 1 && is_byte_list(&v) =>
+            {
+                name_value = Some(v);
             }
             _ => rest.push(v),
         }
@@ -129,9 +135,19 @@ fn header(node: Node<'_>) -> Header<'_> {
     Header {
         handle,
         name,
-        name_span,
+        name_value,
         rest,
     }
+}
+
+/// Whether `v` is a list of whole numbers, a byte list (S65).
+fn is_byte_list(v: &Value<'_>) -> bool {
+    let items = v.items();
+    !items.is_empty()
+        && items.iter().all(|i| {
+            i.as_word()
+                .is_some_and(|w| w.bytes().all(|b| b.is_ascii_digit()))
+        })
 }
 
 /// The attributes of `node`: its line's properties, then its child nodes.
@@ -275,8 +291,8 @@ impl<'s> Checker<'s> {
                 .cloned()
         });
         let mut out = self.out(file);
-        if let (Some(name), Some(span), Some(p)) = (&h.name, h.name_span, &name_property) {
-            check_string(name, span, "name", p, &mut out);
+        if let (Some(v), Some(p)) = (&h.name_value, &name_property) {
+            check_string(v, "name", p, &mut out);
         }
         match &h.handle {
             Some((handle, span)) => {
@@ -634,17 +650,7 @@ impl<'s> Checker<'s> {
                 }
             },
             "enum" => check_enum(value, name, p, &mut out),
-            "string" => match value.as_string() {
-                Some(text) => check_string(&text, value.span(), name, p, &mut out),
-                None => out.error(
-                    codes::TYPE,
-                    value.span(),
-                    format!(
-                        "`{name}` takes a string, such as \"Name\", not `{}`",
-                        value.text()
-                    ),
-                ),
-            },
+            "string" => check_string(value, name, p, &mut out),
             "pointer" => {
                 let target = p.target.as_deref().unwrap_or("ID");
                 let kind = self
