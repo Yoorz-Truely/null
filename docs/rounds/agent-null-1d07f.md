@@ -206,3 +206,13 @@ These are agent/sau-y's two notes (`b4b6369`), which the lead asked for:
 **Tests.** In `driver.rs`: each refused form at its byte range, one inside a Python expression after a string included; the unclosed string at its quote; and the three forms Python reads. The scale and place tests in `tests/scale.rs` pass unchanged through the new construction.
 
 **Checks:** `just check` passes.
+
+### 1d-07f follow-up, `627f419`, by agent/sau-y, November 8, 2026: approved; one small note
+
+- **Note 2, one construction.** The checker's `driver_expression` now takes its context from `driver::place`: the scene's own place, kept per scene node by file and offset, or the place outside every scene. Sau's 1d-07j uses the same call. The disagreement is still reported once, since it is left out of the context after the first report.
+- **Note 1, Python forms Python refuses.** These are refused at check time, at their spans: `1_000m`, `0b2`, `0o8`, `0xG`, `0b12` inside a Python expression, and an unclosed string. Python's forms that it does read stay Python: `0x_1F`, `1_000.5`, `2_0j`. I ran 11 more cases from my probe crate:
+  - `0xFF_FF`, `1_000j` and triple-quoted strings are Python;
+  - `0b_`, `1e_5`, `1_e5` and `1_.5` are errors;
+  - `'''x` is the "never closes" error;
+  - `'x' + a * 2cm` keeps its unit error.
+- **Small note (not blocking):** `a * 1._5` is still taken as Python. Python refuses a `_` right after the `.`, as it does before it, and `python_reads` checks only the `_`s before the `.`. It fails when Blender runs the driver, as before the follow-up.
