@@ -12,7 +12,7 @@ use crate::schema::{Property, SHADER_TREE, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    dimension, list,
+    check_string, dimension, list,
 };
 
 /// Checks every file of a project together, since handles are visible project-wide
@@ -65,6 +65,8 @@ struct Attr<'a> {
 struct Header<'a> {
     handle: Option<(String, Span)>,
     name: Option<String>,
+    /// The display name as written: a string, or the list of its bytes (S65).
+    name_value: Option<Value<'a>>,
     rest: Vec<Value<'a>>,
 }
 
@@ -110,19 +112,42 @@ fn props_of(node: Node<'_>) -> Vec<(SyntaxToken<'_>, Value<'_>)> {
 fn header(node: Node<'_>) -> Header<'_> {
     let mut handle = None;
     let mut name = None;
+    let mut name_value = None;
     let mut rest = Vec::new();
     for (i, v) in args_of(node).into_iter().enumerate() {
         match v {
             Value::Word(t) if i == 0 && t.text.starts_with('@') => {
                 handle = Some((t.text.to_string(), t.span))
             }
-            Value::Str(_) | Value::Raw(_) if name.is_none() => {
-                name = v.as_string().map(|s| s.into_owned())
+            Value::Str(_) | Value::Raw(_) if name_value.is_none() => {
+                name = v.as_string().map(|s| s.into_owned());
+                name_value = Some(v);
+            }
+            // A name that is not UTF-8, as the list of its bytes (S65, task 1c-02g).
+            Value::List(_)
+                if name_value.is_none() && handle.is_some() && i == 1 && is_byte_list(&v) =>
+            {
+                name_value = Some(v);
             }
             _ => rest.push(v),
         }
     }
-    Header { handle, name, rest }
+    Header {
+        handle,
+        name,
+        name_value,
+        rest,
+    }
+}
+
+/// Whether `v` is a list of whole numbers, a byte list (S65).
+fn is_byte_list(v: &Value<'_>) -> bool {
+    let items = v.items();
+    !items.is_empty()
+        && items.iter().all(|i| {
+            i.as_word()
+                .is_some_and(|w| w.bytes().all(|b| b.is_ascii_digit()))
+        })
 }
 
 /// The attributes of `node`: its line's properties, then its child nodes.
@@ -236,7 +261,7 @@ impl<'s> Checker<'s> {
             return;
         };
         let rna = s.rna.clone();
-        self.header_check(file, node, &kind);
+        self.header_check(file, node, &kind, Some(&rna));
         if kind == "scene" {
             let mut rate = frame_rate(node);
             self.scale = Units::of(node)
@@ -254,10 +279,21 @@ impl<'s> Checker<'s> {
         self.scale = self.outside.scale();
     }
 
-    /// The handle and display name on a datablock's line, and nothing else.
-    fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str) {
+    /// The handle and display name on a datablock's line, and nothing else. The display name is
+    /// struct `rna`'s `name`, so it must fit Blender's field for it (task 1b-03h).
+    fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str, rna: Option<&str>) {
         let h = header(node);
+        let name_property = rna.and_then(|rna| {
+            self.schema
+                .properties_of(rna)
+                .into_iter()
+                .find(|p| p.name == "name" && p.ty == "string")
+                .cloned()
+        });
         let mut out = self.out(file);
+        if let (Some(v), Some(p)) = (&h.name_value, &name_property) {
+            check_string(v, "name", p, &mut out);
+        }
         match &h.handle {
             Some((handle, span)) => {
                 kebab_handle(handle, *span, &mut out);
@@ -404,7 +440,7 @@ impl<'s> Checker<'s> {
                 ("scene" | "collection", "collection") => {
                     if a.node.is_some_and(defines) {
                         let n = a.node.unwrap();
-                        self.header_check(file, n, "collection");
+                        self.header_check(file, n, "collection", Some("Collection"));
                         let props = self.schema.properties_of("Collection");
                         self.attributes(file, n, "collection", &props, &[]);
                     } else {
@@ -614,18 +650,7 @@ impl<'s> Checker<'s> {
                 }
             },
             "enum" => check_enum(value, name, p, &mut out),
-            "string" => {
-                if value.as_string().is_none() {
-                    out.error(
-                        codes::TYPE,
-                        value.span(),
-                        format!(
-                            "`{name}` takes a string, such as \"Name\", not `{}`",
-                            value.text()
-                        ),
-                    );
-                }
-            }
+            "string" => check_string(value, name, p, &mut out),
             "pointer" => {
                 let target = p.target.as_deref().unwrap_or("ID");
                 let kind = self
