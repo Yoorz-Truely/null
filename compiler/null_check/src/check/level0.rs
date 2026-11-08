@@ -39,6 +39,8 @@ pub(super) struct ArrayRef {
     pub bounds_span: Option<Span>,
     /// The domain size the array must have, where the mesh says it.
     pub expected: Option<(usize, &'static str)>,
+    /// The data file found for it, once one is: a second is an error.
+    pub found: Option<(FileId, Span)>,
 }
 
 /// The sizes of a mesh's domains, where its lines say them.
@@ -168,6 +170,7 @@ impl Checker<'_> {
                 bounds,
                 bounds_span: prop(a, "bounds").map(|v| v.span()),
                 expected,
+                found: None,
             });
             return count;
         }
@@ -534,7 +537,23 @@ impl Checker<'_> {
                 ),
             );
         };
-        let r = self.refs.remove(at);
+        // A second data file for the same line says so (S75's review note).
+        if let Some((first, first_span)) = self.refs[at].found {
+            let span = node.code_span();
+            let d = Diagnostic::error(
+                codes::HANDLE,
+                file,
+                span,
+                format!(
+                    "a second data file for `{array}` of {kind} {handle}: one line names one file"
+                ),
+            )
+            .with_label(first, first_span, "the first is here");
+            self.out.push(d);
+            return;
+        }
+        self.refs[at].found = Some((file, node.code_span()));
+        let r = self.refs[at].clone();
         let items = list.items();
         if let Some(n) = r.count
             && n != items.len()
@@ -561,23 +580,47 @@ impl Checker<'_> {
             );
         }
         // Each element checked, and the bounds taken from them.
-        let mut lo: Vec<f64> = Vec::new();
-        let mut hi: Vec<f64> = Vec::new();
+        // Each component's smallest and largest by `total_cmp`, so `-0` is below `0` and the
+        // summary is the same bits in any element order; NaNs are left out, and a component of
+        // NaNs only has no bounds (Sau's decision S75).
+        let mut columns: Vec<Vec<f64>> = Vec::new();
         for item in &items {
             if let Some(nums) = self.element(file, item, array, &r.elements) {
-                if lo.is_empty() {
-                    lo = nums.clone();
-                    hi = nums;
-                } else {
-                    for (k, x) in nums.iter().enumerate() {
-                        if k < lo.len() {
-                            lo[k] = lo[k].min(*x);
-                            hi[k] = hi[k].max(*x);
-                        }
+                if columns.is_empty() {
+                    columns = vec![Vec::new(); nums.len()];
+                }
+                for (k, x) in nums.into_iter().enumerate() {
+                    if k < columns.len() && !x.is_nan() {
+                        columns[k].push(x);
                     }
                 }
             }
         }
+        let extremes: Option<(Vec<f64>, Vec<f64>)> =
+            (!columns.is_empty() && columns.iter().all(|c| !c.is_empty())).then(|| {
+                let pick = |c: &Vec<f64>, max: bool| {
+                    c.iter()
+                        .copied()
+                        .reduce(|a, b| {
+                            let a_first = a.total_cmp(&b).is_le();
+                            if a_first != max { a } else { b }
+                        })
+                        .unwrap_or_default()
+                };
+                (
+                    columns.iter().map(|c| pick(c, false)).collect(),
+                    columns.iter().map(|c| pick(c, true)).collect(),
+                )
+            });
+        if r.bounds.is_some() && extremes.is_none() && !columns.is_empty() {
+            let span = r.bounds_span.unwrap_or(r.span);
+            self.out(r.file).error(
+                codes::RANGE,
+                span,
+                "`bounds=` cannot be given: a component of this data file holds only NaNs, which have no bounds (S75)",
+            );
+        }
+        let (lo, hi) = extremes.unwrap_or_default();
         if let Some((blo, bhi)) = &r.bounds {
             let same = |a: &[f64], b: &[f64]| {
                 a.len() == b.len()
@@ -600,7 +643,10 @@ impl Checker<'_> {
 
     /// The lines that name a data file none of the project's files holds.
     pub(super) fn unmatched_refs(&mut self) {
-        for r in std::mem::take(&mut self.refs) {
+        for r in std::mem::take(&mut self.refs)
+            .into_iter()
+            .filter(|r| r.found.is_none())
+        {
             self.out(r.file).error(
                 codes::HANDLE,
                 r.span,
@@ -631,7 +677,13 @@ fn numbers(v: &Value<'_>, dim: Dimension, scale: f32) -> Option<Vec<f64>> {
         _ => {
             let w = v.as_word()?;
             if let Ok(n) = w.parse::<i64>() {
-                return Some(vec![n as f64]);
+                // `-0` is a float's negative zero, below `0` in the bounds (S75).
+                let x = if n == 0 && w.starts_with('-') {
+                    -0.0
+                } else {
+                    n as f64
+                };
+                return Some(vec![x]);
             }
             read_in::<f32>(w, dim, &scene)
                 .ok()

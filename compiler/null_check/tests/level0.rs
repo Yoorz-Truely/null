@@ -212,3 +212,53 @@ fn a_line_without_its_data_file_and_a_data_file_without_its_line_are_errors() {
         "{found:?}"
     );
 }
+
+/// A mesh whose float attribute's data file is `values`, named with `bounds`.
+fn heat(values: &str, bounds: &str) -> (String, String) {
+    let mesh = format!(
+        "mesh @rock \"Rock\" {{\n  vertices [[0m 0m 0m] [1m 0m 0m] [0m 1m 0m]]\n  polygons [[0 1 2]]\n  attribute @heat point float \"heat\" file=\"rock.heat.noll\" count=3{bounds}\n}}\n"
+    );
+    let data = format!("array mesh @rock @heat [\n{values}]\n");
+    (mesh, data)
+}
+
+#[test]
+fn bounds_order_minus_zero_below_zero_in_any_order_and_leave_nans_out() {
+    // Sau's decision S75: each component's smallest and largest by `total_cmp`.
+    for values in ["  0\n  -0\n  1\n", "  -0\n  0\n  1\n", "  1\n  0\n  -0\n"] {
+        let (mesh, data) = heat(values, " bounds=[-0 1]");
+        assert_eq!(messages(&[&mesh, &data]), Vec::<String>::new(), "{values}");
+        let (mesh, data) = heat(values, " bounds=[0 1]");
+        let found = messages(&[&mesh, &data]);
+        assert!(
+            found.iter().any(|m| m.contains("`bounds=` disagrees")),
+            "{values}: {found:?}"
+        );
+    }
+    // A NaN is left out of the bounds.
+    let (mesh, data) = heat("  0.5\n  nan\n  2\n", " bounds=[0.5 2]");
+    assert_eq!(messages(&[&mesh, &data]), Vec::<String>::new());
+    // An all-NaN array has no bounds.
+    let (mesh, data) = heat("  nan\n  nan\n  nan\n", " bounds=[0 0]");
+    let found = messages(&[&mesh, &data]);
+    assert!(found.iter().any(|m| m.contains("only NaNs")), "{found:?}");
+    let (mesh, data) = heat("  nan\n  nan\n  nan\n", "");
+    assert_eq!(messages(&[&mesh, &data]), Vec::<String>::new());
+}
+
+#[test]
+fn a_second_data_file_for_one_line_says_so() {
+    let found = errors(&[ROCK, ROCK_VERTICES, ROCK_HEAT, ROCK_HEAT]);
+    let second: Vec<_> = found
+        .iter()
+        .filter(|d| {
+            d.message
+                .contains("a second data file for `@heat` of mesh @rock")
+        })
+        .collect();
+    assert_eq!(second.len(), 1, "{found:?}");
+    assert!(
+        !found.iter().any(|d| d.message.contains("no line names")),
+        "{found:?}"
+    );
+}

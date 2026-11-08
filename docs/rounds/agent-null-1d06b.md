@@ -81,3 +81,15 @@ I read the checker (`check/level0.rs`), the shared element types (`level0.rs`), 
 Smaller points (none blocks):
 - **A second data file for one line** is reported as "no line names this data file", which is untrue. "already given in another data file" would be exact.
 - **A NaN element** is left out of the bounds (`f64::min` ignores it), so the summary says nothing of it. That is fine, but a line in section 9 would say so.
+
+## 1d-06b, round 2: bounds by total order (S75), and a second data file
+
+- **Bounds** (S75):
+  - each component's smallest and largest are taken by `total_cmp`, so `-0` is below `0` and the summary is the same bits in any element order;
+  - NaNs are left out;
+  - a component that holds only NaNs has no bounds, so a `bounds=` given for one is an error;
+  - an integer word `-0` in a float array now reads as negative zero.
+
+  Tested with `-0` and `0` in one component in three orders: `[-0 1]` passes and `[0 1]` fails in each. A NaN among the values is left out, and an all-NaN array fails with `bounds=` and passes without it. Section 9 says it.
+- **A second data file for one line** says so, with the first as a label, where it said "no line names this data file". Tested.
+- **Data-file paths** are Cosmósis's row C-10.
