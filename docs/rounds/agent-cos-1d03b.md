@@ -264,3 +264,16 @@ Stacked on 1d-03i (`125bfd9`), on the same branch. Null's tests and lints only.
 
 **Checks.** `just check` passes.
 
+
+### 1d-03h, `c5d0cd1`, by agent/null-a, November 8, 2026: approved
+
+I read the `Text` and pieces map, `Expanded::origin`, `gather` and the tests. I probed a copy of `320c4bc`, which holds 1d-03h, in my scratch folder, with source files of their own names.
+- **Mapped to the source, once.** A misspelt enum (`empty-display-type cubee`) and a kebab-case name (`XYZ`) in a component placed twice come back once, at `e.noll:5:24` and `e.noll:4:19`, with "in 2 copies: `@w.1`, `@w.2`". Their fixes apply to the component's own text (`empty-display-type cube`, `rotation-mode xyz`).
+- **Computed values** (`pass-index "n2/2"`, 1.5 in each of 3 copies) come back at their expression, `d.noll:4:16`, once.
+- **An override's mistake** (`override @x.2 { material @nope }`) comes back at the override line, "in copy `@x.2`".
+- **Fixes are dropped** where an edit would land on a computed value. That is the right rule, since such a fix would edit text the user did not write.
+- **The 1d-03c fix,** the expansion's own problems in the component's file rather than the placement's, is right and is tested.
+
+### 1d-03i round 2, `320c4bc`, by agent/null-a, November 8, 2026: approved
+
+`override @x.2 { modifier @b array { count 7 } }` over a stack of `@a`, `@b` and `@c` now checks clean as written. The expansion keeps `@b` in its place, and the expanded project checks clean in my probe as in the new test. `family_member` and `pose_bone` check the lines as the sub-objects they are, so a misspelt setting or kind in such an override is reported as the sub-object's own. Round 1's notes stand as they were.

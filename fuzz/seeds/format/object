@@ -1,0 +1,11 @@
+object @pier "Pier" {
+  location [0m -4m 0.35m]
+  rotation-euler [0deg 0deg 12deg]
+  scale [1 1 1]
+  data mesh @pier-deck
+  material @weathered-oak
+}
+
+// Every attribute may sit on the owner's line as a property instead.
+object @post "Post" location=[1.2m -4m 0m] rotation-euler=[0 0 1.5707964] scale=[0.1 0.1 1.5]
+object @post-cap "PostCap" { parent @post; location [0 0 0.75m] }

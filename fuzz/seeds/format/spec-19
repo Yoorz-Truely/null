@@ -1,0 +1,10 @@
+object @dial "Dial" { rotation-euler [0deg 0deg 45deg] }
+
+light @dial-lamp "Dial Lamp" {
+  type point
+  energy driver="spin * 100" {
+    var spin transforms {
+      target @dial transform-type=rot-z transform-space=world-space
+    }
+  }
+}

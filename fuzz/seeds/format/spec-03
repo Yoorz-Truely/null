@@ -1,0 +1,18 @@
+// objects/pier.noll
+object @pier "Pier" {
+  location [0m -4m 0.35m]
+  rotation-euler [0deg 0deg 12deg]
+  scale [1 1 1]
+  data mesh @pier-deck
+
+  modifier @array array {
+    count 12
+    relative-offset-displace [1 0 0]
+  }
+  modifier @bevel bevel { width 4mm; segments 3 }
+  material @weathered-oak
+}
+
+mesh @pier-deck "PierDeck" {
+  primitive cube size=1m scale=[1.2 3 0.08] // level 1: a procedure
+}

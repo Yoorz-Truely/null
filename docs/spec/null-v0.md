@@ -397,7 +397,7 @@ Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6
 - **Overrides** (S33). `override @plank.7 { … }`, beside the `use` line, gives one copy other parameters or properties. `override @plank.7/@plank-mesh { … }` reaches a datablock the copy made. An edit in Sau to a placed copy is written as an override on it by default, and to the component itself only on request (1d-03f), as Figma's instances and main components are edited.
 - **Recursion that counts down** (S38, S74 (5)). A component may place itself, directly or through others, only when one whole-number parameter is marked `{ countdown }`, every such placement passes it a smaller value, and the placements sit under an `if` that holds only while it is above 0. The checker refuses any other recursion.
 
-**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
+**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. The short forms are written in full first (section 17, S77), so a component's lines are read as their full forms. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
 
 How the flat project is written (task 1d-03c):
 - **Components are taken out**, and each scene or collection that places copies is written with a member line for each copy's root (`object @plank.7`), and for each copy made inside one (`object @tree/@left`). The copies' datablocks follow it in its file, in placement order, each copy's in the component's order, under their handles: `object @plank.7 "Plank"`, `mesh @plank.7/@plank-mesh "Plank"`. Every other line is as written.
@@ -768,7 +768,7 @@ Files in `checks/` state what must be true of the scene and of renders: a polygo
 
 ## 15. Canonical form
 
-The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
+The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, which Null's `format` fuzz target holds it to on any text, with the layout keeping every token and construct (task 1d-02d). Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
 
 The layout is fixed (settled November 7, 2026, task 1a-07):
 
@@ -834,26 +834,27 @@ Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and
 
 ### Short forms
 
-Task 1d-03d, November 8, 2026 (Sau's decision S35: the abstract form first, the full form always available). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::expand` writes a project's files with every short form in full, which is what the checker and Sau's apply read it as. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
+Tasks 1d-03d and 1d-03j, November 8, 2026 (Sau's decisions S35, the abstract form first and the full form always available, and S77). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::full_form` writes a project's files with all eight short forms below in full, which is what the checker and Sau's apply read it as. A component's block takes them as a file does, its datablocks as datablocks and its `if` and `else` blocks as the lines they hold. Sau's load writes the full form first and then expands components (`null_check::expand`, section 8), as S77 settles. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
 
 | Short form | Full form | Where |
 | --- | --- | --- |
 | `object "Pier"`: the handle left out | `object @pier "Pier"`, the handle made from the name | A datablock (section 7) |
 | `modifier @bevel bevel`: the quoted name left out | `modifier @bevel bevel "bevel"`, the handle without `@` | A modifier, constraint, pose bone, node or attribute (sections 8, 9 and 10) |
 | `modifier @bevel bevel width=4mm`: settings on the line | `modifier @bevel bevel { width 4mm }` | A datablock, modifier, constraint or pose bone (section 5). Other lines' `key=value`s (a key's `interpolation=`, an f-curve's `index=`, a primitive's settings, `slot=`) are part of the line, not settings |
-| `hide-render`: a bare boolean | `hide-render on` | Any boolean (section 5) |
+| `hide-render`: a bare boolean | `hide-render on` | A boolean of the line's owner: its datablock's, sub-object's, struct block's or node's struct (section 5). A line that is no boolean of its owner, such as a parameter's `{ countdown }`, is not one |
 | `units metric scale=1 length=m rotation=deg` | `units { system metric; scale-length 1; length-unit meters; system-rotation degrees }` | A project or scene (section 8) |
 | `action @bob`: `slot=` left out | `action @bob slot=@buoy` | The line that plays an action with one slot (section 11) |
 | An action's f-curves in its slots' blocks | `layer @layer "Layer" { strip @strip keyframe { channels @buoy { … } } }`, with the slot lines kept | An action with one layer and one keyframe strip (section 11, S71 (3)). `Layer` is Blender's name for a first layer. A strip has no name, so its handle is its kind, with `-2` added where the action already has a sub-object of that handle |
-| `parent @box` in `material @clay`: a path's owner left out | `@clay/@box` | A path in its owner's block (section 7). Lines name their own datablock's nodes and sub-objects this way, so expansion leaves them as written. The index of paths reads both forms as the same, and write-back writes the short one in the owner's block |
+| `parent @box` and `@noise.fac` in `material @clay`: a path's owner left out | `parent @clay/@box`, `@clay/@noise.fac` | A link or a frame in a datablock's `nodes` block, naming one of its nodes (section 7). The checker reads a tree's links and frames either way, and a path from another datablock names none of this tree's nodes. The index of paths reads both forms as the same |
 
 Write-back keeps each form in these ways:
 - A value is changed where it is written: on the line (`width=5mm`), as a unit word in `units` (`length=cm` for `centimeters`), or in a slot's block for a strip's channels.
 - A bare boolean stays bare while it is on and becomes `hide-render off` when it is not.
 - `slot=` stays left out while the slot is the action's only one.
 - A handle that is made from the name stays left out.
+- A path stays written the way it is, from its owner or not.
 
-Every example in this section and in sections 8, 10 and 11, expanded, checks clean, and expanding it again changes nothing (`null_print`'s `short` test).
+Every example in this section and in sections 8, 10 and 11, in full form, checks clean, and writing it in full again changes nothing. Its components' copies check clean too (`null_print`'s `short` test).
 
 ```null
 scene @harbour "Harbour" {

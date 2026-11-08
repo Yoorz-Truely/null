@@ -1,0 +1,17 @@
+material @weathered-oak "Weathered Oak" {
+  nodes {
+    node @bsdf principled-bsdf {
+      base-color [0.8 0.62 0.41 1]
+      roughness 0.62
+    }
+    node @out output-material { surface @bsdf.bsdf }
+  }
+  layout { @bsdf [-160 0]; @out [120 0] }
+}
+
+material @rust "Rust" {
+  nodes {
+    node @bsdf principled-bsdf base-color=#b7410e roughness=0.9
+    node @out output-material surface=@bsdf.bsdf
+  }
+}
