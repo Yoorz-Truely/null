@@ -30,7 +30,9 @@ pub mod units;
 mod values;
 
 pub use check::check;
-pub use schema::{Datablock, Item, NodeDef, Primitive, Property, Range, Schema, Struct};
+pub use schema::{
+    Datablock, Item, NodeDef, Primitive, Property, Range, SHADER_TREE, Schema, Struct,
+};
 pub use values::unit_dimension;
 
 /// The checker's diagnostic codes (spec, section 18). They are stable.

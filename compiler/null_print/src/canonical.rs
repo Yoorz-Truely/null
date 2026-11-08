@@ -12,7 +12,7 @@
 //! material's `nodes` and `layout` at `node-tree`. A node's settings come first and then its
 //! inputs in the order its declaration lists them.
 
-use null_check::{Schema, forms};
+use null_check::{SHADER_TREE, Schema, forms};
 use null_syntax::ast::Node;
 use null_syntax::{NodeKind, SyntaxElement, SyntaxNode, TokenKind, parse};
 
@@ -48,6 +48,9 @@ struct Order {
     /// Whether this is a node tree's `nodes` block, whose `node` lines keep their order but are
     /// each ordered by their kind.
     nodes: bool,
+    /// The pointers to a struct written as a block of its own (S70), by name, with the struct's
+    /// RNA identifier: a block of one is ordered by that struct's order.
+    pointers: Vec<(String, String)>,
 }
 
 impl Order {
@@ -63,6 +66,12 @@ impl Order {
         if self.nodes && name == "node" {
             let kind = node.args().nth(1).and_then(|v| v.as_word()).unwrap_or("");
             return node_order(schema, kind);
+        }
+        if let Some((_, rna)) = self.pointers.iter().find(|(n, _)| *n == name) {
+            let kind = schema
+                .struct_by_rna(rna)
+                .map_or(String::new(), |s| s.kind.clone());
+            return struct_order(schema, rna, &kind);
         }
         self.children
             .iter()
@@ -87,7 +96,7 @@ fn top_order(schema: &Schema, node: Node<'_>) -> Order {
         return Order {
             names: vec!["units".into(), "scene".into()],
             children: vec![("units".into(), units_order(schema))],
-            nodes: false,
+            ..Order::default()
         };
     }
     let Some(s) = schema.struct_by_kind(&kind) else {
@@ -128,10 +137,29 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
     }
     let mut names: Vec<String> = Vec::new();
     let mut children = Vec::new();
+    let mut pointers = Vec::new();
     for s in chain.iter().rev() {
-        for p in &s.properties {
+        // Each struct's own properties, then what an add-on attaches to it (`cycles`).
+        let own = s.properties.iter();
+        let attached = schema
+            .properties_of(&s.rna)
+            .into_iter()
+            .filter(|p| !s.properties.iter().any(|q| std::ptr::eq(q, *p)))
+            .filter(|p| {
+                // properties_of also lists the bases' own; keep only those attached to `s`.
+                !chain
+                    .iter()
+                    .any(|b| b.properties.iter().any(|q| std::ptr::eq(q, *p)))
+            });
+        for p in own.chain(attached) {
             if !names.contains(&p.name) {
                 names.push(p.name.clone());
+            }
+            if p.ty == "pointer"
+                && let Some(target) = p.target.as_deref()
+                && !schema.is_datablock_struct(target)
+            {
+                pointers.push((p.name.clone(), target.to_string()));
             }
         }
     }
@@ -177,6 +205,7 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
         names,
         children,
         nodes: false,
+        pointers,
     }
 }
 
@@ -203,9 +232,18 @@ fn units_order(schema: &Schema) -> Order {
 /// A node's order: its settings first, then its inputs as its declaration lists them.
 fn node_order(schema: &Schema, kind: &str) -> Order {
     let mut names = Vec::new();
-    if let Some(def) = schema.nodes.iter().find(|n| n.kind == kind) {
-        if let Some(rna) = def.rna.as_deref() {
-            names.extend(schema.properties_of(rna).iter().map(|p| p.name.clone()));
+    // A node is found in its tree: a kind may name a shader node and a compositor node both
+    // (`invert`, 1b-03c's review), and a material's tree is a shader tree.
+    if let Some(def) = schema.node(SHADER_TREE, kind) {
+        // Its own settings (not `Node`'s, whose `color` is the editor's colour for the node, not
+        // an input), then its inputs.
+        if let Some(s) = def.rna.as_deref().and_then(|rna| schema.struct_by_rna(rna)) {
+            names.extend(
+                s.properties
+                    .iter()
+                    .filter(|p| !def.inputs.iter().any(|i| i.name == p.name))
+                    .map(|p| p.name.clone()),
+            );
         }
         names.extend(def.inputs.iter().map(|i| i.name.clone()));
     }

@@ -175,7 +175,7 @@ fn a_node_keeps_its_place_and_orders_its_inputs() {
 material @m \"M\" {
   nodes {
     node @out output-material { surface @bsdf.bsdf }
-    node @bsdf principled-bsdf { roughness 0.5; base-color [1 1 1 1] }
+    node @bsdf bsdf-principled { roughness 0.5; base-color [1 1 1 1] }
   }
   roughness 0.5
 }
@@ -297,4 +297,35 @@ proptest! {
         prop_assert_eq!(tokens(&mixed), tokens(text));
         prop_assert_eq!(canonical(&mixed, schema()), canonical(text, schema()));
     }
+}
+
+#[test]
+fn a_node_is_ordered_by_its_trees_node() {
+    // From 1b-03c's review: `invert` names a shader node and a compositor node; a material's
+    // node is the shader tree's, whose declaration lists `fac` before `color`.
+    let project =
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap();
+    let text = "material @m \"M\" {\n  nodes {\n    node @inv invert { color [1 1 1 1]; fac 0.5 }\n  }\n}\n";
+    let out = canonical(text, &project);
+    assert!(out.contains("{ fac 0.5; color [1 1 1 1] }"), "{out}");
+}
+
+#[test]
+fn a_cycles_block_is_ordered_by_cycles_struct() {
+    // S70: an add-on's struct is written as a block, ordered as that struct is; the block stands
+    // where the attached property stands, after the scene's own properties.
+    let project =
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap();
+    let text = "scene @s \"S\" {\n  cycles { use-denoising; samples 64; device gpu }\n  frame-start 1\n}\n";
+    let out = canonical(text, &project);
+    assert_eq!(canonical(&out, &project), out);
+    assert!(
+        out.find("frame-start").unwrap() < out.find("cycles").unwrap(),
+        "{out}"
+    );
+    let block = &out[out.find("cycles").unwrap()..];
+    assert!(
+        block.find("device").unwrap() < block.find("samples").unwrap(),
+        "{out}"
+    );
 }

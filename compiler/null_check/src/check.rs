@@ -4,11 +4,11 @@ use std::collections::{HashMap, HashSet};
 
 use null_syntax::ast::{Entry, Node, Value};
 use null_syntax::names::{is_kebab_case, to_kebab_case};
-use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, closest};
+use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, TextEdit, closest};
 
 use crate::codes;
 use crate::forms;
-use crate::schema::{Property, Schema};
+use crate::schema::{Property, SHADER_TREE, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
@@ -487,8 +487,80 @@ impl<'s> Checker<'s> {
         );
     }
 
+    /// A property a flat form of Null's sets, written in a block of its struct instead (S70):
+    /// an error, with a fix that moves the line to the flat form's place, before the block's own
+    /// line (`render { fps 30 }` in a scene is `fps 30` at the scene).
+    fn flat_in_block(&mut self, file: FileId, a: &Attr<'_>, block: Node<'_>, target: &str) {
+        for child in block.children() {
+            let name = child.name();
+            let Some((_, _, flat)) = forms::FLAT_FORMS
+                .iter()
+                .find(|(t, inner, _)| *t == target && *inner == name)
+            else {
+                continue;
+            };
+            let code = child.code_span();
+            let base = child.span().start;
+            let text = &child.0.text()[code.start - base..code.end - base];
+            let moved = text.replacen(name.as_ref(), flat, 1);
+            let line_start = a.span.start;
+            let d = Diagnostic::error(
+                codes::REPEATED,
+                file,
+                code,
+                format!(
+                    "`{name}` is written at the {} as `{flat}` (S70: one spelling per property), not in `{}`",
+                    "scene", a.name
+                ),
+            )
+            .with_fix(
+                format!("move it out of `{}`", a.name),
+                vec![
+                    TextEdit {
+                        file,
+                        span: child.span(),
+                        replacement: String::new(),
+                    },
+                    TextEdit {
+                        file,
+                        span: Span::new(line_start, line_start),
+                        replacement: format!("{moved}\n  "),
+                    },
+                ],
+            );
+            self.out.push(d);
+        }
+    }
+
     /// One RNA property's value.
     fn property(&mut self, file: FileId, a: &Attr<'_>, p: &Property, power: bool) {
+        // A struct the owner holds, not a datablock (`cycles` on a scene, task 1b-03g), is written
+        // as a block of its own properties, checked as that struct's.
+        if p.ty == "pointer"
+            && let Some(block) = a.node.filter(|n| n.block().is_some())
+            && let Some(target) = p.target.as_deref()
+            && !self.schema.is_datablock_struct(target)
+            && let Some(s) = self.schema.struct_by_rna(target)
+        {
+            // One spelling per property (S70): the block form is for a struct Null does not
+            // flatten. `units` writes a scene's unit settings, so a block of them is an error.
+            if target == "UnitSettings" {
+                self.out(file).error(
+                    codes::TYPE,
+                    a.name_span,
+                    format!(
+                        "a scene's unit settings are written `units …` (section 8), not as a `{}` block",
+                        a.name
+                    ),
+                );
+                return;
+            }
+            self.flat_in_block(file, a, block, target);
+            let schema = self.schema;
+            let props = schema.properties_of(target);
+            self.attributes(file, block, &s.kind.clone(), &props, &[]);
+            return;
+        }
         let mut out = self.out(file);
         let name = a.name.as_str();
         if p.readonly || p.ty == "collection" {
@@ -961,7 +1033,7 @@ impl<'s> Checker<'s> {
                 "`nodes` takes a block of `node @handle <kind>` lines",
             );
         };
-        let kinds: Vec<&str> = self.schema.nodes.iter().map(|n| n.kind.as_str()).collect();
+        let kinds: Vec<&str> = self.schema.node_kinds(SHADER_TREE);
         let mut seen = HashSet::new();
         for child in tree.children() {
             let Some(name) = child.name_token() else {
@@ -980,7 +1052,7 @@ impl<'s> Checker<'s> {
                 self.out(file).error(
                     codes::TYPE,
                     child.code_span(),
-                    "a node is written `node @handle <kind>`, such as `node @bsdf principled-bsdf`",
+                    "a node is written `node @handle <kind>`, such as `node @bsdf bsdf-principled`",
                 );
                 continue;
             };
@@ -1002,8 +1074,17 @@ impl<'s> Checker<'s> {
                 );
             }
             let kind = k.text();
-            let Some(def) = self.schema.nodes.iter().find(|n| n.kind == kind) else {
-                let near = closest(kind, kinds.iter().copied());
+            let Some(def) = self.schema.node(SHADER_TREE, kind) else {
+                // The same words in another order first: S67 made `principled-bsdf`
+                // `bsdf-principled` (1b-03c's review).
+                let mut words: Vec<&str> = kind.split('-').collect();
+                words.sort_unstable();
+                let reordered = kinds.iter().copied().find(|k| {
+                    let mut w: Vec<&str> = k.split('-').collect();
+                    w.sort_unstable();
+                    w == words
+                });
+                let near = reordered.or_else(|| closest(kind, kinds.iter().copied()));
                 self.out(file).error_fix(
                     codes::KIND,
                     k.span(),
@@ -1073,7 +1154,7 @@ impl<'s> Checker<'s> {
                 }),
             );
         };
-        if let Some(def) = self.schema.nodes.iter().find(|n| &n.kind == kind) {
+        if let Some(def) = self.schema.node(SHADER_TREE, kind) {
             let outs: Vec<&str> = def.outputs.iter().map(|o| o.name.as_str()).collect();
             if !outs.contains(&socket) {
                 let near = closest(socket, outs.iter().copied());

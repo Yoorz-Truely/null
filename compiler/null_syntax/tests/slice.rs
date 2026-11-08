@@ -89,7 +89,7 @@ fn the_slice_covers_its_constructs() {
         "vertices",
         "faces",
         "material",
-        "principled-bsdf",
+        "bsdf-principled",
         "base-color",
         "roughness",
         "camera",

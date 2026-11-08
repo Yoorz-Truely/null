@@ -6,7 +6,7 @@
 //! Structs are found by RNA identifier and by kind through indexes made once at load, since the
 //! project's schema has about 1,350 of them (task 1b-03e).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::Deserialize;
 use serde_json::Value as Json;
@@ -26,12 +26,43 @@ pub struct Schema {
     pub nodes: Vec<NodeDef>,
     /// Mesh primitives: the add operators and their settings.
     pub primitives: Vec<Primitive>,
+    /// Add-ons' settings, each its own section (task 1b-03g): Cycles' render, object, light and
+    /// world settings. Their structs are read as Blender's are; their properties on Blender's
+    /// structs (`Scene.cycles`) are added to those structs'.
+    #[serde(default)]
+    pub addons: BTreeMap<String, Addon>,
+    /// Add-ons' properties on Blender's structs, by owner, made by [`Schema::from_json`].
+    #[serde(skip)]
+    attached: HashMap<String, Vec<Property>>,
     /// Index into `structs` by RNA identifier, made by [`Schema::from_json`].
     #[serde(skip)]
     by_rna: HashMap<String, usize>,
     /// Index into `structs` by kind, made by [`Schema::from_json`].
     #[serde(skip)]
     by_kind: HashMap<String, usize>,
+}
+
+/// One add-on's section of the project's schema (task 1b-03g).
+#[derive(Clone, Debug, Deserialize)]
+pub struct Addon {
+    /// Its Python module, such as `cycles`.
+    pub module: String,
+    /// Its version: Blender's, for an add-on bundled with Blender.
+    pub version: String,
+    /// The properties it adds to Blender's structs.
+    pub attached: Vec<Attached>,
+    /// The structs it defines.
+    pub structs: Vec<Struct>,
+}
+
+/// An add-on's property on one of Blender's structs, such as `Scene.cycles`.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Attached {
+    /// The struct it is on, by RNA identifier.
+    pub owner: String,
+    /// The property.
+    #[serde(flatten)]
+    pub property: Property,
 }
 
 /// One datablock type of the project's schema.
@@ -120,19 +151,39 @@ pub struct Item {
     pub quoted: bool,
 }
 
-/// A shader node kind.
+/// A node kind.
 #[derive(Clone, Debug, Deserialize)]
 pub struct NodeDef {
-    /// Null's kind, such as `principled-bsdf`.
+    /// Null's kind, such as `bsdf-principled` (Sau's decision S67: Blender's identifier with its
+    /// type prefix removed, in kebab case).
     pub kind: String,
     /// Its RNA identifier, such as `ShaderNodeBsdfPrincipled`, where the schema gives it.
     #[serde(default)]
     pub rna: Option<String>,
+    /// The node trees that take it, by RNA identifier (`ShaderNodeTree`), each with the kind it
+    /// has there; where two kinds of one tree would share a name, the tree's own family keeps it
+    /// (`geometry-switch` in a compositor tree). Absent in the slice's schema, whose nodes are all
+    /// shader nodes under `kind`.
+    #[serde(default)]
+    pub trees: Option<std::collections::BTreeMap<String, String>>,
     /// Its inputs.
     pub inputs: Vec<Property>,
     /// Its outputs.
     pub outputs: Vec<Property>,
 }
+
+impl NodeDef {
+    /// Its kind in `tree` (an RNA identifier such as `ShaderNodeTree`), if that tree takes it.
+    pub fn kind_in(&self, tree: &str) -> Option<&str> {
+        match &self.trees {
+            Some(trees) => trees.get(tree).map(String::as_str),
+            None => (tree == SHADER_TREE).then_some(self.kind.as_str()),
+        }
+    }
+}
+
+/// A material's node tree, the slice's one kind of tree.
+pub const SHADER_TREE: &str = "ShaderNodeTree";
 
 /// A mesh primitive.
 #[derive(Clone, Debug, Deserialize)]
@@ -147,8 +198,32 @@ impl Schema {
     /// Reads a schema file's text.
     pub fn from_json(text: &str) -> Result<Schema, serde_json::Error> {
         let mut schema: Schema = serde_json::from_str(text)?;
+        let addons: Vec<Addon> = schema.addons.values().cloned().collect();
+        for addon in addons {
+            schema.structs.extend(addon.structs);
+            for a in addon.attached {
+                schema.attached.entry(a.owner).or_default().push(a.property);
+            }
+        }
         for (i, s) in schema.structs.iter().enumerate() {
             schema.by_rna.entry(s.rna.clone()).or_insert(i);
+        }
+        // A kind is unique where it is read (S67): among the datablock types, in a family, in a
+        // tree. Read alone, it names the datablock type first (`scene` is `Scene`, not the node
+        // socket `NodeSocketScene`), then the first struct of that kind.
+        let datablock_rnas: Vec<String> = schema
+            .datablocks
+            .iter()
+            .flatten()
+            .map(|d| d.rna.clone())
+            .collect();
+        for rna in &datablock_rnas {
+            if let Some(&i) = schema.by_rna.get(rna) {
+                let kind = schema.structs[i].kind.clone();
+                schema.by_kind.entry(kind).or_insert(i);
+            }
+        }
+        for (i, s) in schema.structs.iter().enumerate() {
             schema.by_kind.entry(s.kind.clone()).or_insert(i);
         }
         Ok(schema)
@@ -164,15 +239,40 @@ impl Schema {
         self.by_kind.get(kind).map(|&i| &self.structs[i])
     }
 
-    /// `rna`'s properties and those of every struct it extends, its own first.
+    /// `rna`'s properties and those of every struct it extends, its own first, with what add-ons
+    /// add to each (`Scene.cycles`).
     pub fn properties_of<'a>(&'a self, rna: &str) -> Vec<&'a Property> {
         let mut out = Vec::new();
         let mut at = self.struct_by_rna(rna);
         while let Some(s) = at {
             out.extend(s.properties.iter());
+            out.extend(self.attached.get(&s.rna).into_iter().flatten());
             at = s.base.as_deref().and_then(|b| self.struct_by_rna(b));
         }
         out
+    }
+
+    /// Whether the struct `rna` is a datablock type, which a pointer names by its handle; any
+    /// other a pointer holds is written as a block of its properties.
+    pub fn is_datablock_struct(&self, rna: &str) -> bool {
+        let mut at = self.struct_by_rna(rna);
+        while let Some(s) = at {
+            if s.rna == "ID" {
+                return true;
+            }
+            at = s.base.as_deref().and_then(|b| self.struct_by_rna(b));
+        }
+        rna == "ID"
+    }
+
+    /// The node of kind `kind` in a tree of type `tree` (`ShaderNodeTree`).
+    pub fn node(&self, tree: &str, kind: &str) -> Option<&NodeDef> {
+        self.nodes.iter().find(|n| n.kind_in(tree) == Some(kind))
+    }
+
+    /// Every node kind a tree of type `tree` takes.
+    pub fn node_kinds(&self, tree: &str) -> Vec<&str> {
+        self.nodes.iter().filter_map(|n| n.kind_in(tree)).collect()
     }
 
     /// The datablock kinds: the file's list of datablock types where it has one (leaving out
