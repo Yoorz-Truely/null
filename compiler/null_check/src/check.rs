@@ -13,8 +13,8 @@ use crate::forms;
 use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
-    Out, check_bool, check_bool_array, check_enum, check_float, check_float_array,
-    check_float_matrix, check_int, check_string, dimension, list, list_near,
+    Out, check_bool, check_bool_array, check_display_name, check_enum, check_float,
+    check_float_array, check_float_matrix, check_int, check_string, dimension, list, list_near,
 };
 
 mod anim;
@@ -403,8 +403,8 @@ impl<'s> Checker<'s> {
                 .cloned()
         });
         let mut out = self.out(file);
-        if let (Some(v), Some(p)) = (&h.name_value, &name_property) {
-            check_string(v, "name", p, &mut out);
+        if let Some(v) = &h.name_value {
+            check_display_name(v, name_property.as_ref(), &mut out);
         }
         match &h.handle {
             Some((handle, span)) => {

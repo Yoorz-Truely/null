@@ -1,8 +1,9 @@
 //! S65's byte lists wherever a string goes (task 1c-02g): a string Blender holds that is not
 //! UTF-8, an old file path or a name from another system, is written as the list of its bytes.
-//! The checker takes it in a string property and as a datablock's display name, and holds it to
-//! the field's `max-length` (task 1b-03h) in bytes, as it does a string; the formatter and
-//! write-back's printer give it back unchanged.
+//! The checker takes it in a string property and holds it to the field's `max-length` (task
+//! 1b-03h) in bytes, as it does a string; the formatter and write-back's printer give it back
+//! unchanged. A datablock's display name is UTF-8 (Sau's S72, task 1c-02i): a byte list there
+//! is an error, with the name Blender would make of it as the fix.
 
 use null_check::{Schema, check, codes};
 use null_print::{Printing, Typed, canonical, format, print_value, read_value};
@@ -99,20 +100,53 @@ fn a_byte_list_is_held_to_the_field_in_bytes() {
 }
 
 #[test]
-fn a_display_name_may_be_a_byte_list_held_to_the_name_field() {
+fn a_display_name_as_a_byte_list_is_an_error_with_its_utf8_reading_as_the_fix() {
+    // A datablock's name is UTF-8 (Sau's S72, task 1c-02i): Blender strips every byte that is
+    // not, so `Pür` in Latin-1 would be `Pr`, and the fix says so.
     let schema = schema();
-    // `Pür` in Latin-1.
-    assert_eq!(codes_of(&schema, "object @pur [80 252 114]\n"), vec![]);
-    let mut long = vec![252u8];
-    long.extend(std::iter::repeat_n(b'a', 255));
-    let found = codes_of(&schema, &format!("object @pur {}\n", bytes(&long)));
+    let text = "object @pur [80 252 114]\n";
+    let parsed = parse(text);
+    let found = check(&schema, &[(FileId(0), &parsed)]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].code, codes::TYPE);
+    assert!(
+        found[0].message.contains("a display name is UTF-8 text"),
+        "{}",
+        found[0].message
+    );
+    let fix = &found[0].fixes[0].edits[0].replacement;
+    assert_eq!(fix, "\"Pr\"");
+    let fixed = text.replace("[80 252 114]", fix);
+    assert_eq!(codes_of(&schema, &fixed), vec![]);
+    // A collection defined in a scene too, and with an escape the fix keeps exact.
+    let scene = "scene @s \"S\" {\n  collection @c [34 252 13] {\n  }\n}\n";
+    let parsed = parse(scene);
+    let found = check(&schema, &[(FileId(0), &parsed)]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].fixes[0].edits[0].replacement, "\"\\\"\\u{d}\"");
+    // Nothing of it is UTF-8: an error with no fix.
+    let found = codes_of(&schema, "object @pur [252 255]\n");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(
+        found[0].1.contains("none of these bytes is"),
+        "{}",
+        found[0].1
+    );
+    // A byte list that is UTF-8, or not bytes, keeps 1c-02g's errors.
+    let found = codes_of(&schema, "object @pier [80 105 101 114]\n");
+    assert!(
+        found[0].1.contains("written as a string: \"Pier\""),
+        "{found:?}"
+    );
+    let found = codes_of(&schema, "object @pier [80 0 252]\n");
+    assert!(found[0].1.contains("cannot hold a 0 byte"), "{found:?}");
+    // A string property still takes a byte list (the path test above), and a string name is
+    // held to the field as before.
+    let mut long = String::from("P");
+    long.push_str(&"a".repeat(255));
+    let found = codes_of(&schema, &format!("object @pur \"{long}\"\n"));
     assert_eq!(found.len(), 1, "{found:?}");
     assert_eq!(found[0].0, codes::RANGE);
-    assert!(
-        found[0]
-            .1
-            .contains("`name` holds at most 255 bytes, not 256")
-    );
 }
 
 #[test]

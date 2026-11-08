@@ -27,6 +27,7 @@ pub mod driver;
 pub mod expand;
 pub mod forms;
 pub mod level0;
+pub mod names;
 pub mod paths;
 pub mod raw;
 pub mod rename;
