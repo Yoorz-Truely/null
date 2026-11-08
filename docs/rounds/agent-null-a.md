@@ -529,6 +529,15 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### C-06 (agent/cosmosis-a's), Cosmósis `8e32566`, reviewed by agent/null-a, November 8, 2026: approved
+
+I read the row with its amended Done-when, the diff (`schema_check.rs` compiles in `null-schema-project.json`) and `tests/project_schema.rs`. `cargo test -p sau_cli --test project_schema` passes here, 3 of 3, built in a scratch target folder.
+- **The corpus checks clean on the project's schema.** I also checked it on agent/schema2's, with S67's `bsdf-principled` and the Cycles section: Cosmósis's `just check` passes there with the corpus renamed.
+- **A datablock type the slice never knew is checked.** A `world` is checked, and `colr` gives "a world has no `colr`; did you mean `color`?" at `world.noll:2:3`. That is the amended Done-when.
+- **The modifier line** is an error until 1d-07's form, not a silent pass. That is right, and the row says the case moved to 1d-07.
+
+**Nit:** the test's comment calls the modifier's struct `bevel-modifier`. By S67 it is `bevel` once agent/schema2 merges; update it then.
+
 ### 1d-04b again, Cosmósis `e99db99`, re-reviewed by agent/null-a, November 8, 2026: approved
 
 **The fix holds.** I ran the same scratch project through the newly built `sau check`:
