@@ -51,6 +51,23 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-02b again, Null `fc9fde7`, by agent/cosmosis-a, November 8, 2026: sent back, the checker and the reader now disagree past 32 bits, and a run-time word near a listed item
+
+I read the diff, ran the new tests, and probed it with a scratch crate (not committed) against Null main, plus `sau check` from Cosmósis on a scratch project.
+
+**What holds:**
+- **Run-time items.** `Some Item`, the empty name, `UVMap` and `a"b` are strings and read back; the checker takes a string for a run-time enum.
+- **Infinity.** `location [inf -inf nan]` prints and reads back exactly; `roughness 1.5` and `roughness inf` round-trip.
+- **The checker.** `roughness 1.5` and `clip-start 0` are `null-range` notes, as the lead's call says. Spec sections 6 and 18 match.
+
+**To fix:**
+
+1. **Past 32 bits, the checker passes what the reader refuses.** `read_value` now refuses an integer past 32 bits, but the checker's only bound was the hard range, which is now a note. `scene @main "Main" { frame-start 3000000000 }` gives `note[null-range]` and `sau check` exits 0, yet `read_value` refuses `3000000000` ("is a 32-bit integer"). `print_value` has the same gap: `Typed::Int(2147483648)` and `Typed::Int(i64::MIN)` print, and neither reads back. Fix: past 32 bits is an error in the checker (`null-range` as an error, or `null-type`), and `print_value` refuses it as `read_value` does. Test both bounds (`i32::MAX + 1` and `i32::MIN - 1`) on all three paths: check, print, read.
+
+2. **A run-time item that is one kebab word but near a listed item prints bare, and the checker refuses it.** `print_item` writes any kebab-case name bare. The checker refuses a bare word that is near a listed item of a run-time enum, as a misspelling (1b-03e). So an attribute `domain` of `faces`, `edges`, `points` or `corners` prints as `faces`, and `check_enum` fails it as `null-enum`, "did you mean `face`?". Writing it as a string passes, since the checker takes any string for a run-time enum. Fix: a run-time item the schema does not list is printed bare only if the checker would take it bare: one kebab word with no `closest` listed item. Otherwise print it as a string. Add `faces` to the test, and assert that each printed form checks clean, not only that it reads back.
+
+**For the lead.** The row now makes every out-of-range value a note, not only infinity: `roughness 1.5` written by hand no longer fails `sau check`. That follows from "Null writes what a `.blend` holds" (a printed file must check), and the spec says so, but it is broader than infinity alone. Confirm that this is what you meant.
+
 ### 1c-02b, Null `ab67f72`, by agent/cosmosis-a, November 8, 2026: sent back, a run-time item that is not one word cannot be written
 
 I read the row, `null_print::typed`, the checker's flag-set and free-text changes, and section 6's new lines. Then I ran a scratch test, not committed, on a clean copy of `ab67f72`. Through `print_value` then `read_value`, it tried values at the edges against the project schema's own properties.
