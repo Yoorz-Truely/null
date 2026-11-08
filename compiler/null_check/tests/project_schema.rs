@@ -295,3 +295,43 @@ world @sky \"Sky\" {
     assert_eq!(without.len(), 1, "{without:#?}");
     assert_eq!(without[0].code, codes::UNKNOWN_PROPERTY);
 }
+
+#[test]
+fn a_property_with_a_flat_form_is_an_error_in_a_block() {
+    // S70: one spelling per property. A block is for a struct Null does not flatten; `fps` is a
+    // scene's own line, so `render { fps 30 }` is an error whose fix moves the line out.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let clean = errors(
+        &schema,
+        &["scene @s \"S\" {\n  fps 24\n  render { resolution-x 1920 }\n}\n"],
+    );
+    assert!(clean.is_empty(), "{clean:#?}");
+    let text = "scene @s \"S\" {\n  render { fps 30; resolution-x 1920 }\n}\n";
+    let found = errors(&schema, &[text]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::REPEATED);
+    let edits: Vec<_> = found[0].fixes[0]
+        .edits
+        .iter()
+        .map(|e| (e.span, e.replacement.as_str()))
+        .collect();
+    let fixed = null_syntax::apply_edits(text, &edits);
+    assert!(fixed.contains("  fps 30\n"), "{fixed}");
+    let after = errors(&schema, &[&fixed]);
+    assert!(after.is_empty(), "{fixed}: {after:#?}");
+    // The unit settings are written `units`, never as their block.
+    let units = errors(
+        &schema,
+        &["scene @s \"S\" {\n  unit-settings { system metric }\n}\n"],
+    );
+    assert_eq!(units.len(), 1, "{units:#?}");
+    assert!(units[0].message.contains("`units"), "{}", units[0].message);
+}
+
+#[test]
+fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "material @m \"M\" {\n  nodes {\n    node @b principled-bsdf\n  }\n}\n";
+    let found = errors(&schema, &[text]);
+    assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
+}

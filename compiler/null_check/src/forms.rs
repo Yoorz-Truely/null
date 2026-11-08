@@ -59,3 +59,11 @@ pub const FPS_RANGE: (f64, f64) = (1.0, 32767.0);
 
 /// A scene's `fps-base`, for its render settings' `fps-base`: RNA's range.
 pub const FPS_BASE_RANGE: (f64, f64) = (1e-5, 1e6);
+
+/// Properties a flat form of Null's sets, which a block of their struct must not set again
+/// (S70): (struct, property, the flat form's name). A scene's `fps` and `fps-base` are its
+/// render settings'.
+pub const FLAT_FORMS: [(&str, &str, &str); 2] = [
+    ("RenderSettings", "fps", "fps"),
+    ("RenderSettings", "fps-base", "fps-base"),
+];

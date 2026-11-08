@@ -207,6 +207,23 @@ impl Schema {
         }
         for (i, s) in schema.structs.iter().enumerate() {
             schema.by_rna.entry(s.rna.clone()).or_insert(i);
+        }
+        // A kind is unique where it is read (S67): among the datablock types, in a family, in a
+        // tree. Read alone, it names the datablock type first (`scene` is `Scene`, not the node
+        // socket `NodeSocketScene`), then the first struct of that kind.
+        let datablock_rnas: Vec<String> = schema
+            .datablocks
+            .iter()
+            .flatten()
+            .map(|d| d.rna.clone())
+            .collect();
+        for rna in &datablock_rnas {
+            if let Some(&i) = schema.by_rna.get(rna) {
+                let kind = schema.structs[i].kind.clone();
+                schema.by_kind.entry(kind).or_insert(i);
+            }
+        }
+        for (i, s) in schema.structs.iter().enumerate() {
             schema.by_kind.entry(s.kind.clone()).or_insert(i);
         }
         Ok(schema)
