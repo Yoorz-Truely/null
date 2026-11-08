@@ -49,7 +49,7 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 | Compiled or interpreted? | Loaded: parsed, checked and applied to Blender's model incrementally on every save | Applying only what changed is what makes reload fast. Rendering is the build. |
 | Typed? | Statically and strongly, by the schema generated from RNA, with units as part of each type | Every mistake is caught before it reaches the scene. Units stop a length being used as an angle. |
 | High-level or low-level? | Both, by levels (section 9): intent (a cube with a bevel) down to exact vertex arrays | People and AI edit intent; exactness is never lost. |
-| Turing-complete? | No, on purpose: total (Sau's decision S38). Patterns applied any number of times in one line, loops over counts and lists, conditions, arithmetic, parameters, and recursion that counts down to an end. Unbounded computation belongs to geometry nodes, drivers and generators | Every file always finishes loading, means one thing, and can be diffed and written back. Abstraction keeps files short. |
+| Turing-complete? | No, on purpose: total (Sau's decision S38). Patterns applied any number of times in one line, loops over counts and lists, conditions, arithmetic, parameters, and recursion that counts down to an end (section 8, "Components, parameters and patterns"). Unbounded computation belongs to geometry nodes, drivers and generators | Every file always finishes loading, means one thing, and can be diffed and written back. Abstraction keeps files short. |
 | Garbage-collected? | No. The toolchain is Rust and the engine Blender's C++ | Nothing pauses the viewport. |
 
 ## 4. A first look
@@ -360,6 +360,89 @@ object @rig "Rig" {
 }
 
 armature @rig-bones "Rig"
+```
+
+### Components, parameters and patterns
+
+Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54 and S61 (6)). Parsing and checking these forms is 1d-03b, and expanding them 1d-03c, so the examples are fenced `null (1d-03b)`. A component is a part made once and placed many times, as a React component is (S19). Each placement may differ from the others in any regard, and each copy keeps a handle of its own.
+
+- **A component** is a top-level `component @h "Name" { … }` in any file. Its block holds its parameters and the datablocks it makes. The first `object` in it is its **root**, the object a placement puts in the scene; the rest (its data, materials made for it, child objects) come with it. A datablock the component names but does not define (`material @oak`) is the project's, shared by every placement, never copied.
+- **Parameters** are `param <name> <default>`, typed by the default: a length (`2.4m`), an angle, a number, a whole number, `on` or `off`, a handle of a kind (`param finish material @oak`), or a word from a list (`param state solid { one-of [solid liquid] }`). A parameter with no default (`param length length`, naming its type) must be given by every placement. Names are kebab-case and local to the component.
+- **Arithmetic.** Wherever a value goes, a word may be an expression over numbers with units, parameter names and `+`, `*` and `/`, with the usual precedence: `length/1m`, `n*25cm`, `width*0.5`. Subtraction, grouping and comparisons are written as a quoted expression, with spaces around each operator: `"length - 10cm"`, `"(n - 1) * 25cm"`, `"state == liquid"`. A `-` inside a word is part of a name, since names are kebab-case. Units follow section 6: an expression's value is computed exactly and rounded once into the property's type (S59), and a length times a length is an error where a length goes.
+- **Placement.** `use @component @handle { … }`, in a scene or a collection, places one copy. Its root object becomes `@handle` and joins that scene or collection. The block gives parameters by name and sets the root object's own properties (`location`, `rotation-euler`, `parent`); a name is a parameter's first. A component from a package is placed the same way, `use @cosmosis-materials:oak-plank @deck` (S54).
+- **Patterns.** `use @component @handle count=N { … }` places N copies in one line (S34). The copies' handles are `@handle.1` to `@handle.N`, counted as the pattern counts (S61 (6)), and in the block `n` is the copy's number. `use … each=[v1 v2 …] as=<name>` places one copy per item of a list, the item named `<name>` in the block, the copies numbered in the list's order.
+- **The handles a copy makes.** The root is `@handle` or `@handle.n`. Every other datablock the component defines is found through it as a path: `@plank.7/@plank-mesh` is copy 7's mesh. A copy's sub-objects keep the component's handles (`@plank.7/@fluid`).
+- **Conditions.** `if "<condition>" { … }`, in a component's block or any block inside it, holds lines that apply only when the condition, a comparison of parameters, holds. `else { … }` may follow. A condition is known when the component is placed, so each copy is plain data.
+- **Overrides** (S33). `override @plank.7 { … }`, beside the `use` line, gives one copy other parameters or properties. `override @plank.7/@plank-mesh { … }` reaches a datablock the copy made. An edit in Sau to a placed copy is written as an override on it by default, and to the component itself only on request (1d-03f), as Figma's instances and main components are edited.
+- **Recursion that counts down** (S38). A component may place itself, directly or through others, only when one whole-number parameter is marked `{ countdown }`, every such placement passes it a smaller value, and the placements sit under an `if` that holds only while it is above 0. The checker refuses any other recursion.
+
+**Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
+
+**Why every file finishes loading** (S38). Null is total, not Turing-complete:
+- a pattern's `count=` is a whole number and its `each=` a list, both known before expansion;
+- a condition only picks between lines;
+- recursion is allowed only on a `countdown` parameter that every recursive placement makes smaller and that stops at 0, so every chain of placements ends.
+
+Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
+
+The pier of twenty planks, plank 7 liquid:
+
+```null (1d-03b)
+// components/plank.noll
+component @plank "Plank" {
+  param length 2.4m
+  param state solid { one-of [solid liquid] }
+  object @plank "Plank" {
+    data mesh @plank-mesh
+    if "state == solid" { material @weathered-oak }
+    else {
+      material @water
+      modifier @fluid fluid { fluid-type flow }
+    }
+  }
+  mesh @plank-mesh "Plank" {
+    primitive cube size=1m scale=[length/1m 0.2 0.04]
+  }
+}
+```
+
+```null (1d-03b)
+// objects/pier.noll
+collection @pier "Pier" {
+  use @plank @plank count=20 {
+    location [0m n*25cm 0.35m]
+  }
+  override @plank.7 { state liquid }
+}
+```
+
+A tree whose branches count down:
+
+```null (1d-03b)
+component @branch "Branch" {
+  param depth 4 { countdown }
+  param length 1m
+  object @branch "Branch" {
+    data mesh @segment
+  }
+  mesh @segment "Segment" { primitive cylinder radius=length*0.05 depth=length }
+  if "depth > 0" {
+    use @branch @left {
+      depth "depth - 1"
+      length length*0.7
+      parent @branch
+      location [0m 0m length]
+      rotation-euler [0deg 35deg 0deg]
+    }
+    use @branch @right {
+      depth "depth - 1"
+      length length*0.7
+      parent @branch
+      location [0m 0m length]
+      rotation-euler [0deg -35deg 0deg]
+    }
+  }
+}
 ```
 
 ## 9. Geometry as source

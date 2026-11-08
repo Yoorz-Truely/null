@@ -377,5 +377,13 @@ fn every_example_in_the_spec_checks_clean_as_one_project() {
         let is_task =
             task.len() >= 5 && task.starts_with(|c: char| c.is_ascii_digit()) && task.contains('-');
         assert!(is_task, "a fence `null ({task})` names no task");
+        // Not checked yet, but written in Null's syntax already.
+        let body = fence.split_once('\n').map_or("", |x| x.1);
+        let body = format!("{}\n", body.split("\n```").next().unwrap_or_default());
+        let parsed = parse(&body);
+        let mut map = SourceMap::new();
+        let id = map.add(format!("unbuilt ({task})"), &body);
+        let syntax = null_syntax::diagnostics(&parsed, id);
+        assert!(syntax.is_empty(), "{}", map.render_all(&syntax));
     }
 }
