@@ -81,6 +81,10 @@ pub struct ExprError {
     pub at: (usize, usize),
     /// The word to write there instead.
     pub fix: Option<String>,
+    /// The mistake is a unit's (one that is none, seconds without a frame rate, a scale the
+    /// scenes do not agree on), which the checker reports as `null-unit`, as a value's; else
+    /// `null-type`.
+    pub unit: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -114,6 +118,7 @@ fn error(message: impl Into<String>, at: (usize, usize), fix: Option<String>) ->
         message: message.into(),
         at,
         fix,
+        unit: false,
     })
 }
 
@@ -124,7 +129,8 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
     while i < b.len() {
         let c = b[i];
         let start = i;
-        if c == b' ' || c == b'\t' {
+        // Blender's `isspace`, between any two tokens: an expression may run over lines.
+        if matches!(c, b' ' | b'\t' | b'\n' | b'\r' | 0x0b | 0x0c) {
             i += 1;
             continue;
         }
@@ -151,9 +157,12 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
                 }
             }
             let number = &text[start..i];
+            // C-style octal, as Blender forbids it: a whole number led by 0 and holding another
+            // digit (`00` is 0, in Blender as in Python).
             if number.len() > 1
                 && number.starts_with('0')
                 && number.bytes().all(|d| d.is_ascii_digit())
+                && number.bytes().any(|d| d != b'0')
             {
                 return Err(Fail::Python(format!(
                     "`{number}` is a whole number with a leading 0, which Python refuses"
@@ -171,11 +180,14 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
                 match Unit::from_suffix(suffix, Dimension::None) {
                     Some(u) => Some(u),
                     None => {
-                        return Err(error(
-                            format!("`{suffix}` is not a unit, after the number `{number}`"),
-                            (unit_start, i),
-                            None,
-                        ));
+                        return Err(Fail::Error(ExprError {
+                            message: format!(
+                                "`{suffix}` is not a unit, after the number `{number}`"
+                            ),
+                            at: (unit_start, i),
+                            fix: None,
+                            unit: true,
+                        }));
                     }
                 }
             };
@@ -475,12 +487,45 @@ impl Parser<'_> {
     }
 }
 
+/// Where a driver is compiled: the scene its values are read in, and what its property and its
+/// place say of how a number in a unit is read (task 1d-07f).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Context<'a> {
+    /// The scene the numbers are read in: its unit scale and frame rate.
+    pub scene: Scene,
+    /// The driver is inside a scene, so a time in seconds can be read through its frame rate.
+    pub in_scene: bool,
+    /// The driven property counts frames (section 6, "Frames"): a time in seconds is read as
+    /// frames, through the scene's frame rate.
+    pub frames: bool,
+    /// Outside every scene where the scenes' unit scales disagree and the project sets no
+    /// `units`: the message for a number in a scaled unit, as a value's (section 6, "Scene
+    /// scale").
+    pub disagreement: Option<&'a str>,
+}
+
+/// `text` compiled in `scene` for a property that does not count frames, as a driver inside
+/// that scene is: [`compile_in`] with that context.
+pub fn compile(text: &str, vars: &[&str], scene: &Scene) -> Result<Compiled, ExprError> {
+    compile_in(
+        text,
+        vars,
+        &Context {
+            scene: *scene,
+            in_scene: true,
+            frames: false,
+            disagreement: None,
+        },
+    )
+}
+
 /// `text`, a driver's expression whose variables are `vars`, compiled for Blender: in Blender's
 /// simple expressions, with its numbers in units written in the internal unit (read in `scene`);
 /// else kept as written, with why it is Python. A mistake in it (a unit that is none, a
 /// variable or a function misspelt, a function given the wrong number of arguments, a unit in
 /// a Python expression) is an error.
-pub fn compile(text: &str, vars: &[&str], scene: &Scene) -> Result<Compiled, ExprError> {
+pub fn compile_in(text: &str, vars: &[&str], cx: &Context<'_>) -> Result<Compiled, ExprError> {
+    let scene = &cx.scene;
     let python = |why: String| -> Result<Compiled, ExprError> {
         Ok(Compiled {
             expression: text.to_string(),
@@ -515,10 +560,38 @@ pub fn compile(text: &str, vars: &[&str], scene: &Scene) -> Result<Compiled, Exp
     for t in &toks {
         if let Tok::Num { unit: Some(u) } = t.tok {
             let word = &text[t.at.0..t.at.1];
-            let value = read_in::<f64>(word, u.dimension(), scene).map_err(|_| ExprError {
+            let mut dimension = u.dimension();
+            // A time in seconds on a property that counts frames: frames, through the scene's
+            // frame rate, as a value is (task 1c-01h); outside a scene there is none to take.
+            if dimension == Dimension::Seconds && cx.frames {
+                if !cx.in_scene {
+                    return Err(ExprError {
+                        message: format!(
+                            "`{word}` is in seconds, and this driver's property counts frames: seconds need a scene's frame rate, and this is not inside a scene"
+                        ),
+                        at: t.at,
+                        fix: None,
+                        unit: true,
+                    });
+                }
+                dimension = Dimension::Frames;
+            }
+            // Outside every scene, a scaled unit needs the one scale the scenes agree on.
+            if let Some(message) = cx.disagreement
+                && dimension.scale_power() > 0
+            {
+                return Err(ExprError {
+                    message: message.to_string(),
+                    at: t.at,
+                    fix: None,
+                    unit: true,
+                });
+            }
+            let value = read_in::<f64>(word, dimension, scene).map_err(|_| ExprError {
                 message: format!("`{word}` does not read as a value"),
                 at: t.at,
                 fix: None,
+                unit: true,
             })?;
             out.push_str(&text[last..t.at.0]);
             out.push_str(&print_bare(value));
@@ -588,6 +661,7 @@ fn units_in_python(text: &str, at: (usize, usize), why: &str) -> ExprError {
         ),
         at,
         fix: None,
+        unit: true,
     }
 }
 
@@ -595,6 +669,11 @@ fn units_in_python(text: &str, at: (usize, usize), why: &str) -> ExprError {
 /// text as written (`spin * 100W` for Blender's `spin * 100`).
 pub fn reads_as(text: &str, blender: &str, vars: &[&str], scene: &Scene) -> bool {
     text == blender || compile(text, vars, scene).is_ok_and(|c| c.expression == blender)
+}
+
+/// [`reads_as`] in a context of the caller's (a frame property, a place outside every scene).
+pub fn reads_as_in(text: &str, blender: &str, vars: &[&str], cx: &Context<'_>) -> bool {
+    text == blender || compile_in(text, vars, cx).is_ok_and(|c| c.expression == blender)
 }
 
 #[cfg(test)]
@@ -651,6 +730,57 @@ mod tests {
         };
         assert_eq!(at(0.5), "dist * 2");
         assert_eq!(at(0.01), "dist * 100.00000223517424");
+    }
+
+    #[test]
+    fn a_number_is_read_as_its_place_reads_it() {
+        // Task 1d-07f. Seconds on a property that counts frames: through the scene's frame rate
+        // inside a scene, refused outside one.
+        let at = |in_scene, frames, disagreement| Context {
+            scene: Scene {
+                fps: 25,
+                ..Scene::default()
+            },
+            in_scene,
+            frames,
+            disagreement,
+        };
+        let c = |text: &str, cx: &Context<'_>| compile_in(text, &["t"], cx);
+        assert_eq!(
+            c("t * 2s", &at(true, true, None)).unwrap().expression,
+            "t * 50"
+        );
+        assert_eq!(
+            c("t * 2s", &at(true, false, None)).unwrap().expression,
+            "t * 2"
+        );
+        let e = c("t * 2s", &at(false, true, None)).unwrap_err();
+        assert!(e.unit && e.at == (4, 6), "{e:?}");
+        // Outside every scene where the scenes' scales disagree: a scaled unit is that error,
+        // at the number; an angle, which no scale touches, is read as written.
+        let e = c("t * 1m", &at(false, false, Some("they disagree"))).unwrap_err();
+        assert_eq!(
+            (e.message.as_str(), e.at, e.unit),
+            ("they disagree", (4, 6), true)
+        );
+        assert_eq!(
+            c("t * 90deg", &at(false, false, Some("they disagree")))
+                .unwrap()
+                .expression,
+            "t * 1.5707963267948966"
+        );
+    }
+
+    #[test]
+    fn whitespace_and_zeros_are_blenders() {
+        // Blender's `isspace` between tokens, so an expression over lines stays simple; `00` is
+        // a whole number, `01` C's octal, which Blender and Python refuse.
+        assert_eq!(
+            simple("spin *\n  2 +\r\n\u{b}3\u{c}"),
+            "spin *\n  2 +\r\n\u{b}3\u{c}"
+        );
+        assert_eq!(simple("spin * 00"), "spin * 00");
+        assert!(python("spin * 01").contains("leading 0"));
     }
 
     #[test]

@@ -94,3 +94,31 @@ I read `driver.rs`, the checker's `driver_expression`, the tests and section 11,
 4. **A name near a variable is an error, not Python.** That is right for misspellings, but a real Python global near a variable's name (`noise` beside a variable `nose`) is then refused rather than noted. Rare, and the message says what to do. Worth one sentence in section 11.
 
 I also ran 1d-08a's corpus drivers through this branch by reading: `var to transforms` gives `to` as the variable's name (the keyword attribute's two arguments), so `driver=#"to * 100"#` compiles as written. The raw string is then reported at the whole string, as `driver_expression` says it should be.
+
+## 1d-07f, round 2, by agent/cosmosis-a (taking over from agent/null-a, on the lead's order)
+
+agent/null-a had stopped, so the lead gave me this row's fix. The Sau worker reviews it, since I cannot approve my own commit.
+
+**The fix (my review, `0277cae`).** A driver's number is now read as a value is in its place. Outside every scene, where the scenes' unit scales differ and the project sets no `units`, a number in a unit the scale divides (`scale_power() > 0`) is the error a value there is. It uses `Out::disagreement`'s message, at the number, under `null-unit`, once, as a value's is. Before, `Outside::scale()` gave such a driver a scale of 1 silently.
+- **`driver::Context`** carries the place to `compile_in`: the scene, whether the driver is inside one, whether its property counts frames, and the disagreement's message. `compile(text, vars, scene)` stays as it was, with the context of a driver inside that scene.
+- **`ExprError::unit`** marks a unit's mistake, so the checker reports it as `null-unit`, as a value's is: a unit that is none, a unit in Python, seconds with no frame rate and the scale. `diagnostics.rs`'s two unit cases move from `null-type` to `null-unit`, and both snapshots follow.
+
+**The notes, done as the lead asked:**
+- **Seconds on a property that counts frames** (a float frame, `unit: time`: a curve's `eval-time`, a scene's `frame-float`) are read as frames, through the scene's frame rate, as a value's (1c-01h). Outside every scene there is no frame rate, so they are refused there, as a value's are.
+  - **What I did not do:** the lead allowed "refused if there's no single scene". I went with the value's rule (inside a scene, else refused) rather than taking the project's one scene for a driver outside it. A value outside every scene takes no seconds even when the project has one scene, and a driver should follow the same rule.
+- **Whitespace** between tokens is any of Blender's six `isspace` characters, so an expression over lines stays simple.
+- **`00` is a number**, as in Blender and Python 3. `01` is still Python.
+- **Section 11** says how a number follows its place, the whitespace, the zeros, and that a name near a variable, function or constant is taken for a misspelling. So a Python global near one, such as `noise` beside `nose`, is refused, not noted.
+
+**Tests:**
+- **`tests/scale.rs`:**
+  - Two scenes at 1 and 0.01 with no project `units`: two lights' drivers in `m` give one `null-unit` error, at the first `1m`. In degrees they check clean, and with agreeing scenes too.
+  - A curve's `eval-time` driven by `spin * 2s` outside every scene is refused, and checks clean in frames. A scene's `frame-float` driven by `spin * 2s` inside it checks clean.
+- **`driver.rs`'s unit tests:**
+  - `2s` is `50` at 25 fps on a frame property, and `2` on another.
+  - The disagreement is at its number, and an angle is untouched by it.
+  - An expression over line feed, CR, vertical tab and form feed stays simple.
+  - `00` passes, and `01` is Python.
+
+**Checks:** `just check` passes.
+

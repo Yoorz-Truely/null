@@ -669,7 +669,9 @@ impl Checker<'_> {
             match k.text {
                 "driver" => {
                     if let Some(text) = v.as_string() {
-                        self.driver_expression(file, v, &text, &vars);
+                        let frames =
+                            crate::values::dimension(p, false) == null_value::Dimension::Frames;
+                        self.driver_expression(file, v, &text, &vars, frames);
                     } else if !types.iter().any(|t| Some(t.as_str()) == v.as_word()) {
                         let shown: Vec<&str> = types
                             .iter()
@@ -799,12 +801,31 @@ impl Checker<'_> {
 
     /// A scripted driver's expression (task 1d-07f): in Blender's simple expressions, with
     /// Null's units, it compiles; a mistake in it is an error at its place; Python is a note.
-    fn driver_expression(&mut self, file: FileId, v: &Value<'_>, text: &str, vars: &[String]) {
+    fn driver_expression(
+        &mut self,
+        file: FileId,
+        v: &Value<'_>,
+        text: &str,
+        vars: &[String],
+        frames: bool,
+    ) {
         let vars: Vec<&str> = vars.iter().map(String::as_str).collect();
         let scene = self.scene.unwrap_or_default();
-        let scene = null_value::Scene {
-            scale_length: self.scale,
-            ..scene
+        // Read as a value is: in the scene's unit scale and frame rate, or outside every scene
+        // in the one scale the scenes agree on (section 6).
+        let disagreement = if self.scene.is_none() {
+            self.disagreement.clone()
+        } else {
+            None
+        };
+        let cx = crate::driver::Context {
+            scene: null_value::Scene {
+                scale_length: self.scale,
+                ..scene
+            },
+            in_scene: self.scene.is_some(),
+            frames,
+            disagreement: disagreement.as_deref(),
         };
         // A place in the expression, in the file: exact where the string is written as it reads
         // (no escapes), else the whole string.
@@ -817,7 +838,7 @@ impl Checker<'_> {
                 span
             }
         };
-        match crate::driver::compile(text, &vars, &scene) {
+        match crate::driver::compile_in(text, &vars, &cx) {
             Ok(c) => {
                 if let Some(why) = c.python {
                     self.out(file).note(
@@ -830,9 +851,14 @@ impl Checker<'_> {
                 }
             }
             Err(e) => {
+                // The scenes' disagreement is reported once, as a value's is.
+                if disagreement.as_deref() == Some(e.message.as_str()) {
+                    self.disagreement = None;
+                }
                 let at = place(e.at);
                 let fix = e.fix.map(|f| (format!("write `{f}`"), at, f));
-                self.out(file).error_fix(codes::TYPE, at, e.message, fix);
+                let code = if e.unit { codes::UNIT } else { codes::TYPE };
+                self.out(file).error_fix(code, at, e.message, fix);
             }
         }
     }

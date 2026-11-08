@@ -10,3 +10,7 @@ case.noll:1:29 error[null-unit]: `clip-start` cannot take `s`: it takes m, cm, m
 case.noll:1:23 error[null-unit]: `zz` is not a unit `lens` takes; it takes mm, cm, m, um or a bare number
   fix: write `mm`
   `write `mm`` gives: camera @c "C" { lens 5mm }\n
+--- object @d "D"\nlight @l "L" {\n  type point\n  energy driver="spin * 100Q" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n
+case.noll:4:28 error[null-unit]: `Q` is not a unit, after the number `100`
+--- object @d "D"\nlight @l "L" {\n  type point\n  energy driver="bpy.context.scene.frame_current * 1W" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n
+case.noll:4:52 error[null-unit]: `1W` has a unit, which Null compiles only in Blender's simple expressions; this one is Python (`.` is not in Blender's simple expressions), so write its numbers as Python does
