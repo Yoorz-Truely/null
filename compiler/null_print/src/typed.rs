@@ -143,16 +143,10 @@ fn print_scalar(
 ) -> Result<String, TypedError> {
     match (p.ty.as_str(), value) {
         ("bool", Typed::Bool(b)) => Ok(if *b { "on" } else { "off" }.to_string()),
-        ("int", Typed::Int(n)) => {
-            in_range(*n as f64, p)?;
-            Ok(n.to_string())
-        }
-        ("float32", Typed::F32(x)) => {
-            if !x.is_nan() {
-                in_range(f64::from(*x), p)?;
-            }
-            Ok(print_float(*x, dimension, how))
-        }
+        // A value outside the property's range, an infinity included, is written as it is: a
+        // `.blend` can hold it, and the checker says so in a note (section 6).
+        ("int", Typed::Int(n)) => Ok(n.to_string()),
+        ("float32", Typed::F32(x)) => Ok(print_float(*x, dimension, how)),
         ("float64", Typed::F64(x)) => Ok(print_float(*x, dimension, how)),
         ("enum", Typed::Enum(name)) if !p.flags => print_item(name, p),
         ("enum", Typed::Flags(names)) if p.flags => {
@@ -170,7 +164,13 @@ fn print_item(name: &str, p: &Property) -> Result<String, TypedError> {
     match item {
         Some(i) if i.quoted => Ok(escape(&i.name)),
         Some(i) => Ok(i.name.clone()),
-        None if p.items_at_run_time => Ok(name.to_string()),
+        // An item of the data (an attribute's or a UV map's name) may hold spaces or capitals, or
+        // be empty: written as a string unless it is one kebab-case word.
+        None if p.items_at_run_time => Ok(if null_syntax::names::is_kebab_case(name) {
+            name.to_string()
+        } else {
+            escape(name)
+        }),
         None => err(format!("`{name}` is not an item of `{}`", p.name)),
     }
 }
@@ -223,18 +223,6 @@ fn check_text(bytes: &[u8], p: &Property) -> Result<(), TypedError> {
             p.name,
             max - 1,
             bytes.len()
-        ));
-    }
-    Ok(())
-}
-
-fn in_range(x: f64, p: &Property) -> Result<(), TypedError> {
-    if let Some(r) = &p.range
-        && (x < r.hard[0] || x > r.hard[1])
-    {
-        return err(format!(
-            "`{}` takes {} to {}, not {x}",
-            p.name, r.hard[0], r.hard[1]
         ));
     }
     Ok(())
@@ -347,16 +335,15 @@ fn read_scalar(
         "int" => {
             let w = word(v, p)?;
             let n = read_int(w).map_err(|e| TypedError(format!("`{}`: {e}", p.name)))?;
-            in_range(n as f64, p)?;
+            if !(i64::from(i32::MIN)..=i64::from(i32::MAX)).contains(&n) {
+                return err(format!("`{}` is a 32-bit integer, not {n}", p.name));
+            }
             Ok(Typed::Int(n))
         }
         "float32" => {
             let w = word(v, p)?;
             let x: f32 = read_in(w, dimension, scene)
                 .map_err(|e| TypedError(format!("`{}`: {e}", p.name)))?;
-            if !x.is_nan() {
-                in_range(f64::from(x), p)?;
-            }
             Ok(Typed::F32(x))
         }
         "float64" => {

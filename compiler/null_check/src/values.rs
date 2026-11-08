@@ -22,6 +22,11 @@ pub(crate) struct Out<'o> {
 }
 
 impl Out<'_> {
+    pub fn note(&mut self, code: &'static str, span: Span, message: impl Into<String>) {
+        let d = Diagnostic::new(null_syntax::Severity::Note, code, self.file, span, message);
+        self.list.push(d);
+    }
+
     pub fn error(&mut self, code: &'static str, span: Span, message: impl Into<String>) {
         let d = Diagnostic::error(code, self.file, span, message);
         self.list.push(d);
@@ -236,11 +241,14 @@ fn check_range(x: f64, word: &str, span: Span, name: &str, p: &Property, out: &m
                 "int" => format!("{v}"),
                 _ => null_value::print_bare(v as f32),
             };
-            out.error(
+            // A note, not an error (the lead's call on task 1c-02b): a `.blend` can hold a value
+            // outside RNA's range (an infinity in DNA), and Null writes what Blender stores. Blender
+            // clamps it when the value is set (spec, section 6, "Types").
+            out.note(
                 codes::RANGE,
                 span,
                 format!(
-                    "`{word}` is outside `{name}`'s range, {} to {}",
+                    "`{word}` is outside `{name}`'s range, {} to {}; Blender clamps it when it is set",
                     show(lo),
                     show(hi)
                 ),
