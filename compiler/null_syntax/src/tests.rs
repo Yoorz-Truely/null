@@ -19,7 +19,8 @@ fn spec_examples() -> Vec<&'static str> {
 #[test]
 fn every_spec_example_parses_clean_and_prints_back() {
     let examples = spec_examples();
-    assert_eq!(examples.len(), 5, "section 4 has five example files");
+    // Section 4 has five example files; sections 8, 10 and 11 have their own (task 1d-07a).
+    assert!(examples.len() >= 5, "{} examples", examples.len());
     for text in examples {
         let file = parse(text);
         assert!(

@@ -205,18 +205,7 @@ fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
     for child in node.children() {
         let name = child.name();
         if name == "nodes" {
-            for n in child.children().filter(|n| n.name() == "node") {
-                let args = args_of(n);
-                if let Some(h) = args.first().filter(|h| h.text().starts_with('@')) {
-                    out.push(SubObject {
-                        kind: "node".into(),
-                        handle: h.text().to_string(),
-                        of: args.get(1).map(|k| k.text().to_string()),
-                        at: (file, h.span()),
-                        subs: Vec::new(),
-                    });
-                }
-            }
+            tree_nodes(file, child, &mut out);
         } else if SUB_KINDS.contains(&name.as_ref()) {
             let args = args_of(child);
             if let Some(h) = args.first().filter(|h| h.text().starts_with('@')) {
@@ -234,6 +223,30 @@ fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
         }
     }
     out
+}
+
+/// A tree's `node` and `zone` lines, the nodes inside a zone's block included: one tree, one
+/// set of handles (section 10).
+fn tree_nodes(file: FileId, block: Node<'_>, out: &mut Vec<SubObject>) {
+    for n in block.children() {
+        let kind = n.name();
+        if kind != "node" && kind != "zone" {
+            continue;
+        }
+        let args = args_of(n);
+        if let Some(h) = args.first().filter(|h| h.text().starts_with('@')) {
+            out.push(SubObject {
+                kind: kind.clone().into_owned(),
+                handle: h.text().to_string(),
+                of: args.get(1).map(|k| k.text().to_string()),
+                at: (file, h.span()),
+                subs: Vec::new(),
+            });
+        }
+        if kind == "zone" {
+            tree_nodes(file, n, out);
+        }
+    }
 }
 
 /// Every datablock of a project with its sub-objects, by handle.
@@ -277,13 +290,15 @@ impl Index {
     }
 
     /// A `null-handle` error for every handle two sub-objects of one owner share, whatever their
-    /// kinds. Two nodes of one tree are left to the node tree's own check.
+    /// kinds. Two nodes or zones of one tree are left to the node tree's own check.
     pub fn duplicates(&self) -> Vec<Diagnostic> {
         fn walk(owner: &str, subs: &[SubObject], out: &mut Vec<Diagnostic>) {
             let mut seen: HashMap<&str, &SubObject> = HashMap::new();
             for s in subs {
                 if let Some(first) = seen.get(s.handle.as_str()) {
-                    if !(first.kind == "node" && s.kind == "node") {
+                    if !(matches!(first.kind.as_str(), "node" | "zone")
+                        && matches!(s.kind.as_str(), "node" | "zone"))
+                    {
                         out.push(Diagnostic::error(
                             codes::HANDLE,
                             s.at.0,
@@ -456,7 +471,7 @@ fn walk_path(
         last = Some(sub);
     }
     if let Some(socket) = &path.socket {
-        let Some(node) = last.filter(|s| s.kind == "node") else {
+        let Some(node) = last.filter(|s| s.kind == "node" || s.kind == "zone") else {
             return Err(Unresolved::new(
                 format!(
                     "`{word}` ends with a socket, which only a node has: `@owner/@node.{socket}`"

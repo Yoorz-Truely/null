@@ -8,12 +8,16 @@ use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, TextEdit, closes
 
 use crate::codes;
 use crate::forms;
-use crate::schema::{Property, SHADER_TREE, Schema};
+use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
     dimension, list,
 };
+
+mod anim;
+mod subs;
+mod trees;
 
 /// Checks every file of a project together, since handles are visible project-wide
 /// (spec, section 7), and returns the problems in each file's text order. Syntax and
@@ -28,6 +32,8 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         project: Units::default(),
         outside: Outside::Scale(1.0),
         disagreement: None,
+        groups: HashMap::new(),
+        actions: HashMap::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -37,6 +43,13 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
     for (file, parse) in files {
         for node in parse.document().nodes() {
             cx.collect(*file, node, true);
+            // Node groups' interfaces and actions' slots, which other files name.
+            let kind = node.name();
+            if kind == "action" {
+                anim::slots(node, &mut cx.actions);
+            } else if cx.tree_of(&kind).is_some_and(|(_, group)| group) {
+                trees::interfaces(node, &mut cx.groups);
+            }
         }
     }
     for (file, parse) in files {
@@ -85,6 +98,10 @@ struct Checker<'s> {
     /// Where the scenes disagree and the project sets no `units`: the message for the first
     /// value written with a scaled unit outside a scene, until it is reported.
     disagreement: Option<String>,
+    /// Every node group's interface, by handle (task 1d-07a).
+    groups: HashMap<String, trees::Interface>,
+    /// Every action's slots, by handle (task 1d-07a).
+    actions: HashMap<String, anim::Slots>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -308,6 +325,9 @@ impl<'s> Checker<'s> {
     /// The body of a datablock of `kind`, struct `rna`: RNA's properties and Null's forms.
     fn body(&mut self, file: FileId, node: Node<'_>, kind: &str, rna: &str) {
         let props = self.schema.properties_of(rna);
+        if kind == "action" {
+            return self.action_body(file, node, &props);
+        }
         self.attributes(file, node, kind, &props, &[]);
     }
 
@@ -366,31 +386,55 @@ impl<'s> Checker<'s> {
         others: &[(String, String)],
         light_type: &str,
     ) {
-        let forms: &[&str] = match kind {
-            "scene" => &["object", "collection", "units", "fps", "fps-base"],
-            "collection" => &["object", "collection"],
-            "object" => &["data", "material"],
-            "mesh" => &["primitive", "vertices", "polygons"],
-            "material" => &["nodes", "layout"],
-            _ => &[],
+        let tree_kind = self.tree_of(kind);
+        let mut forms: Vec<&str> = match kind {
+            "scene" => vec!["object", "collection", "units", "fps", "fps-base"],
+            "collection" => vec!["object", "collection"],
+            "object" => vec!["data", "material", "modifier", "constraint", "bone"],
+            "mesh" => vec!["primitive", "vertices", "polygons"],
+            "pose-bone" => vec!["constraint"],
+            _ => vec![],
         };
+        if let Some((_, group)) = tree_kind {
+            forms.extend(["nodes", "layout"]);
+            if group {
+                forms.extend(["input", "output", "panel"]);
+            }
+        }
+        // Animation on any datablock that has it (section 11).
+        let animated = props.iter().any(|p| p.name == "animation-data");
+        if animated {
+            forms.extend(["action", "track"]);
+        }
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
         names.extend(forms.iter().copied());
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
         let all = attrs(node);
         // Node handles first, so layout and links may name nodes defined later.
-        let node_handles = all
-            .iter()
-            .find(|a| a.name == "nodes")
-            .and_then(|a| a.node)
-            .map(node_tree)
-            .unwrap_or_default();
+        let tree = tree_kind.map(|(rna, group)| {
+            let interface = group
+                .then(|| {
+                    header(node)
+                        .handle
+                        .and_then(|(h, _)| self.groups.get(&h).cloned())
+                })
+                .flatten();
+            trees::Tree::new(
+                rna,
+                all.iter().find(|a| a.name == "nodes").and_then(|a| a.node),
+                interface,
+            )
+        });
         for a in &all {
             let repeatable = matches!(
                 (kind, a.name.as_str()),
-                ("scene" | "collection", "object" | "collection") | ("object", "material")
-            );
+                ("scene" | "collection", "object" | "collection")
+                    | ("object", "material" | "modifier" | "constraint" | "bone")
+                    | ("pose-bone", "constraint")
+            ) || (tree.is_some()
+                && matches!(a.name.as_str(), "input" | "output" | "panel"))
+                || (animated && a.name == "track");
             if !repeatable && !seen.insert(a.name.clone()) {
                 self.out(file).error(
                     codes::REPEATED,
@@ -419,9 +463,20 @@ impl<'s> Checker<'s> {
                 ("mesh", "primitive") => self.primitive(file, a),
                 ("mesh", "vertices") => vertex_count = self.vertices(file, a),
                 ("mesh", "polygons") => {} // after the loop, against the vertex count
-                ("material", "nodes") => self.nodes(file, a, &node_handles),
-                ("material", "layout") => self.layout(file, a, &node_handles),
+                ("object", "modifier") => self.family_member(file, a, "Modifier"),
+                ("object" | "pose-bone", "constraint") => self.family_member(file, a, "Constraint"),
+                ("object", "bone") => self.pose_bone(file, a),
+                (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
+                (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
+                (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
+                    self.interface_line(file, a)
+                }
+                (_, "action") if animated => self.plays(file, a, kind),
+                (_, "track") if animated => self.track(file, a, kind),
                 _ => match props.iter().find(|p| p.name == a.name) {
+                    Some(p) if a.props.iter().any(|(k, _)| k.text == "driver") => {
+                        self.driver(file, a, p)
+                    }
                     Some(p) => {
                         let power = power.contains(&a.name.as_str());
                         self.property(file, a, p, power)
@@ -679,6 +734,32 @@ impl<'s> Checker<'s> {
         }
     }
 
+    /// Whether a datablock defined as `defined` is a `wanted`: the same kind, or one whose
+    /// struct extends it (a `geometry` node group is a `node-tree`; any datablock is an `id`).
+    fn kind_fits(&self, defined: &str, wanted: &str) -> bool {
+        if defined == wanted {
+            return true;
+        }
+        let Some(want) = self.schema.struct_by_kind(wanted).map(|s| s.rna.as_str()) else {
+            return false;
+        };
+        let mut at = self
+            .schema
+            .datablock_kinds()
+            .find(|s| s.kind == defined)
+            .and_then(|s| s.base.as_deref());
+        while let Some(rna) = at {
+            if rna == want {
+                return true;
+            }
+            at = self
+                .schema
+                .struct_by_rna(rna)
+                .and_then(|s| s.base.as_deref());
+        }
+        false
+    }
+
     /// A handle that must name a datablock of `kind`.
     fn handle_ref(&mut self, file: FileId, v: &Value<'_>, kind: &str, what: &str) {
         let Some(word) = v.as_word().filter(|w| w.starts_with('@')) else {
@@ -700,7 +781,8 @@ impl<'s> Checker<'s> {
         }
         if self
             .defs
-            .contains_key(&(kind.to_string(), word.to_string()))
+            .keys()
+            .any(|(k, h)| h == word && self.kind_fits(k, kind))
         {
             return;
         }
@@ -719,7 +801,7 @@ impl<'s> Checker<'s> {
         let candidates: Vec<&str> = self
             .defs
             .keys()
-            .filter(|(k, _)| k == kind)
+            .filter(|(k, _)| self.kind_fits(k, kind))
             .map(|(_, h)| h.as_str())
             .collect();
         let near = closest(word, candidates.iter().copied()).map(str::to_string);
@@ -1023,216 +1105,6 @@ impl<'s> Checker<'s> {
             }
         }
     }
-
-    /// `nodes { node @h <kind> { inputs } … }`: a material's shader nodes.
-    fn nodes(&mut self, file: FileId, a: &Attr<'_>, handles: &HashMap<String, String>) {
-        let Some(tree) = a.node.filter(|n| n.block().is_some()) else {
-            return self.out(file).error(
-                codes::TYPE,
-                a.span,
-                "`nodes` takes a block of `node @handle <kind>` lines",
-            );
-        };
-        let kinds: Vec<&str> = self.schema.node_kinds(SHADER_TREE);
-        let mut seen = HashSet::new();
-        for child in tree.children() {
-            let Some(name) = child.name_token() else {
-                continue;
-            };
-            if child.name() != "node" {
-                self.out(file).error(
-                    codes::UNKNOWN_PROPERTY,
-                    name.span,
-                    format!("a node tree holds `node` lines, not `{}`", child.name()),
-                );
-                continue;
-            }
-            let args = args_of(child);
-            let (Some(h), Some(k)) = (args.first(), args.get(1)) else {
-                self.out(file).error(
-                    codes::TYPE,
-                    child.code_span(),
-                    "a node is written `node @handle <kind>`, such as `node @bsdf bsdf-principled`",
-                );
-                continue;
-            };
-            let handle = h.text();
-            if !handle.starts_with('@') {
-                self.out(file).error(
-                    codes::TYPE,
-                    h.span(),
-                    "a node's handle comes first, such as `@bsdf`",
-                );
-                continue;
-            }
-            kebab_handle(handle, h.span(), &mut self.out(file));
-            if !seen.insert(handle.to_string()) {
-                self.out(file).error(
-                    codes::HANDLE,
-                    h.span(),
-                    format!("`{handle}` names two nodes of this tree"),
-                );
-            }
-            let kind = k.text();
-            let Some(def) = self.schema.node(SHADER_TREE, kind) else {
-                // The same words in another order first: S67 made `principled-bsdf`
-                // `bsdf-principled` (1b-03c's review).
-                let mut words: Vec<&str> = kind.split('-').collect();
-                words.sort_unstable();
-                let reordered = kinds.iter().copied().find(|k| {
-                    let mut w: Vec<&str> = k.split('-').collect();
-                    w.sort_unstable();
-                    w == words
-                });
-                let near = reordered.or_else(|| closest(kind, kinds.iter().copied()));
-                self.out(file).error_fix(
-                    codes::KIND,
-                    k.span(),
-                    format!(
-                        "`{kind}` is not a node kind the schema knows: {}",
-                        list(&kinds)
-                    ),
-                    near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
-                );
-                continue;
-            };
-            let inputs: Vec<&Property> = def.inputs.iter().collect();
-            let names: Vec<&str> = inputs.iter().map(|p| p.name.as_str()).collect();
-            for v in &args[2..] {
-                self.out(file).error(
-                    codes::TYPE,
-                    v.span(),
-                    "a node's inputs are written as `name value` lines or `name=value`",
-                );
-            }
-            let mut given = HashSet::new();
-            for input in attrs(child) {
-                if !given.insert(input.name.clone()) {
-                    self.out(file).error(
-                        codes::REPEATED,
-                        input.name_span,
-                        format!("`{}` is given twice", input.name),
-                    );
-                    continue;
-                }
-                let Some(p) = inputs.iter().find(|p| p.name == input.name) else {
-                    self.unknown(file, &input, &format!("a {kind} node"), &names, None);
-                    continue;
-                };
-                match input.args.as_slice() {
-                    [v] if v.as_word().is_some_and(|w| w.starts_with('@')) => {
-                        self.link(file, v, handles)
-                    }
-                    _ => self.property(file, &input, p, false),
-                }
-            }
-        }
-    }
-
-    /// `@node.socket`: a link from another node's output.
-    fn link(&mut self, file: FileId, v: &Value<'_>, handles: &HashMap<String, String>) {
-        let word = v.as_word().unwrap_or_default();
-        let Some((node, socket)) = word.split_once('.') else {
-            return self.out(file).error(
-                codes::TYPE,
-                v.span(),
-                format!("a link names a node and its output, such as `{word}.bsdf`"),
-            );
-        };
-        let Some(kind) = handles.get(node) else {
-            let near = closest(node, handles.keys().map(String::as_str)).map(str::to_string);
-            return self.out(file).error_fix(
-                codes::HANDLE,
-                v.span(),
-                format!("no node of this tree is called `{node}`"),
-                near.map(|n| {
-                    (
-                        format!("write `{n}.{socket}`"),
-                        v.span(),
-                        format!("{n}.{socket}"),
-                    )
-                }),
-            );
-        };
-        if let Some(def) = self.schema.node(SHADER_TREE, kind) {
-            let outs: Vec<&str> = def.outputs.iter().map(|o| o.name.as_str()).collect();
-            if !outs.contains(&socket) {
-                let near = closest(socket, outs.iter().copied());
-                self.out(file).error_fix(
-                    codes::HANDLE,
-                    v.span(),
-                    format!(
-                        "a {kind} node has no output `{socket}`: it has {}",
-                        list(&outs)
-                    ),
-                    near.map(|n| {
-                        (
-                            format!("write `{node}.{n}`"),
-                            v.span(),
-                            format!("{node}.{n}"),
-                        )
-                    }),
-                );
-            }
-        }
-    }
-
-    /// `layout { @h [x y]; … }`: where the editor draws each node.
-    fn layout(&mut self, file: FileId, a: &Attr<'_>, handles: &HashMap<String, String>) {
-        let Some(block) = a.node.filter(|n| n.block().is_some()) else {
-            return self.out(file).error(
-                codes::TYPE,
-                a.span,
-                "`layout` takes a block of `@node [x y]` lines",
-            );
-        };
-        for child in block.children() {
-            let Some(name) = child.name_token() else {
-                continue;
-            };
-            let handle = name.text;
-            let mut out = self.out(file);
-            if !handle.starts_with('@') {
-                out.error(
-                    codes::TYPE,
-                    name.span,
-                    format!("a layout line starts with a node's handle, not `{handle}`"),
-                );
-                continue;
-            }
-            if !handles.contains_key(handle) {
-                out.error(
-                    codes::HANDLE,
-                    name.span,
-                    format!("no node of this tree is called `{handle}`"),
-                );
-            }
-            let args = args_of(child);
-            match args.as_slice() {
-                [v @ Value::List(_)] if v.items().len() == 2 => {
-                    for item in v.items() {
-                        check_float(
-                            &item,
-                            "layout",
-                            null_value::Dimension::None,
-                            &Property::any(),
-                            &mut out,
-                        );
-                    }
-                }
-                [_, rest @ ..] if !rest.is_empty() => out.error(
-                    codes::TYPE,
-                    rest[0].span(),
-                    "one node per layout line: end each with a line break or `;`",
-                ),
-                _ => out.error(
-                    codes::TYPE,
-                    child.code_span(),
-                    "a layout line is `@node [x y]`",
-                ),
-            }
-        }
-    }
 }
 
 /// Whether a `collection` line inside a scene or collection defines one (it has a
@@ -1287,19 +1159,6 @@ fn frame_rate(scene: Node<'_>) -> null_value::Scene {
 }
 
 /// The handles of a node tree's nodes and their kinds.
-fn node_tree(tree: Node<'_>) -> HashMap<String, String> {
-    tree.children()
-        .filter(|c| c.name() == "node")
-        .filter_map(|c| {
-            let args = args_of(c);
-            Some((
-                args.first()?.text().to_string(),
-                args.get(1)?.text().to_string(),
-            ))
-        })
-        .collect()
-}
-
 /// A handle must be `@` and kebab-case (S16, S18).
 fn kebab_handle(handle: &str, span: Span, out: &mut Out<'_>) -> bool {
     let bare = handle.trim_start_matches('@');

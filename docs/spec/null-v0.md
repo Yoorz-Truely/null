@@ -111,7 +111,7 @@ mesh @pier-deck "PierDeck" {
 // materials/weathered-oak.noll
 material @weathered-oak "Weathered Oak" {
   nodes {
-    node @tex image-texture { image @oak-diffuse interpolation=cubic }
+    node @tex tex-image { image @oak-diffuse interpolation=cubic }
     node @bsdf bsdf-principled {
       base-color @tex.color             // a link: the socket takes another node's output
       roughness 0.62
@@ -127,11 +127,12 @@ image @oak-diffuse "oak_diffuse.png" { source media/3f9a…c1.png colorspace=srg
 ```null
 // actions/lamp-flicker.noll
 action @lamp-flicker "LampFlicker" {
-  slot light @lamp-light
-  fcurve energy {
-    key 1  800W interpolation=bezier
-    key 6  620W
-    key 11 800W
+  slot @lamp light "Lamp" {
+    fcurve energy {
+      key 1  800W interpolation=bezier
+      key 6  620W
+      key 11 800W
+    }
   }
 }
 ```
@@ -226,7 +227,7 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 - **Made from the name.** A new sub-object's handle is its Blender name in kebab-case, as for datablocks (S18): `Spine.002` gives `spine-002`, `Base Color` gives `base-color`.
 - **Unique within its owner, across kinds.** No two sub-objects of one owner share a handle, whatever their kinds, so `@pier/@bevel` names one thing without saying whether it is a modifier or a constraint. Blender lets a modifier and a constraint of one object share a name; the second then gets `-2` (`@bevel-2`), as Blender itself numbers names. A duplicate handle within an owner is an error.
 - **Paths.** `/` steps from an owner to a sub-object, and may step again where a sub-object owns others (`@rig/@spine-002/@ik`, a bone's constraint on the object's pose). `.` followed by a name names a socket of a node (`@bsdf.roughness`); `.` followed by a number is a copy made by a pattern (`@plank.7`, Sau's decision S61 (6)). Nothing else uses `.`. A path starts at a datablock handle; inside the owner's own block the owner may be left out (`@bevel`). There a path starts at that owner's own sub-objects first, so a datablock elsewhere with the same handle never shadows them, and the owner is that one datablock, its kind and handle (an object and a mesh may both be `@pier`); a path whose first step names none of the owner's sub-objects is read as written, from a datablock; once it names one, the path stays the owner's and its errors are the owner's.
-- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` in a `nodes` block. The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy and a package's datablock parse, and resolve once patterns (task 1d-03) and packages (task 1d-04) are read. Each kind's own properties are checked once its form is specified (task 1d-07). Task 1b-02c.
+- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy and a package's datablock parse, and resolve once patterns (task 1d-03) and packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
 - **What keeps identity across a rename.** Where Blender keeps an identity of its own that survives renaming, Sau maps the handle to it. Where Blender identifies the sub-object only by its name, Sau keeps the handle through the project's map, `.sau/ids.noll`, keyed by the owner's persistent ID (Sau's decision S61 (3), task 1b-02b). Either way a rename in Sau changes the quoted name and keeps the handle and every reference.
 
 | Sub-object | Owner | Blender's own identity (checked in Blender 5.3's DNA) | Kept by |
@@ -271,7 +272,7 @@ The schema Sau generates from RNA gives every name, type, unit, range and enum i
 | `project "Name" { units …; scene @s }` | The project: its name, its units, its scenes. No RNA struct | A project is Cosmósis's, not Blender's |
 | `units metric scale=1 length=m rotation=deg` | A scene's `UnitSettings`: the argument is `system`; `scale` is `scale-length`; `length` is `length-unit`, written as a unit (`m`, `cm`, `mm`, `km`, `in`, `ft`) or an item (`meters`); `rotation` is `system-rotation`, as `deg` or `rad` or an item. The full names may be child lines instead. In `project` it applies to every scene | Short forms first (S35); RNA's `unit-settings` is read-only |
 | `object @h` and `collection @h` in a `scene` or `collection` | Members: objects and child collections of the scene's master collection, or of the collection. A `collection` line with a display name or a block defines the collection there | RNA's `objects` and `children` are read-only collections |
-| `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
+| `data mesh @h` in an `object` | The object's data, its kind written before the handle (`mesh`, `camera`, `light`, `armature`) | RNA's `data` points to any ID; the kind makes the line readable and checkable |
 | `material @h` in an `object` | One material slot, in order; the first is the active material | RNA keeps materials in slots |
 | `primitive <kind> settings…` in a `mesh` | The mesh as made by Blender's add operator of that kind (`cube`, `uv-sphere`, …) with the operator's settings by their names. `size` is one length, and a primitive's proportions come from the operator's `scale` (unitless, default `[1 1 1]`), which shapes the mesh: `primitive cube size=1m scale=[1.2 3 0.08]` is a 1.2 m by 3 m by 0.08 m box with its object's scale left at 1, so the object's modifiers (a 4 mm bevel stays 4 mm) and children are not squashed. The cube, UV sphere, ico sphere, cylinder and cone take `scale`; the plane, circle, grid, monkey and torus do not (Blender 5.3's operators ignore it or have none) | Level 1 geometry (section 9); the operators are RNA's |
 | `vertices [[x y z] …]` and `polygons [[0 1 2] …]` in a `mesh` | Level 0 data: each vertex's `co`, and each polygon's `vertices`, three or more indices of existing vertices | A collection of one-value structs is written as a list of the values. The name is RNA's `polygons`, not `faces` (S16) |
@@ -284,6 +285,46 @@ The schema Sau generates from RNA gives every name, type, unit, range and enum i
 A property's default, which the formatter omits (section 15), is its value in a new datablock: the schema's `new` where it differs from RNA's own default (a new scene's units are `metric` and `meters`).
 
 Handles are kebab-case wherever they appear, defined or referenced (S16, S18). Enum values are the items' kebab-case names; `XYZ` is an error whose fix is `xyz`.
+
+### Modifiers, constraints and pose bones
+
+Task 1d-07a. An object's modifiers, constraints and pose bones are sub-objects (section 7), written in its block:
+
+- `modifier @h <kind> "Name" { … }` is one modifier, in stack order. Its kind is a modifier's (S67: `bevel`, `array`, `subsurf`, `nodes`), and its block holds that kind's properties and those every modifier has (`show-viewport`, `show-render`). A geometry nodes modifier (`nodes`) names its group with `node-group`, and its group's inputs are its lines by their handles (section 10).
+- `constraint @h <kind> "Name" { … }` is one constraint, in stack order, of a constraint kind (`damped-track`, `copy-location`, `kinematic` for inverse kinematics).
+- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (1d-07h).
+
+The quoted name is Blender's and may be left out, the handle then standing for it.
+
+```null
+object @lid "Lid" {
+  data mesh @lid-mesh
+  modifier @bevel bevel "Bevel" { width 4mm; segments 3 }
+  modifier @stacked nodes "Stacked" {
+    node-group @stack-up
+    count 3
+  }
+  constraint @aim damped-track "Aim" {
+    target @dial
+    track-axis track-negative-z
+  }
+}
+
+mesh @lid-mesh "Lid" { primitive cube size=1m }
+
+object @rig "Rig" {
+  data armature @rig-bones
+  bone @spine "Spine" {
+    rotation-mode xyz
+    constraint @reach kinematic "IK" {
+      target @lid
+      chain-count 2
+    }
+  }
+}
+
+armature @rig-bones "Rig"
+```
 
 ## 9. Geometry as source
 
@@ -302,20 +343,214 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 
 ## 10. Node trees
 
-Shader, geometry, compositor and texture node trees are written as their nodes and links:
+Shader, geometry and compositor node trees are written as their nodes and links (task 1d-07a). Texture node trees wait for a row of their own (1d-07b).
 
-- A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, the kind being the node's RNA identifier in kebab-case.
-- A link is a socket value that names another node's output: `base-color @tex.color`. A socket with no line takes its default.
-- Group nodes reference a node tree (`shader`, `geometry`, `compositor` or `texture-node-tree`, by S67); group interfaces list their inputs and outputs with types and defaults.
-- Zones (repeat, simulation, for-each) are blocks containing their nodes.
-- **Layout is kept apart.** Node positions, frames, colours and widths live in the tree's trailing `layout` block, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout.
+- **Where a tree is.** A material's, a world's and a light's tree is its `nodes` block, a shader tree. A node group is a datablock of its tree's kind (S67): `shader`, `geometry` or `compositor`. It holds its interface, its `nodes` and its `layout`, as below. A scene's compositor is the `compositor` group its `compositing-node-group` names, and a geometry nodes modifier names its group with `node-group` (section 8).
+- **A node** is `node @handle <kind> "Name" { … }`:
+  - Its kind is named by section 8's rule (`tex-noise`, `bsdf-principled`, `transform`), and a node is read in its tree, since the schema gives each node the trees that take it.
+  - Its handle is unique in the tree. The quoted name is the node's Blender name and may be left out; then the name is the handle without `@` (Sau's task 1b-02d).
+  - Its block holds its **settings**: the node struct's own properties (`operation`, `interpolation`), and of the properties every node has, `label`, `mute`, `hide`, `parent`, `color`, `use-custom-color`, `color-tag`, `show-options`, `show-preview` and `show-texture`.
+  - It also holds its **inputs**, by the names the schema gives its sockets, each a value of the socket's type or a link. Where a setting and an input share a name, the name is the input's. A socket with no line takes its default.
+  - A node's position and width are the `layout` block's, never its own lines.
+- **A link** is a socket value that names another node's output: `base-color @ramp.color`. A socket that takes several links (a join's `geometry`) takes a list of them, `[@a.geometry @b.geometry]`. A geometry, shader, bundle or closure socket has no value of its own, so it takes only links.
+- **Frames.** A frame is a node, `node @box frame "Box"`, and a node drawn in it says `parent @box`.
+- **A group's interface** is its `input`, `output` and `panel` lines, in the interface's order:
+  - `input @h <socket-type> "Name" { … }` and `output @h <socket-type> "Name" { … }`. The socket type is an interface socket's kind (`float`, `float-distance`, `int`, `vector`, `geometry`, `object`, and the schema's others), and the block holds that type's settings (`default-value`, `min-value`, `max-value`, `description`, `hide-value` and the rest).
+  - `panel @h "Name" { default-closed; <input and output lines> }`.
+  - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
+- **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block, `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+  - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
+  - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
+  - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
+  - the nodes inside the zone.
+
+  Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
+- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+
+A material, with a frame:
+
+```null
+material @clay "Clay" {
+  nodes {
+    node @noise tex-noise { scale 4 }
+    node @ramp val-to-rgb { fac @noise.fac }
+    node @box frame "Surface" { label "Surface" }
+    node @bsdf bsdf-principled "Skin" {
+      parent @box
+      base-color @ramp.color
+      roughness 0.6
+    }
+    node @out output-material { surface @bsdf.bsdf }
+  }
+  layout { @noise [-600 0]; @ramp [-350 0]; @box [-120 60]; @bsdf [-100 0]; @out [200 0] }
+}
+```
+
+A geometry node group with an interface, a panel and a repeat zone, used by a group node and by a modifier (section 8):
+
+```null
+geometry @stack-up "Stack Up" {
+  is-modifier
+  input @geometry geometry "Geometry"
+  input @count int "Count" {
+    default-value 4
+    min-value 1
+  }
+  panel @spacing "Spacing" {
+    input @gap float-distance "Gap" { default-value 10cm }
+  }
+  output @stacked geometry "Geometry"
+  nodes {
+    node @in group-input
+    zone @loop repeat "Repeat" {
+      repeat-item @geometry geometry "Geometry"
+      iterations @in.count
+      geometry @in.geometry
+      node @lift transform {
+        geometry @loop.geometry
+        translation [0m 0m 1m]
+      }
+      node @join join-geometry { geometry [@loop.geometry @lift.geometry] }
+      output { geometry @join.geometry }
+    }
+    node @out group-output { stacked @loop.geometry }
+  }
+  layout { @in [-500 0]; @loop [-300 0] [400 0]; @lift [-100 -120]; @join [150 0]; @out [600 0] }
+}
+
+geometry @tower "Tower" {
+  is-modifier
+  input @base geometry "Base"
+  output @tower-out geometry "Tower"
+  nodes {
+    node @in group-input
+    node @stack group "Stack Up" {
+      node-tree @stack-up
+      geometry @in.base
+      count 6
+      gap 20cm
+    }
+    node @out group-output { tower-out @stack.stacked }
+  }
+}
+```
+
+A compositor group, which a scene uses as its compositor:
+
+```null
+compositor @grade "Grade" {
+  input @image color "Image"
+  output @graded color "Image"
+  nodes {
+    node @in group-input
+    node @contrast bright-contrast {
+      image @in.image
+      contrast 10
+    }
+    node @out group-output { graded @contrast.image }
+  }
+}
+
+scene @shot "Shot" { compositing-node-group @grade }
+```
 
 ## 11. Animation and drivers
 
-- Actions follow Blender's slotted, layered model: slots name what they animate; f-curves name the property by its RNA path; keys are `key <frame> <value>` with interpolation, handles and easing as properties.
-- Frames are exact as Blender stores them (float32, so sub-frames are allowed and print exactly).
-- Drivers are written on the property they drive: `energy driver="var * 800" { var single-prop @lamp-light.energy }`. Driver expressions stay in Blender's simple-expression subset where possible, so they evaluate without Python.
-- NLA strips, markers, shape-key animation and armature poses are ordinary nodes.
+Task 1d-07a. Actions follow Blender's slotted, layered model, and everything that plays them is written on the datablock that plays.
+
+- **An action** holds its slots: `slot @h <kind> "Name"`, one for each datablock it animates, of the datablock kind it animates (`object`, `light`, `material`). Its handle is the slot's own; Blender keeps it in `ActionSlot::handle` (section 7).
+- **F-curves.** `fcurve <path> index=N { … }` animates one property:
+  - The path is a property of the slot's kind of datablock: `energy`, `location`. A light's slot reaches its light type's properties too.
+  - `index=` picks an array's item, and is required for an array.
+  - A sub-object's property is written as its path and the property (`fcurve @bevel width`), and a node socket as `@bsdf.roughness`. Their keys are bare, in the internal unit, until the checker resolves them through the datablocks that play the action (1d-07g).
+  - The f-curve's block holds its settings (`extrapolation`, `color-mode`, `auto-smoothing`, `mute`, `lock`, `hide`), its keys and its modifiers.
+- **Keys** are `key <frame> <value>`, then the key's settings as `name=value`: `interpolation`, `easing`, `type`, `handle-left-type`, `handle-right-type`, `back`, `amplitude`, `period`, and `handle-left` and `handle-right` as `[frame value]`.
+  - A frame is a number of frames, exact as Blender stores it (float32, so sub-frames are allowed and print exactly). An action is outside every scene, so a frame is never written in seconds (section 6).
+  - The value is written as the property's own: `800W` for a light's energy, `1.5m` for a location.
+- **An f-curve's modifiers** are `modifier @h <kind> "Name" { … }` lines in its block, of the f-curve modifier kinds (`noise`, `cycles`, `generator`, `limits`, `stepped`, …).
+- **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first). Its full form writes them under layers instead, and never both:
+  - `layer @h "Name" { strip @h keyframe { channels @slot { fcurve … } } }`;
+  - each `channels` block holds one slot's f-curves in that strip.
+- **What plays.** On any datablock that can be animated:
+  - `action @a slot=@s` plays action `@a` through its slot `@s`, which must animate that kind of datablock. `slot=` may be left out when the action has one slot.
+  - NLA tracks are `track @h "Name" { strip @h "Name" { action @a slot=@s; frame-start 1; repeat 2; blend-type add; … } }`, in the stack's order, each strip with `NlaStrip`'s settings.
+- **Drivers** are written on the property they drive, which then takes no value of its own:
+  - `driver=` is the expression in quotes (a scripted driver), or one of `average`, `sum`, `min` and `max`. `index=` picks an array's item, and `use-self=on` lets the expression read its own datablock.
+  - The block holds the variables, `var <name> <type> { target … }`. A variable's name is the name the expression uses (letters, digits and `_`), and its type is one of `single-prop`, `transforms`, `rotation-diff`, `loc-diff` and `context-prop`.
+  - `target @handle <property>` reads one property of a datablock. A transforms target reads its datablock's transform, with `transform-type=`, `transform-space=` and `rotation-mode=`. The two kinds of difference take two targets each.
+  - Driver expressions stay in Blender's simple-expression subset where possible, so they evaluate without Python. Null's own expression syntax is task 1d-07f.
+
+A light flickering by a short-form action with a noise modifier:
+
+```null
+action @flicker "Lamp Flicker" {
+  slot @lamp light "Lamp" {
+    fcurve energy {
+      key 1 800W interpolation=bezier
+      key 6 620W
+      key 11 800W
+      modifier @wobble noise "Wobble" {
+        strength 40
+        scale 2
+      }
+    }
+  }
+}
+
+light @lamp-light "Lamp" {
+  type point
+  energy 800W
+  action @flicker slot=@lamp
+}
+```
+
+The full form, layered, played twice by an NLA strip:
+
+```null
+action @hop "Hop" {
+  use-cyclic
+  slot @ball object "Ball"
+  layer @base "Base" {
+    strip @keys keyframe {
+      channels @ball {
+        fcurve location index=2 {
+          extrapolation linear
+          key 1 0m
+          key 12 1.5m interpolation=sine easing=ease-out
+          key 24 0m handle-left=[20 0.4] handle-right=[28 0.4]
+        }
+      }
+    }
+  }
+}
+
+object @ball "Ball" {
+  track @moves "Moves" {
+    strip @hop-twice "Hop" {
+      action @hop slot=@ball
+      frame-start 1
+      repeat 2
+      blend-type add
+    }
+  }
+}
+```
+
+A driver: a lamp whose power follows a dial's turn:
+
+```null
+object @dial "Dial" { rotation-euler [0deg 0deg 45deg] }
+
+light @dial-lamp "Dial Lamp" {
+  type point
+  energy driver="spin * 100" {
+    var spin transforms {
+      target @dial transform-type=rot-z transform-space=world-space
+    }
+  }
+}
+```
 
 ## 12. Media and caches
 
