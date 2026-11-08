@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Changes after v0, each through an RFC (`docs/rfcs/`).
+
+## v0, November 8, 2026
+
+Null v0 is frozen: the specification `docs/spec/null-v0.md` as of the local tag `v0` (Sau's task 1d-01c). It covers the slice and every v0 construct: values and units with exact conversion, identity and references with sub-object handles, every datablock type through the generated schema with Null's own forms, geometry as source at every level, components, node trees (shader, geometry, compositor and texture, with zones, group interfaces and an absolute `layout` with sizes), modifiers, constraints, animation, drivers in Null's expression syntax, the `raw` block, the canonical form and the diagnostics. From here, a change to what a file means goes through an RFC (`docs/rfcs/README.md`). The entries below are v0's history, oldest first.
+
 - November 6, 2026: the repository is created. The draft v0 specification moves here from Sau's `docs/NULL.md`. The name Null and the `.noll` extension were chosen by the user.
 - November 7, 2026: section 6 says a value with a unit is converted exactly and rounded once, and that NaN is written `nan` without its sign or payload, the one value that does not round-trip; section 4's bevel example is written `{ width 4mm; segments 3 }`, two attributes (Sau's decision S59).
 - November 7, 2026: section 8 lists Null's forms over RNA for the slice (project, units, members, `data`, material slots, primitives, `vertices` and `polygons`, node trees, light power, lens millimetres) and that defaults are a new datablock's; section 18 lists every diagnostic code; section 6 defines the sRGB rule. Section 4's examples follow the schema: a primitive cube's `size` is one length, scaled by its object, and `layout` has one node per `;`. Task 1a-06.
