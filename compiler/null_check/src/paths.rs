@@ -200,7 +200,7 @@ fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
 }
 
 /// The sub-object lines inside `node`'s block, with theirs.
-fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
+pub(crate) fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
     let mut out = Vec::new();
     for child in node.children() {
         let name = child.name();
