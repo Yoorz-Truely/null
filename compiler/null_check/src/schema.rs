@@ -101,6 +101,10 @@ pub struct Property {
     /// The type: `float32`, `int`, `bool`, `enum`, `string`, `pointer`, `collection`.
     #[serde(rename = "type")]
     pub ty: String,
+    /// A node socket's identifier (`Base Color`, `A_Float`), by which Blender finds it, where
+    /// the schema lists the property as a socket (Sau's task 1d-07b).
+    #[serde(default)]
+    pub socket: Option<String>,
     /// A fixed length (`[3]`) or `"dynamic"`.
     #[serde(default)]
     pub array: Option<Json>,
@@ -193,6 +197,13 @@ pub struct NodeDef {
     pub inputs: Vec<Property>,
     /// Its outputs.
     pub outputs: Vec<Property>,
+    /// A new node's width in the editor, its kind's default, which a `layout` line leaves out
+    /// (section 10; Sau's decision S79). Absent from a schema made before Sau's task 1d-07b.
+    #[serde(default)]
+    pub width: Option<f32>,
+    /// A new frame's height, the one node kind whose height a `layout` line writes.
+    #[serde(default)]
+    pub height: Option<f32>,
 }
 
 impl NodeDef {
@@ -330,6 +341,7 @@ impl Property {
         Property {
             name: String::new(),
             ty: "float32".into(),
+            socket: None,
             array: None,
             min_length: None,
             subtype: None,
