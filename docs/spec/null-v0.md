@@ -803,6 +803,49 @@ Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back ea
 
 Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
 
+### Short forms
+
+Task 1d-03d, November 8, 2026 (Sau's decision S35: the abstract form first, the full form always available). A short form is a shorter way to write something that also has a full form. It means exactly what its full form means, and write-back keeps it. `null_print::expand` writes a project's files with every short form in full, which is what the checker and Sau's apply read it as. That output shows meaning, so comments and `/-` lines are dropped. `null_print::write_through` is write-back's edit of one value. The value is addressed as the full form spells it, by its datablock, the lines down to it and the value. Only that value is changed, however the file writes it, so the short form stays short, and expanding the written file gives what the same write gives through the full form.
+
+| Short form | Full form | Where |
+| --- | --- | --- |
+| `object "Pier"`: the handle left out | `object @pier "Pier"`, the handle made from the name | A datablock (section 7) |
+| `modifier @bevel bevel`: the quoted name left out | `modifier @bevel bevel "bevel"`, the handle without `@` | A modifier, constraint, pose bone, node or attribute (sections 8, 9 and 10) |
+| `modifier @bevel bevel width=4mm`: settings on the line | `modifier @bevel bevel { width 4mm }` | A datablock, modifier, constraint or pose bone (section 5). Other lines' `key=value`s (a key's `interpolation=`, an f-curve's `index=`, a primitive's settings, `slot=`) are part of the line, not settings |
+| `hide-render`: a bare boolean | `hide-render on` | Any boolean (section 5) |
+| `units metric scale=1 length=m rotation=deg` | `units { system metric; scale-length 1; length-unit meters; system-rotation degrees }` | A project or scene (section 8) |
+| `action @bob`: `slot=` left out | `action @bob slot=@buoy` | The line that plays an action with one slot (section 11) |
+| An action's f-curves in its slots' blocks | `layer @layer "Layer" { strip @strip keyframe { channels @buoy { … } } }`, with the slot lines kept | An action with one layer and one keyframe strip (section 11, S71 (3)). `Layer` is Blender's name for a first layer. A strip has no name, so its handle is its kind, with `-2` added where the action already has a sub-object of that handle |
+| `parent @box` in `material @clay`: a path's owner left out | `@clay/@box` | A path in its owner's block (section 7). Lines name their own datablock's nodes and sub-objects this way, so expansion leaves them as written. The index of paths reads both forms as the same, and write-back writes the short one in the owner's block |
+
+Write-back keeps each form in these ways:
+- A value is changed where it is written: on the line (`width=5mm`), as a unit word in `units` (`length=cm` for `centimeters`), or in a slot's block for a strip's channels.
+- A bare boolean stays bare while it is on and becomes `hide-render off` when it is not.
+- `slot=` stays left out while the slot is the action's only one.
+- A handle that is made from the name stays left out.
+
+Every example in this section and in sections 8, 10 and 11, expanded, checks clean, and expanding it again changes nothing (`null_print`'s `short` test).
+
+```null
+scene @harbour "Harbour" {
+  units metric scale=1 length=m rotation=deg
+  object @buoy
+}
+object "Buoy" {
+  hide-render
+  modifier @round bevel width=4mm segments=3
+  action @bob
+}
+action @bob "Bob" {
+  slot @buoy object "Buoy" {
+    fcurve location index=2 {
+      key 1 0m
+      key 24 0.2m interpolation=sine
+    }
+  }
+}
+```
+
 ## 18. Diagnostics
 
 Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a value's, since Blender clamps it), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`. The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
