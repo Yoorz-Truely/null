@@ -56,12 +56,25 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         scope: None,
         expanded,
         refs: Vec::new(),
+        outside_place: crate::driver::Place::default(),
+        scene_places: HashMap::new(),
+        scene_place: None,
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
     cx.outside = units::outside(parses);
     cx.scale = cx.outside.scale();
     cx.disagreement = disagreement(&cx.outside);
+    let all: Vec<&Parse> = files.iter().map(|(_, p)| *p).collect();
+    cx.outside_place = crate::driver::place(&all, None);
+    for (file, parse) in files {
+        for node in parse.document().nodes().filter(|n| n.name() == "scene") {
+            cx.scene_places.insert(
+                (file.0, node.span().start),
+                crate::driver::place(&all, Some(node)),
+            );
+        }
+    }
     for (file, parse) in files {
         for node in parse.document().nodes() {
             cx.collect(*file, node, true);
@@ -153,6 +166,12 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
+    /// Where drivers are read (task 1d-07f): outside every scene, and inside each scene node, by
+    /// its file and place, as `driver::place` gives them to the checker and to Sau alike.
+    outside_place: crate::driver::Place,
+    scene_places: HashMap<(u32, usize), crate::driver::Place>,
+    /// The place of the scene whose block is being checked.
+    scene_place: Option<crate::driver::Place>,
     /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
     refs: Vec<level0::ArrayRef>,
 }
@@ -360,12 +379,14 @@ impl<'s> Checker<'s> {
                 .scale();
             rate.scale_length = self.scale;
             self.scene = Some(rate);
+            self.scene_place = self.scene_places.get(&(file.0, node.span().start)).cloned();
         }
         match kind.as_str() {
             "light" => self.light(file, node),
             _ => self.body(file, node, &kind, &rna),
         }
         self.scene = None;
+        self.scene_place = None;
         self.scale = self.outside.scale();
     }
 

@@ -810,23 +810,18 @@ impl Checker<'_> {
         frames: bool,
     ) {
         let vars: Vec<&str> = vars.iter().map(String::as_str).collect();
-        let scene = self.scene.unwrap_or_default();
-        // Read as a value is: in the scene's unit scale and frame rate, or outside every scene
-        // in the one scale the scenes agree on (section 6).
-        let disagreement = if self.scene.is_none() {
-            self.disagreement.clone()
-        } else {
-            None
-        };
-        let cx = crate::driver::Context {
-            scene: null_value::Scene {
-                scale_length: self.scale,
-                ..scene
-            },
-            in_scene: self.scene.is_some(),
-            frames,
-            disagreement: disagreement.as_deref(),
-        };
+        // Read where `driver::place` says, as Sau reads it: in the scene, or outside every scene.
+        // The scenes' disagreement is reported once in a check, as a value's is, so it is left
+        // out once it has been.
+        let place = self
+            .scene_place
+            .clone()
+            .unwrap_or_else(|| self.outside_place.clone());
+        let mut cx = place.context(frames);
+        if self.disagreement.is_none() {
+            cx.disagreement = None;
+        }
+        let disagreement = cx.disagreement.map(str::to_string);
         // A place in the expression, in the file: exact where the string is written as it reads
         // (no escapes), else the whole string.
         let span = v.span();

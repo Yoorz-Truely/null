@@ -170,6 +170,20 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
             }
             // Python's own number forms (`0x1F`, `0b11`, `0o7`, `1_000`, `1j`): Python, not a unit.
             if let Some(form) = python_number(b, start, i) {
+                if !python_reads(b, start, form) {
+                    let mut e = form;
+                    while e < b.len() && (b[e].is_ascii_alphanumeric() || b[e] == b'_') {
+                        e += 1;
+                    }
+                    return Err(error(
+                        format!(
+                            "`{}` is a number neither Blender nor Python reads",
+                            &text[start..e]
+                        ),
+                        (start, e),
+                        None,
+                    ));
+                }
                 return Err(Fail::Python(format!(
                     "`{}` is a number in Python's form, which Blender's simple expressions do not read",
                     &text[start..form]
@@ -296,9 +310,36 @@ fn python_number(b: &[u8], start: usize, i: usize) -> Option<usize> {
     None
 }
 
+/// Whether Python reads the number in its own form `b[start..end]` (from [`python_number`]):
+/// a prefix's digits of its base (`0b2` is not one), and no letter right after it (`1_000m`).
+fn python_reads(b: &[u8], start: usize, end: usize) -> bool {
+    let word = &b[start..end];
+    // Python's rule: digits of the base, a `_` between two of them or right after the prefix.
+    let digits_of = |ok: fn(u8) -> bool| {
+        let rest = &word[2..];
+        let rest = rest.strip_prefix(b"_").unwrap_or(rest);
+        !rest.is_empty()
+            && rest.iter().all(|&c| ok(c) || c == b'_')
+            && !rest.ends_with(b"_")
+            && !rest.windows(2).any(|w| w == b"__")
+    };
+    let after = b
+        .get(end)
+        .is_some_and(|&c| c.is_ascii_alphanumeric() || c == b'_');
+    if after {
+        return false;
+    }
+    match word.get(..2) {
+        Some(b"0x" | b"0X") => digits_of(|c| c.is_ascii_hexdigit()),
+        Some(b"0b" | b"0B") => digits_of(|c| matches!(c, b'0' | b'1')),
+        Some(b"0o" | b"0O") => digits_of(|c| (b'0'..=b'7').contains(&c)),
+        _ => !word.ends_with(b"_") && !word.windows(2).any(|w| w == b"__"),
+    }
+}
+
 /// Where the string literal starting at `b[i]` (its quote, `'` or `"`) ends, past its closing
-/// quote, a triple quote's and a `\` escape's included; the text's end if it never closes.
-fn string_end(b: &[u8], i: usize) -> usize {
+/// quote, a triple quote's and a `\` escape's included; `None` if it never closes.
+fn string_end(b: &[u8], i: usize) -> Option<usize> {
     let q = b[i];
     let triple = b.get(i..i + 3).is_some_and(|t| t == [q, q, q]);
     let mut j = i + if triple { 3 } else { 1 };
@@ -309,14 +350,14 @@ fn string_end(b: &[u8], i: usize) -> usize {
         }
         if triple {
             if b.get(j..j + 3).is_some_and(|t| t == [q, q, q]) {
-                return j + 3;
+                return Some(j + 3);
             }
         } else if b[j] == q {
-            return j + 1;
+            return Some(j + 1);
         }
         j += 1;
     }
-    b.len()
+    None
 }
 
 /// The nearest of `names` to `word`, by Scowr's rule for suggestions.
@@ -745,7 +786,15 @@ fn check_python(text: &str, why: String) -> Result<Compiled, ExprError> {
     let b = text.as_bytes();
     while at < b.len() {
         if matches!(b[at], b'\'' | b'"') {
-            at = string_end(b, at);
+            let Some(end) = string_end(b, at) else {
+                return Err(ExprError {
+                    message: "a string that never closes: Python refuses it".into(),
+                    at: (at, b.len()),
+                    fix: None,
+                    unit: false,
+                });
+            };
+            at = end;
             continue;
         }
         if b[at].is_ascii_digit() {
@@ -754,6 +803,21 @@ fn check_python(text: &str, why: String) -> Result<Compiled, ExprError> {
                 at += 1;
             }
             if let Some(end) = python_number(b, start, at) {
+                if !python_reads(b, start, end) {
+                    let mut e = end;
+                    while e < b.len() && (b[e].is_ascii_alphanumeric() || b[e] == b'_') {
+                        e += 1;
+                    }
+                    return Err(ExprError {
+                        message: format!(
+                            "`{}` is a number neither Blender nor Python reads",
+                            &text[start..e]
+                        ),
+                        at: (start, e),
+                        fix: None,
+                        unit: false,
+                    });
+                }
                 at = end;
                 continue;
             }
@@ -929,6 +993,29 @@ mod tests {
         assert!(e.unit && e.message.contains("`2m` has a unit"), "{e:?}");
         let e = wrong("spin * 2mtr");
         assert!(e.message.contains("`mtr` is not a unit"), "{e:?}");
+        // A number in a form neither reads, and a string that never closes: refused at check
+        // time, as Python refuses them.
+        for (text, at) in [
+            ("spin * 1_000m", (7, 13)),
+            ("spin + 0b2", (7, 10)),
+            ("spin + 0o8", (7, 10)),
+            ("spin + 0xG", (7, 10)),
+            ("bpy.data['x'] * 0b12", (16, 20)),
+        ] {
+            let e = wrong(text);
+            assert!(
+                e.message.contains("neither Blender nor Python reads") && e.at == at,
+                "{text}: {e:?}"
+            );
+        }
+        let e = wrong("bpy.data.objects['Lamp].location.x");
+        assert!(e.message.contains("never closes") && e.at.0 == 17, "{e:?}");
+        // Python's own forms that it does read stay Python.
+        for text in ["spin + 0x_1F", "spin * 1_000.5", "spin * 2_0j"] {
+            let c = compile(text, &["spin"], &Scene::default())
+                .unwrap_or_else(|e| panic!("{text}: {e:?}"));
+            assert!(c.python.is_some(), "{text}");
+        }
     }
 
     #[test]

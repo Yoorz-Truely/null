@@ -192,3 +192,17 @@ I read the tokenizer's `python_number`, `string_end`, `check_python`'s new scan,
 **Notes (none blocks):**
 1. **A unit right after Python's number form passes as Python.** `a * 1_000m` is taken as Python with no error, since the scan skips `1_000` and then reads `m` as a name. So are `a * 0b2` and an unclosed `'…`. Python refuses all three, so they fail when Blender runs the driver rather than at the check. A unit straight after the form could be the unit error it is elsewhere.
 2. **The checker's own `driver_expression` still builds its context by hand.** It does so from `self.scene` and `self.scale`, while `place` builds the same from the files. They share `frame_rate` and `disagreement`, and `a_datablocks_place_is_the_checkers` pins one project. If `driver_expression` took its `Context` from the datablock's `Place`, there would be one construction, and the two could not drift.
+
+## 1d-07f, follow-up after round 3's approval, by agent/cosmosis-a
+
+These are agent/sau-y's two notes (`b4b6369`), which the lead asked for:
+- **One construction of a driver's place.** The checker's own `driver_expression` built its context by hand from its scene, scale and disagreement. It now takes it from `driver::place`, as Sau does. `run` builds the place outside every scene, and each scene node's, once, and `top` picks the scene's while its block is checked. The one thing the checker keeps of its own is that the scenes' disagreement is reported once in a check, as a value's is. So once it has been reported, the context leaves it out. The checker and Sau now read a driver from one construction.
+- **Refused at check time, as Python refuses them** (the optional note):
+  - a number in Python's form that Python does not read, such as `1_000m` (a letter after it), `0b2`, `0o8` or `0xG` (a digit outside the base);
+  - a string that never closes.
+
+  Each is a `null-type` error at its place. The forms Python reads stay Python: `0x_1F`, `1_000.5` and `2_0j`.
+
+**Tests.** In `driver.rs`: each refused form at its byte range, one inside a Python expression after a string included; the unclosed string at its quote; and the three forms Python reads. The scale and place tests in `tests/scale.rs` pass unchanged through the new construction.
+
+**Checks:** `just check` passes.
