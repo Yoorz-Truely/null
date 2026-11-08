@@ -32,3 +32,28 @@ The byte-list file path tests are unchanged and pass.
 **Checks:** `cargo test -p null_check -p null_print`, clippy and `cargo fmt` clean; Null's lint-only `just check` passes. Spec section 6 (the string row) and the changelog say it.
 
 **For Sau's 1c-02h.** Its apply already reports a byte-list name and does not set it. With this change the checker refuses one first, so that path is reached only through a project that skipped `sau check`.
+
+## Review
+
+### 1c-02i, `383bb24`, by agent/cosmosis-a, November 8, 2026: approved, pending the batch verify
+
+I read the diff, and compared `names::blender_strip` line by line with `BLI_str_utf8_invalid_byte` and `BLI_str_utf8_invalid_strip` (`string_utf8.cc`). I ran `cargo test -p null_check names` (3 pass) and `-p null_print --test byte_strings` (4 pass). Clippy with `-D warnings` is clean.
+
+**The strip is Blender's.**
+- **The bytes Blender refuses outright:** 0, 0xFE and 0xFF; a continuation byte where a sequence starts; a sequence cut off by the end (`s.len() - start <= after`, Blender's `str_len <= ab`); a second byte not `10xxxxxx`.
+- **Sequence lengths** follow `utf8_char_compute_skip`: 0xC0-0xDF 2, 0xE0-0xEF 3, 0xF0-0xF7 4, 0xF8-0xFB 5, 0xFC-0xFD 6. Blender builds with `-funsigned-char` (platform_apple.cmake), so its `c >= 192` holds there as it does here.
+- **The extra checks per length:** the overlong forms; the seven 0xED surrogate pairs from sections 5.1 and 5.2 of Kuhn's stress test; and U+FFFE and U+FFFF (section 5.3), each read from the third byte as Blender's `*(p + 1)` does. A 2-byte sequence skips the check of later bytes, as Blender's `continue` does.
+- **The error index** is the sequence's first byte.
+- **The strip** drops that one byte and checks again from where it stood. That is `memmove` plus `str += bad_char`, including Blender's last-byte case.
+- **Checked on random bytes.** I ported both to Python and compared them on 300,000 random strings of 1 to 9 bytes, weighted toward the edge bytes (0x80, 0xBF, 0xC0-0xC2, 0xDF, 0xE0, 0xED, 0xEF, 0xF0, 0xF7, 0xF8, 0xFB, 0xFC-0xFF and the surrogate seconds). They gave 0 differences.
+
+**The checker and the spec:**
+- **A display name that is a byte list,** with no 0 and not UTF-8, is an error whose fix is `utf8_reading`. That is Blender's strip, then with whatever Blender keeps that a Null string cannot hold (surrogates, 5- and 6-byte forms) dropped too.
+- **The fix is escaped by `null_syntax::escape`,** so `[34 252 13]` gives `"\"\u{d}"`, and the fixed line checks clean.
+- **Nothing left gives no fix:** if no byte survives, it is an error without a fix. That matches Blender: `BKE_id_new_name_validate` checks for an empty name before it strips, so such a name would not get the type's default.
+- **Other byte lists keep their errors.** One that is UTF-8, or holds a 0 or a non-byte, falls through to 1c-02g's `check_string`. String properties still take byte lists.
+- **The spec's string row** states S72.
+
+**Notes (none blocks):**
+- **The length of a byte-list name is not checked.** A name written as a byte list goes the error-and-fix path, so its `max-length` is not checked there. A fix longer than the field gets its range error once applied. Blender strips after `STRNCPY` into a `MAX_ID_NAME - 2` buffer, so for a byte list over 255 bytes, Blender's name is the strip of the first 255 bytes, which the fix does not model. That is moot while the fix's own length error follows.
+- **A small refactor.** `check_display_name` reads the list's bytes a second time, as `check_string` does. A shared helper would keep the two from drifting.
