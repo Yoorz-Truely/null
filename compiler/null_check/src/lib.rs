@@ -25,6 +25,7 @@
 mod check;
 pub mod forms;
 pub mod paths;
+pub mod rename;
 mod schema;
 pub mod units;
 mod values;

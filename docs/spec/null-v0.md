@@ -218,6 +218,20 @@ Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA
 - **Persistent IDs.** Behind every handle Sau keeps a persistent ID: 128 random bits on every datablock in Blender's data, saved in `.blend` files (Sau's decisions S17, S61, S63 and S64, task 1b-01a). A rename in Sau or in the file never changes it, and neither do saving, reopening, undo and redo. A copy, a duplicate and an appended datablock get a new one; a linked datablock keeps its library's; a library override has its own, and keeps it when Blender resyncs the override with its library. An ID is unique within its library, and a datablock is identified by its library and its ID together, so a datablock linked from a copy of the open file may share its ID with a local one. Data from a file saved before Sau had the field gets an ID derived from the datablock's type and name and, when linked, its library's path, so an unchanged old file gives the same IDs every time it opens. The ID is never written in a `.noll` file: the project's map `.sau/ids.noll` ties each handle to its ID (S61 (2)), and is rebuilt from the open scene when it is missing.
 - **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers, action slots and the rest are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine-002`. The rules are under "Sub-object handles" below.
 - **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
+- **Renaming a handle** (Sau's decision S17, task 1b-01h). `null_check::rename` gives the edits that rename a datablock's handle in every file of the project, as an editor renames a symbol, and Cosmósis's `sau rename @old @new` makes them. The datablock keeps its persistent ID, so the map `.sau/ids.noll` is updated to hold that ID under the new handle.
+  - **What changes:** the definition, and each word that names the datablock: `@old`, a path from it (`@old/@bevel`) and a pattern's copy (`@old.7`).
+  - **What does not change:**
+    - a word that names something else: a sub-object's own line, and inside a datablock that has a sub-object `@old`, every word, since there the sub-object shadows it;
+    - inside a node tree: a node's or zone's line, a link to a node's output (`@old.color`), a frame named by `parent`, and the `layout` block;
+    - the slot an `action` line names with `slot=`;
+    - a package's datablock (`@package:old`);
+    - strings and comments.
+  - **A handle made from a name** (`object "Old Pier"`) gets the new handle written before the name, so the name stays.
+  - **Refused:**
+    - a handle two kinds share, since the words naming each cannot be told apart;
+    - a new handle the same kind already has;
+    - a file with syntax errors;
+    - a map line that cannot be read.
 - **Linked libraries** (another `.blend` or another Null project) are packages or `link` nodes naming the source and the handles taken from it. Library overrides are written as the overridden values on top of the linked handle.
 
 ### Sub-object handles
