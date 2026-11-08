@@ -229,3 +229,30 @@ I read the diff from `38e6d68` and ran probes against a copy of `125bfd9` in my 
 
 **Notes (none blocks):**
 - **The checker and the expansion now both report `"tilt > 1rad"`,** at slightly different spans (5:8 and 5:5). Consumers run the expansion only on a project that checked clean, so this is no double report in practice, but the spans could agree.
+
+## 1d-03h: problems in expanded text point back to the source
+
+Stacked on 1d-03i (`125bfd9`), on the same branch. Null's tests and lints only.
+
+**What changed.**
+- **The map.** The expansion now writes into `Text`, a string together with its pieces. Each piece records its range in the expanded text, the file and span it was written from, and the copy whose expansion wrote it. An `Expanded` file keeps its pieces, plus the copies, shared as one `Arc` list. `Expanded::origin(span)` gives an `Origin`: the file, the span and the copy.
+  - **Mapped exactly**, letter for letter, where the expansion writes text as it stands: a line's name, an entry written unchanged, every line outside the components and placements, a scene's or collection's own lines.
+  - **Mapped to the whole of what made it**, where the expansion made the text: a computed value (to its expression), a copy's handle (to its datablock's handle, or its name where the handle is made from the name), a member line `object @plank.7` (to its placement's handle).
+  - **A position in no piece**, such as a brace or a line's end, takes the piece before it.
+- **`check_expanded`** reports the flat project's problems through the map: each primary place and label is moved to the source.
+  - **A fix** is kept only when each of its edits lands inside a piece written as it stands, so it edits the source exactly. One that would edit a computed value is left out.
+  - **Problems are gathered (`gather`)**, one per code and place, with the copies they were found in as a note: "in copy `@plank.7`", or "in 20 copies: `@plank.1`, … and 15 more". This takes up note 2 of the 1d-03c round 2 review.
+- **The expansion's own problems** are gathered the same way. Each now names the file its node is in, found from the node's text. Before, a value's error in a component was reported in the placement's file, at the component's offsets. That was a bug in 1d-03c, and it is fixed here.
+- **`Expanded`** now has private map fields. `Expanded::unmapped(file, text)` makes one with no map, as the tests do for hand-edited text.
+- **Section 8** says how problems point back.
+
+**Tests** (`tests/expand.rs`):
+- **A material no file defines,** in the component's line: one error, at `components/plank.noll:6:36`. It names 19 copies, since plank 7 is liquid and takes the other branch, and it keeps its fix (`@weathered-oak`).
+- **Exact and computed values:** a misspelt primitive key is found at its letters (`14:20`), and a value computed from `"length/1m"` (not a whole number) at its expression (`6:16`). Each error is reported once, across all 20 copies.
+- **An override's value** is found at the override line, in copy `@plank.7` alone. A mistake in a plain datablock in another file is found exactly where it is written.
+- **The expansion's own problem** (a condition comparing a word with a length), met in every copy, is reported once, at the component's `if`, naming the 20 copies.
+
+**For 1d-03e.** Sau's apply reads the expanded project, and it can report through `check_expanded` as it stands, since its diagnostics are already in the source's files and spans.
+
+**Checks.** `just check` passes.
+

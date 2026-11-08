@@ -20,7 +20,7 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::fmt::Write as _;
+use std::sync::Arc;
 
 use null_syntax::ast::{Entry, Node, Value};
 use null_syntax::{Diagnostic, FileId, Parse, Span, parse};
@@ -37,13 +37,17 @@ pub const LIMIT: usize = 1_000_000;
 /// that starts at a million would take the expansion's stack before the datablock limit.
 pub const DEPTH: usize = 256;
 
-/// One file, expanded.
+/// One file, expanded, with the map from its text back to the files as written.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expanded {
     /// The file, as given.
     pub file: FileId,
     /// Its text, expanded.
     pub text: String,
+    /// Its pieces in order, each with where it came from ([`Expanded::origin`]).
+    pieces: Vec<Piece>,
+    /// Every copy the expansion made, which pieces name by index.
+    copies: Arc<Vec<String>>,
 }
 
 /// An exact fraction, its denominator positive and the two coprime. `i128::MIN` is never held,
@@ -577,25 +581,115 @@ fn same_line(a: Node<'_>, b: Node<'_>) -> bool {
     name == b.name() && (!REPEATED.contains(&name.as_ref()) || first_word(a) == first_word(b))
 }
 
+/// One piece of expanded text and where it came from: `start..end` in the expanded text, `span`
+/// in `file` as written, and the copy whose expansion wrote it (an index into the copies, plus
+/// one; 0 for text outside every copy).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Piece {
+    start: usize,
+    end: usize,
+    file: FileId,
+    span: Span,
+    copy: usize,
+}
+
+/// Expanded text being written, with the map from its pieces back to the files as written.
+#[derive(Clone, Debug, Default)]
+struct Text {
+    s: String,
+    map: Vec<Piece>,
+}
+
+impl Text {
+    fn put(&mut self, s: &str) {
+        self.s.push_str(s);
+    }
+
+    /// `s`, written for `span` of `file` (in copy `copy`, see [`Piece`]).
+    fn put_from(&mut self, s: &str, file: FileId, span: Span, copy: usize) {
+        let start = self.s.len();
+        self.s.push_str(s);
+        self.map.push(Piece {
+            start,
+            end: self.s.len(),
+            file,
+            span,
+            copy,
+        });
+    }
+
+    fn append(&mut self, other: Text) {
+        let shift = self.s.len();
+        self.s.push_str(&other.s);
+        self.map.extend(other.map.into_iter().map(|p| Piece {
+            start: p.start + shift,
+            end: p.end + shift,
+            ..p
+        }));
+    }
+}
+
+/// Where a span of expanded text came from (task 1d-03h): its place in the files as written, and
+/// the copy whose expansion wrote it, if any.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Origin {
+    /// The file as written.
+    pub file: FileId,
+    /// The span there: the same text where the expansion wrote it as it stands, else the whole
+    /// of what made it (an expression's value, a copy's handle, a member line's placement).
+    pub span: Span,
+    /// The copy whose expansion wrote it (`@plank.7`), none for text outside every copy.
+    pub copy: Option<String>,
+}
+
 /// A line laid over a datablock, with what names mean where it was written.
 type Over<'a> = (Node<'a>, Ctx);
 
 struct Ex<'a, 's> {
     schema: &'s Schema,
+    /// Each file's text, to find the file a node is in.
+    texts: Vec<(FileId, &'a str)>,
     comps: HashMap<String, Node<'a>>,
     /// Override lines by the path they name, as written.
     overrides: HashMap<String, Vec<Node<'a>>>,
     made: usize,
-    out: Vec<Diagnostic>,
+    /// The problems, each with the copy it was found in.
+    out: Vec<(Diagnostic, Option<String>)>,
     stopped: bool,
     /// The components being expanded, with their countdown's value, innermost last.
     stack: Vec<(String, Option<Q>)>,
+    /// Every copy made, in order; and the one being written, as an index plus one.
+    copies: Vec<String>,
+    current: usize,
 }
 
 impl<'a> Ex<'a, '_> {
-    fn error(&mut self, file: FileId, span: Span, message: impl Into<String>) {
-        self.out
-            .push(Diagnostic::error(codes::TYPE, file, span, message.into()));
+    /// The file `node` is in.
+    fn file_of(&self, node: Node<'a>) -> FileId {
+        let text = node.0.file_text();
+        self.texts
+            .iter()
+            .find(|(_, t)| std::ptr::eq(t.as_ptr(), text.as_ptr()))
+            .map_or(FileId(0), |(f, _)| *f)
+    }
+
+    /// A problem at `span` in the file of `node`, in the copy being written.
+    fn error(&mut self, node: Node<'a>, span: Span, message: impl Into<String>) {
+        let file = self.file_of(node);
+        let copy = self.copy_name();
+        self.out.push((
+            Diagnostic::error(codes::TYPE, file, span, message.into()),
+            copy,
+        ));
+    }
+
+    fn copy_name(&self) -> Option<String> {
+        self.current.checked_sub(1).map(|i| self.copies[i].clone())
+    }
+
+    /// `s`, written for `span` of `node`'s file in the copy being written.
+    fn put(&self, out: &mut Text, s: &str, node: Node<'a>, span: Span) {
+        out.put_from(s, self.file_of(node), span, self.current);
     }
 
     fn is_datablock(&self, kind: &str) -> bool {
@@ -619,21 +713,21 @@ impl<'a> Ex<'a, '_> {
     }
 
     /// A block's lines, conditions decided: an `if`'s when it holds, else its `else`'s.
-    fn lines(&mut self, file: FileId, node: Node<'a>, ctx: &Ctx) -> Vec<Node<'a>> {
+    fn lines(&mut self, node: Node<'a>, ctx: &Ctx) -> Vec<Node<'a>> {
         let mut out = Vec::new();
         let mut last_if: Option<bool> = None;
         for c in node.children() {
             match c.name().as_ref() {
                 "if" => {
-                    let held = self.condition(file, c, ctx);
+                    let held = self.condition(c, ctx);
                     if held {
-                        out.extend(self.lines(file, c, ctx));
+                        out.extend(self.lines(c, ctx));
                     }
                     last_if = Some(held);
                 }
                 "else" => {
                     if last_if == Some(false) {
-                        out.extend(self.lines(file, c, ctx));
+                        out.extend(self.lines(c, ctx));
                     }
                     last_if = None;
                 }
@@ -646,27 +740,27 @@ impl<'a> Ex<'a, '_> {
         out
     }
 
-    fn condition(&mut self, file: FileId, node: Node<'a>, ctx: &Ctx) -> bool {
+    fn condition(&mut self, node: Node<'a>, ctx: &Ctx) -> bool {
         let Some(text) = node.args().next().and_then(|v| v.as_string()) else {
             return false; // the checker says so
         };
         match expr::parse_condition(&text).and_then(|c| holds(&c, &ctx.values)) {
             Ok(b) => b,
             Err(e) => {
-                self.error(file, node.code_span(), format!("`{text}`: {e}"));
+                self.error(node, node.code_span(), format!("`{text}`: {e}"));
                 false
             }
         }
     }
 
     /// The override lines that name `path`, their conditions decided, in the project's terms.
-    fn overrides_of(&mut self, file: FileId, path: &str) -> Vec<Over<'a>> {
+    fn overrides_of(&mut self, path: &str) -> Vec<Over<'a>> {
         let nodes = self.overrides.get(path).cloned().unwrap_or_default();
         let project = Ctx::default();
         let mut out = Vec::new();
         for o in nodes {
             out.extend(
-                self.lines(file, o, &project)
+                self.lines(o, &project)
                     .into_iter()
                     .map(|l| (l, Ctx::default())),
             );
@@ -676,28 +770,31 @@ impl<'a> Ex<'a, '_> {
 
     /// One node as written in a copy: its line, its entries in the copy's terms (its first
     /// argument `head` where given), its block's lines with `over` laid on them. `owner` is the
-    /// datablock's path, which its sub-objects' overrides name (`@plank.7/@fluid`).
+    /// datablock's path, which its sub-objects' overrides name (`@plank.7/@fluid`). Each name
+    /// and entry is mapped to where it is written (task 1d-03h).
     #[allow(clippy::too_many_arguments)]
     fn emit(
         &mut self,
-        file: FileId,
         node: Node<'a>,
         ctx: &Ctx,
         depth: usize,
         over: &[Over<'a>],
         head: Option<&str>,
         owner: &str,
-        out: &mut String,
+        out: &mut Text,
     ) {
         let pad = "  ".repeat(depth);
-        let mut line = node.name().into_owned();
+        out.put(&pad);
+        let name = node.name().into_owned();
+        let name_span = node.name_token().map_or(node.span(), |t| t.span);
+        self.put(out, &name, node, name_span);
         // A datablock whose handle is made from its name (S18) has its copy's handle written.
         let written = node.handle().is_some();
         if let Some(h) = head
             && !written
         {
-            line.push(' ');
-            line.push_str(h);
+            out.put(" ");
+            self.put(out, h, node, name_span);
         }
         for (i, e) in node.entries().enumerate() {
             let text = match (e, head) {
@@ -710,15 +807,21 @@ impl<'a> Ex<'a, '_> {
                     ctx.value(&value).map(|v| format!("{} {v}", key.text))
                 }
             };
+            let span = match e {
+                Entry::Arg(v) => v.span(),
+                Entry::Prop { key, value } | Entry::Keyword { key, value } => {
+                    key.span.cover(value.span())
+                }
+            };
             match text {
                 Ok(t) => {
-                    line.push(' ');
-                    line.push_str(&t);
+                    out.put(" ");
+                    self.put(out, &t, node, span);
                 }
-                Err(m) => self.error(file, e.value().span(), m),
+                Err(m) => self.error(node, e.value().span(), m),
             }
         }
-        let children = self.lines(file, node, ctx);
+        let children = self.lines(node, ctx);
         // The layers in order (the placement's lines, then each override's): a line replaces
         // the copy's line, and an earlier layer's, of its name; one that repeats (`modifier`),
         // those of its name and handle; else it is added.
@@ -728,10 +831,10 @@ impl<'a> Ex<'a, '_> {
             layers.push((*o, octx.clone()));
         }
         if children.is_empty() && layers.is_empty() && node.block().is_none() {
-            let _ = writeln!(out, "{pad}{line}");
+            out.put("\n");
             return;
         }
-        let _ = writeln!(out, "{pad}{line} {{");
+        out.put(" {\n");
         // A line laid over takes the place of the first line it replaces, so a stack keeps its
         // order; the copy's other lines it replaces go, and a line that replaces none is added.
         let mut used = vec![false; layers.len()];
@@ -741,17 +844,17 @@ impl<'a> Ex<'a, '_> {
                 Some(i) => {
                     used[i] = true;
                     let (o, octx) = &layers[i];
-                    self.child(file, *o, octx, depth + 1, owner, out);
+                    self.child(*o, octx, depth + 1, owner, out);
                 }
-                None => self.child(file, c, ctx, depth + 1, owner, out),
+                None => self.child(c, ctx, depth + 1, owner, out),
             }
         }
         for (i, (o, octx)) in layers.iter().enumerate() {
             if !used[i] {
-                self.child(file, *o, octx, depth + 1, owner, out);
+                self.child(*o, octx, depth + 1, owner, out);
             }
         }
-        let _ = writeln!(out, "{pad}}}");
+        out.put(&format!("{pad}}}\n"));
     }
 
     /// A line inside a datablock `owner` (`@rig.2`) or a sub-object of one: a sub-object's line
@@ -759,39 +862,31 @@ impl<'a> Ex<'a, '_> {
     /// inside that path, so an override reaches a sub-object of a sub-object
     /// (`@rig.2/@spine/@reach`, task 1d-03i). A node tree's nodes, and a zone's, are their
     /// owner's (section 7).
-    fn child(
-        &mut self,
-        file: FileId,
-        node: Node<'a>,
-        ctx: &Ctx,
-        depth: usize,
-        owner: &str,
-        out: &mut String,
-    ) {
+    fn child(&mut self, node: Node<'a>, ctx: &Ctx, depth: usize, owner: &str, out: &mut Text) {
         let path = first_word(node)
             .filter(|h| h.starts_with('@'))
             .map(|h| format!("{owner}/{h}"));
         let lay = match &path {
-            Some(p) if self.overrides.contains_key(p) => self.overrides_of(file, p),
+            Some(p) if self.overrides.contains_key(p) => self.overrides_of(p),
             _ => Vec::new(),
         };
         let inner = match &path {
             Some(p) if node.name() != "zone" => p.clone(),
             _ => owner.to_string(),
         };
-        self.emit(file, node, ctx, depth, &lay, None, &inner, out);
+        self.emit(node, ctx, depth, &lay, None, &inner, out);
     }
 
     /// A placement (`use`), in `ctx` (the placing copy's, or the project's), its copies' handles
-    /// under `prefix`: their datablocks into `out`, their roots' handles into `members`.
+    /// under `prefix`: their datablocks into `out`, their roots' handles into `members`, each
+    /// with its index among the copies.
     fn placement(
         &mut self,
-        file: FileId,
         node: Node<'a>,
         ctx: &Ctx,
         prefix: Option<&str>,
-        out: &mut String,
-        members: &mut Vec<String>,
+        out: &mut Text,
+        members: &mut Vec<(String, usize)>,
     ) {
         if self.stopped {
             return;
@@ -827,7 +922,7 @@ impl<'a> Ex<'a, '_> {
                 .count()
                 .max(1) as i128;
             if (self.made as i128).saturating_add(count.saturating_mul(each)) > LIMIT as i128 {
-                return self.limit(file, node);
+                return self.limit(node);
             }
             for k in 1..=count {
                 copies.push((
@@ -843,7 +938,7 @@ impl<'a> Ex<'a, '_> {
                 let value = match ctx.val(v) {
                     Ok(t) => t,
                     Err(m) => {
-                        self.error(file, v.span(), m);
+                        self.error(node, v.span(), m);
                         continue;
                     }
                 };
@@ -863,13 +958,13 @@ impl<'a> Ex<'a, '_> {
             // The block's names: the placing copy's, and `n` and the item.
             let mut outer = ctx.clone();
             outer.values.extend(extra);
-            self.copy(file, comp, node, name, &copy, &outer, out, members);
+            self.copy(comp, node, name, &copy, &outer, out, members);
         }
     }
 
-    fn limit(&mut self, file: FileId, node: Node<'a>) {
+    fn limit(&mut self, node: Node<'a>) {
         self.error(
-            file,
+            node,
             node.code_span(),
             format!(
                 "this expands the project past {LIMIT} datablocks, Null's limit (S38): place fewer \
@@ -882,7 +977,6 @@ impl<'a> Ex<'a, '_> {
     /// The parameters `lines` give, into `values`, read in `ctx`; the other lines are the root's.
     fn given(
         &mut self,
-        file: FileId,
         lines: Vec<Node<'a>>,
         ctx: &Ctx,
         params: &[String],
@@ -900,7 +994,7 @@ impl<'a> Ex<'a, '_> {
                 Ok(value) => {
                     values.insert(name, value);
                 }
-                Err(m) => self.error(file, v.span(), m),
+                Err(m) => self.error(l, v.span(), m),
             }
         }
         root
@@ -910,14 +1004,34 @@ impl<'a> Ex<'a, '_> {
     #[allow(clippy::too_many_arguments)]
     fn copy(
         &mut self,
-        file: FileId,
         comp: Node<'a>,
         placement: Node<'a>,
         name: &str,
         copy: &str,
         outer: &Ctx,
-        out: &mut String,
-        members: &mut Vec<String>,
+        out: &mut Text,
+        members: &mut Vec<(String, usize)>,
+    ) {
+        // The copy's place among the copies, which every piece it writes is tagged with.
+        self.copies.push(copy.to_string());
+        let index = self.copies.len();
+        let placing = self.current;
+        self.current = index;
+        self.copy_body(comp, placement, name, copy, outer, out, members, index);
+        self.current = placing;
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn copy_body(
+        &mut self,
+        comp: Node<'a>,
+        placement: Node<'a>,
+        name: &str,
+        copy: &str,
+        outer: &Ctx,
+        out: &mut Text,
+        members: &mut Vec<(String, usize)>,
+        index: usize,
     ) {
         // Parameters: defaults, then the placement's, then an override's of this copy.
         let mut values: HashMap<String, Val> = HashMap::new();
@@ -947,14 +1061,14 @@ impl<'a> Ex<'a, '_> {
                 values.insert(pname.to_string(), d);
             }
         }
-        let placed = self.lines(file, placement, outer);
-        let mut root_over = self.given(file, placed, outer, &params, &mut values);
+        let placed = self.lines(placement, outer);
+        let mut root_over = self.given(placed, outer, &params, &mut values);
         let project = Ctx::default();
         let mut overridden = Vec::new();
         for o in self.overrides.get(copy).cloned().unwrap_or_default() {
-            overridden.extend(self.lines(file, o, &project));
+            overridden.extend(self.lines(o, &project));
         }
-        root_over.extend(self.given(file, overridden, &project, &params, &mut values));
+        root_over.extend(self.given(overridden, &project, &params, &mut values));
         // Recursion counts down (S38): this component's countdown smaller than where it was
         // last placed, and the chain no deeper than `DEPTH`.
         let value = countdown.as_ref().and_then(|c| match values.get(c) {
@@ -966,7 +1080,7 @@ impl<'a> Ex<'a, '_> {
                 matches!((before, value), (Some(b), Some(v)) if v.cmp(b) == Ordering::Less);
             if !smaller {
                 self.error(
-                    file,
+                    placement,
                     placement.code_span(),
                     format!(
                         "`{name}` is placed inside itself and does not count down: its \
@@ -980,9 +1094,11 @@ impl<'a> Ex<'a, '_> {
         }
         if self.stack.len() >= DEPTH {
             self.error(
-                file,
+                placement,
                 placement.code_span(),
-                format!("copies inside copies nest deeper than {DEPTH} here: count down from less"),
+                format!(
+                    "copies inside copies nest deeper than {DEPTH} here (S76): count down from less"
+                ),
             );
             self.stopped = true;
             return;
@@ -1003,22 +1119,22 @@ impl<'a> Ex<'a, '_> {
                 ctx.handles.insert(h.clone(), format!("{copy}/{h}"));
             }
         }
-        members.push(copy.to_string());
+        members.push((copy.to_string(), index));
         self.stack.push((name.to_string(), value));
-        for c in self.lines(file, comp, &ctx) {
+        for c in self.lines(comp, &ctx) {
             if self.stopped {
                 break;
             }
             let kind = c.name().into_owned();
             if kind == "use" {
-                self.placement(file, c, &ctx, Some(copy), out, members);
+                self.placement(c, &ctx, Some(copy), out, members);
                 continue;
             }
             if !self.is_datablock(&kind) {
                 continue; // `param`
             }
             if self.made >= LIMIT {
-                self.limit(file, placement);
+                self.limit(placement);
                 break;
             }
             self.made += 1;
@@ -1029,53 +1145,52 @@ impl<'a> Ex<'a, '_> {
             let over = if root.as_deref() == Some(h.as_str()) {
                 root_over.clone()
             } else {
-                self.overrides_of(file, &new)
+                self.overrides_of(&new)
             };
-            out.push('\n');
-            self.emit(file, c, &ctx, 0, &over, Some(&new), &new, out);
+            out.put("\n");
+            self.emit(c, &ctx, 0, &over, Some(&new), &new, out);
         }
         self.stack.pop();
     }
 
     /// A scene or a collection with placements: its lines as written, each `use` made into its
     /// copies' members (the copies' datablocks into `made`), its `override` lines taken out.
-    fn container(
-        &mut self,
-        file: FileId,
-        node: Node<'a>,
-        depth: usize,
-        out: &mut String,
-        made: &mut String,
-    ) {
+    fn container(&mut self, node: Node<'a>, depth: usize, out: &mut Text, made: &mut Text) {
         let pad = "  ".repeat(depth);
         let start = node.code_span().start;
         let own = node
             .block()
             .map_or(node.code_span().end, |b| b.span().start);
-        let _ = writeln!(
-            out,
-            "{pad}{} {{",
-            text_in(node, Span::new(start, own)).trim_end()
-        );
+        let header = text_in(node, Span::new(start, own)).trim_end();
+        out.put(&pad);
+        self.put(out, header, node, Span::new(start, start + header.len()));
+        out.put(" {\n");
         for c in node.children() {
             match c.name().as_ref() {
                 "use" => {
                     let mut members = Vec::new();
-                    self.placement(file, c, &Ctx::default(), None, made, &mut members);
-                    for m in members {
-                        let _ = writeln!(out, "{pad}  object {m}");
+                    self.placement(c, &Ctx::default(), None, made, &mut members);
+                    // A member line is its placement's: the `use` line's handle.
+                    let at = c.args().nth(1).map_or(c.code_span(), |v| v.span());
+                    let file = self.file_of(c);
+                    for (m, index) in members {
+                        out.put(&format!("{pad}  object "));
+                        out.put_from(&m, file, at, index);
+                        out.put("\n");
                     }
                 }
                 "override" => {}
                 "collection" if c.block().is_some() && has_placements(c) => {
-                    self.container(file, c, depth + 1, out, made);
+                    self.container(c, depth + 1, out, made);
                 }
                 _ => {
-                    let _ = writeln!(out, "{pad}  {}", text_in(c, c.code_span()));
+                    out.put(&format!("{pad}  "));
+                    self.put(out, text_in(c, c.code_span()), c, c.code_span());
+                    out.put("\n");
                 }
             }
         }
-        let _ = writeln!(out, "{pad}}}");
+        out.put(&format!("{pad}}}\n"));
     }
 }
 
@@ -1100,21 +1215,73 @@ fn collect_overrides<'a>(node: Node<'a>, out: &mut HashMap<String, Vec<Node<'a>>
     }
 }
 
+/// The copies a problem was found in, as a note: "in copy `@plank.7`", or "in 20 copies:
+/// `@plank.1`, `@plank.2`, … and 15 more".
+fn copies_note(copies: &[String]) -> String {
+    let shown: Vec<String> = copies.iter().take(5).map(|c| format!("`{c}`")).collect();
+    match copies.len() {
+        1 => format!("in copy {}", shown[0]),
+        n if n <= 5 => format!("in {n} copies: {}", shown.join(", ")),
+        n => format!("in {n} copies: {} and {} more", shown.join(", "), n - 5),
+    }
+}
+
+/// Problems found once per copy, gathered: one per code and place, with the copies it was found
+/// in as a note (task 1d-03h), in the files' text order.
+fn gather(found: Vec<(Diagnostic, Option<String>)>) -> Vec<Diagnostic> {
+    let mut out: Vec<(Diagnostic, Vec<String>)> = Vec::new();
+    let mut at: HashMap<(String, u32, usize, usize), usize> = HashMap::new();
+    for (d, copy) in found {
+        let key = (
+            d.code.to_string(),
+            d.primary.file.0,
+            d.primary.span.start,
+            d.primary.span.end,
+        );
+        let i = *at.entry(key).or_insert_with(|| {
+            out.push((d, Vec::new()));
+            out.len() - 1
+        });
+        if let Some(c) = copy
+            && !out[i].1.contains(&c)
+        {
+            out[i].1.push(c);
+        }
+    }
+    let mut out: Vec<Diagnostic> = out
+        .into_iter()
+        .map(|(d, copies)| {
+            if copies.is_empty() {
+                d
+            } else {
+                d.with_note(copies_note(&copies))
+            }
+        })
+        .collect();
+    out.sort_by_key(|d| (d.primary.file.0, d.primary.span.start, d.primary.span.end));
+    out
+}
+
 /// Every file of a project expanded: components taken out, each placement made into its copies'
 /// datablocks (after the scene or collection that places them, in its file) and its copies'
 /// roots as members there; overrides laid over the copies they name; every other line as
-/// written. The problems are the expansion's own (a condition or value that cannot be computed,
-/// a recursion that does not count down, the limits); the checker's are [`crate::check`]'s, on
-/// the files as written, which should be clean before the expansion is trusted.
+/// written. Each file keeps a map back to the files as written ([`Expanded::origin`]). The
+/// problems are the expansion's own (a condition or value that cannot be computed, a recursion
+/// that does not count down, the limits), each once where it is written, with the copies it was
+/// found in; the checker's are [`crate::check`]'s, on the files as written, which should be
+/// clean before the expansion is trusted.
 pub fn expand(schema: &Schema, files: &[(FileId, &Parse)]) -> (Vec<Expanded>, Vec<Diagnostic>) {
     let mut ex = Ex {
         schema,
+        texts: files.iter().map(|(f, p)| (*f, p.text())).collect(),
         comps: HashMap::new(),
         overrides: HashMap::new(),
         made: 0,
         out: Vec::new(),
         stopped: false,
         stack: Vec::new(),
+        copies: Vec::new(),
+        current: 0,
     };
     for (_, p) in files {
         for node in p.document().nodes() {
@@ -1129,12 +1296,12 @@ pub fn expand(schema: &Schema, files: &[(FileId, &Parse)]) -> (Vec<Expanded>, Ve
             }
         }
     }
-    let mut result = Vec::new();
+    let mut texts = Vec::new();
     for (file, p) in files {
         // The text as written, but for components (taken out) and the scenes and collections
         // that place copies (written with their copies, which follow them).
-        let text = p.print();
-        let mut out = String::new();
+        let text = p.text();
+        let mut out = Text::default();
         let mut at = 0;
         for node in p.document().nodes() {
             let kind = node.name();
@@ -1143,37 +1310,122 @@ pub fn expand(schema: &Schema, files: &[(FileId, &Parse)]) -> (Vec<Expanded>, Ve
                 continue;
             }
             let span = node.span();
-            out.push_str(&text[at..span.start]);
+            out.put_from(&text[at..span.start], *file, Span::new(at, span.start), 0);
             at = span.end;
             if placing {
-                let mut made = String::new();
-                ex.container(*file, node, 0, &mut out, &mut made);
-                out.push_str(&made);
+                let mut made = Text::default();
+                ex.container(node, 0, &mut out, &mut made);
+                out.append(made);
             }
         }
-        out.push_str(&text[at..]);
-        result.push(Expanded {
-            file: *file,
-            text: out,
-        });
+        out.put_from(&text[at..], *file, Span::new(at, text.len()), 0);
+        texts.push((*file, out));
     }
-    let mut problems = ex.out;
-    problems.sort_by_key(|d| (d.primary.file.0, d.primary.span.start, d.primary.span.end));
-    (result, problems)
+    let copies = Arc::new(std::mem::take(&mut ex.copies));
+    let result = texts
+        .into_iter()
+        .map(|(file, t)| Expanded {
+            file,
+            text: t.s,
+            pieces: t.map.into_iter().filter(|p| p.start < p.end).collect(),
+            copies: Arc::clone(&copies),
+        })
+        .collect();
+    (result, gather(ex.out))
+}
+
+impl Expanded {
+    /// An expanded file with no map: its spans are its own (for text made otherwise, such as a
+    /// test's).
+    pub fn unmapped(file: FileId, text: String) -> Expanded {
+        Expanded {
+            file,
+            text,
+            pieces: Vec::new(),
+            copies: Arc::new(Vec::new()),
+        }
+    }
+
+    /// Where `span` of the expanded text came from (task 1d-03h): the piece that holds its start,
+    /// else the last before it on its way (a brace, a line's end). Within a piece written as it
+    /// stands the place is exact; within one the expansion made (a computed value, a copy's
+    /// handle) it is the whole of what made it. `None` for an unmapped file.
+    pub fn origin(&self, span: Span) -> Option<Origin> {
+        let i = self.pieces.partition_point(|p| p.start <= span.start);
+        let p = self.pieces.get(i.checked_sub(1)?)?;
+        let exact = p.end - p.start == p.span.end - p.span.start;
+        let span = if exact && span.start < p.end {
+            let start = p.span.start + (span.start - p.start);
+            Span::new(
+                start,
+                (start + span.end.saturating_sub(span.start)).min(p.span.end),
+            )
+        } else {
+            p.span
+        };
+        Some(Origin {
+            file: p.file,
+            span,
+            copy: p.copy.checked_sub(1).map(|c| self.copies[c].clone()),
+        })
+    }
 }
 
 /// The expanded files checked: their syntax, and [`crate::check`] on them, their copy handles
-/// (`@plank.7`, `@plank.7/@plank-mesh`) taken as the handles they are. The spans are the
-/// expanded texts'.
+/// (`@plank.7`, `@plank.7/@plank-mesh`) taken as the handles they are. Each problem is reported
+/// where it is written in the files as given, through each file's map ([`Expanded::origin`]):
+/// a mistake in a component's line once, at that line, with the copies it affects as a note
+/// (task 1d-03h). A fix is kept where every edit maps exactly. A file with no map keeps its
+/// expanded spans.
 pub fn check_expanded(schema: &Schema, expanded: &[Expanded]) -> Vec<Diagnostic> {
     let parses: Vec<(FileId, Parse)> = expanded.iter().map(|e| (e.file, parse(&e.text))).collect();
     let files: Vec<(FileId, &Parse)> = parses.iter().map(|(f, p)| (*f, p)).collect();
-    let mut out: Vec<Diagnostic> = files
+    let mut found: Vec<Diagnostic> = files
         .iter()
         .flat_map(|(f, p)| null_syntax::diagnostics(p, *f))
         .collect();
-    out.extend(crate::check::check_flat(schema, &files));
-    out
+    found.extend(crate::check::check_flat(schema, &files));
+    let of = |file: FileId| expanded.iter().find(|e| e.file == file);
+    let mapped = found
+        .into_iter()
+        .map(|mut d| {
+            let Some(e) = of(d.primary.file).filter(|e| !e.pieces.is_empty()) else {
+                return (d, None);
+            };
+            let Some(o) = e.origin(d.primary.span) else {
+                return (d, None);
+            };
+            d.primary.file = o.file;
+            d.primary.span = o.span;
+            for l in &mut d.secondary {
+                if let Some(lo) = of(l.location.file).and_then(|e| e.origin(l.location.span)) {
+                    l.location.file = lo.file;
+                    l.location.span = lo.span;
+                }
+            }
+            // A fix's edits must land exactly where they are written, else it is left out.
+            d.fixes.retain_mut(|f| {
+                f.edits.iter_mut().all(|edit| {
+                    let Some(target) = of(edit.file) else {
+                        return false;
+                    };
+                    let Some(eo) = target.origin(edit.span) else {
+                        return false;
+                    };
+                    let exact = target.pieces.iter().any(|p| {
+                        p.start <= edit.span.start
+                            && edit.span.end <= p.end
+                            && p.end - p.start == p.span.end - p.span.start
+                    });
+                    edit.file = eo.file;
+                    edit.span = eo.span;
+                    exact
+                })
+            });
+            (d, o.copy)
+        })
+        .collect();
+    gather(mapped)
 }
 
 #[cfg(test)]

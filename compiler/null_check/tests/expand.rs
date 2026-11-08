@@ -32,18 +32,37 @@ fn run(texts: &[(&str, &str)], clean: bool) -> (Vec<Expanded>, String) {
     (out, map.render_all(&problems))
 }
 
-/// The expanded files' problems, rendered against the expanded texts.
+/// The expanded files' problems, each as `file:start..end code: message`, with its notes.
 fn expanded_problems(files: &[Expanded]) -> String {
-    let mut map = SourceMap::new();
-    let ids: Vec<Expanded> = files
+    let found: Vec<Diagnostic> = check_expanded(schema(), files);
+    found
         .iter()
-        .map(|e| Expanded {
-            file: map.add(format!("expanded-{}", e.file.0), e.text.clone()),
-            text: e.text.clone(),
+        .map(|d| {
+            format!(
+                "{}:{}..{} {}: {} {:?}\n",
+                d.primary.file.0,
+                d.primary.span.start,
+                d.primary.span.end,
+                d.code,
+                d.message,
+                d.notes
+            )
         })
+        .collect()
+}
+
+/// `texts` expanded and the expanded project checked, its problems rendered where they are
+/// written in `texts` (task 1d-03h).
+fn checked_through(texts: &[(&str, &str)]) -> String {
+    let mut map = SourceMap::new();
+    let parses: Vec<(FileId, Parse)> = texts
+        .iter()
+        .map(|(name, text)| (map.add(*name, *text), parse(text)))
         .collect();
-    let found: Vec<Diagnostic> = check_expanded(schema(), &ids);
-    map.render_all(&found)
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    let (out, problems) = expand(schema(), &files);
+    assert_eq!(map.render_all(&problems), "");
+    map.render_all(&check_expanded(schema(), &out))
 }
 
 fn pier() -> Vec<(&'static str, &'static str)> {
@@ -269,10 +288,7 @@ fn a_mistake_in_the_expanded_project_is_found_at_its_copy() {
         true,
     );
     let bad = out[2].text.replace("parent @tree\n", "parent @oak-tree\n");
-    let found = expanded_problems(&[Expanded {
-        file: FileId(0),
-        text: bad,
-    }]);
+    let found = expanded_problems(&[Expanded::unmapped(FileId(0), bad)]);
     assert_eq!(
         found.matches("no object is called `@oak-tree`").count(),
         2,
@@ -511,4 +527,101 @@ fn a_component_s_datablocks_may_take_their_handles_from_their_names() {
     );
     assert!(!text.contains("@plank.1/@puddle"), "{text}");
     assert_eq!(expanded_problems(&out), "");
+}
+
+#[test]
+fn a_mistake_in_a_component_is_reported_once_at_its_line_naming_the_copies() {
+    // Every plank names a material no file defines: one error, at the component's line.
+    let plank = PLANK.replace("material @weathered-oak", "material @weathered-oaks");
+    let found = checked_through(&[
+        ("materials.noll", MATERIALS),
+        ("components/plank.noll", &plank),
+        ("objects/pier.noll", PIER),
+    ]);
+    assert_eq!(found.matches("error[").count(), 1, "{found}");
+    assert!(
+        found.starts_with(
+            "components/plank.noll:6:36 error[null-handle]: no material is called `@weathered-oaks`"
+        ),
+        "{found}"
+    );
+    // Plank 7 is liquid, so 19 copies make the line.
+    assert!(
+        found.contains(
+            "in 19 copies: `@plank.1`, `@plank.2`, `@plank.3`, `@plank.4`, `@plank.5` and 14 more"
+        ),
+        "{found}"
+    );
+    assert!(found.contains("fix: write `@weathered-oak`"), "{found}");
+}
+
+#[test]
+fn a_mistake_is_mapped_exactly_where_it_is_written_and_a_computed_value_to_its_expression() {
+    // A key written as it stands is found at its letters; a computed value, at its expression.
+    let plank = PLANK
+        .replace("primitive cube size=1m", "primitive cube edge=1m")
+        .replace(
+            "    data mesh @plank-mesh\n",
+            "    data mesh @plank-mesh\n    pass-index \"length/1m\"\n",
+        );
+    let found = checked_through(&[
+        ("materials.noll", MATERIALS),
+        ("components/plank.noll", &plank),
+        ("objects/pier.noll", PIER),
+    ]);
+    assert!(
+        found.contains("components/plank.noll:14:20 error[null-unknown-property]"),
+        "{found}"
+    );
+    assert!(found.contains("in 20 copies"), "{found}");
+    assert!(
+        found.contains("components/plank.noll:6:16 error[null-type]"),
+        "{found}"
+    );
+    assert_eq!(found.matches("error[").count(), 2, "{found}");
+}
+
+#[test]
+fn a_mistake_in_one_copy_s_override_or_outside_every_copy_is_found_where_written() {
+    let pier = PIER.replace(
+        "override @plank.7 { state liquid }",
+        "override @plank.7 { state liquid; pass-index 2.5 }",
+    );
+    let found = checked_through(&[
+        (
+            "materials.noll",
+            "material @weathered-oak \"Weathered Oak\" { roughnes 1 }\nmaterial @water \"Water\"\n",
+        ),
+        ("components/plank.noll", PLANK),
+        ("objects/pier.noll", &pier),
+    ]);
+    // The override's value, in plank 7 alone.
+    assert!(
+        found.contains("objects/pier.noll:5:48 error[null-type]"),
+        "{found}"
+    );
+    assert!(found.contains("in copy `@plank.7`"), "{found}");
+    // A file's own datablock, as it stands.
+    assert!(
+        found.contains("materials.noll:1:43 error[null-unknown-property]"),
+        "{found}"
+    );
+    assert_eq!(found.matches("error[").count(), 2, "{found}");
+}
+
+#[test]
+fn the_expansion_s_own_problem_in_a_component_is_reported_once() {
+    // A condition that cannot be decided, met in every copy: one problem, naming them.
+    let plank = PLANK.replace("if \"state == solid\"", "if \"state > length\"");
+    let (_, problems) = run(
+        &[
+            ("materials.noll", MATERIALS),
+            ("components/plank.noll", &plank),
+            ("objects/pier.noll", PIER),
+        ],
+        false,
+    );
+    assert_eq!(problems.matches("error[").count(), 1, "{problems}");
+    assert!(problems.contains("components/plank.noll:6:5"), "{problems}");
+    assert!(problems.contains("in 20 copies"), "{problems}");
 }
