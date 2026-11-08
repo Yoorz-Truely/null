@@ -1,0 +1,12 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { locaton [0m 0m 1m] }\n
+case.noll:1:17 error[null-unknown-property]: an object has no `locaton`; did you mean `location`?
+  fix: write `location`
+  `write `location`` gives: object @o "O" { location [0m 0m 1m] }\n
+--- object @o "O" {\n  modifier @b bevel { wdth 4mm }\n}\n
+case.noll:2:23 error[null-unknown-property]: a bevel modifier has no `wdth`; did you mean `width`?
+  fix: write `width`
+  `write `width`` gives: object @o "O" {\n  modifier @b bevel { width 4mm }\n}\n

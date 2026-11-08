@@ -9,7 +9,7 @@ use null_syntax::{FileId, closest};
 use super::{Attr, Checker, kebab_handle};
 use crate::codes;
 use crate::schema::Property;
-use crate::values::list;
+use crate::values::list_near;
 
 /// Properties a family member's line writes, not a setting: its quoted name, its kind, and
 /// what Blender keeps for itself.
@@ -62,13 +62,12 @@ impl Checker<'_> {
             .find(|s| s.kind == kind && s.base.as_deref() == Some(base))
         else {
             let near = closest(kind, kinds.iter().copied());
-            let shown: Vec<&str> = kinds.iter().copied().take(12).collect();
             return self.out(file).error_fix(
                 codes::KIND,
                 k.span(),
                 format!(
-                    "`{kind}` is not a kind of {word} (such as {}, …)",
-                    list(&shown)
+                    "`{kind}` is not a kind of {word}: {}",
+                    list_near(kind, &kinds)
                 ),
                 near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
             );

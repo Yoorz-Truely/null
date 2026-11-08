@@ -1,0 +1,10 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+objects/pier.noll:3:18 error[null-type]: `location` takes a length, and `n*25cm*2m` is an area
+objects/pier.noll:3:28 error[null-type]: `n-1` is one name, since `-` inside a word is part of a name; write subtraction in quotes, with spaces: "n - 1"
+  fix: write "n - 1"
+components/plank.noll:13:25 error[null-type]: `length+1`: a length + a number: only values of one kind add
+components/plank.noll:13:41 error[null-type]: `lenght/1m`: no parameter is called `lenght`
+  fix: write `length/1m`

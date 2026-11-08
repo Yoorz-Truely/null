@@ -1,0 +1,18 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+objects/pier.noll:2:7 error[null-handle]: no component is called `@plnk`; did you mean `@plank`?
+  fix: write `@plank`
+objects/pier.noll:3:3 error[null-type]: `use` names a component and the copy's handle: `use @plank @deck { … }`
+objects/pier.noll:4:25 error[null-enum]: `state` takes one of `solid`, `liquid`, not `lqiuid`
+  fix: write `liquid`
+objects/pier.noll:4:33 error[null-unknown-property]: `@plank` has no parameter `lenght`, nor its root object a property of that name; did you mean `length`?
+  fix: write `length`
+objects/pier.noll:5:23 error[null-type]: `count` takes a whole number, and `2.5` is a number
+objects/pier.noll:6:22 error[null-type]: `each=` needs `as=`, the name each item takes in the block
+objects/pier.noll:7:20 error[null-type]: `as=` names the items of `each=`, which this `use` does not give
+objects/pier.noll:8:23 error[null-type]: a pattern gives `count=` or `each=`, not both
+objects/pier.noll:9:17 error[null-unknown-property]: `use` takes `count=`, or `each=` with `as=`; not `cnt=`
+  fix: write `count`
+objects/pier.noll:10:25 error[null-type]: `state` takes one of [solid liquid], and `3` is a whole number

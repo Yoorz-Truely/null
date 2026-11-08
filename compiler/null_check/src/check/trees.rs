@@ -15,7 +15,7 @@ use null_syntax::{FileId, closest};
 use super::{Attr, Checker, args_of, attrs, header, kebab_handle};
 use crate::codes;
 use crate::schema::{NodeDef, Property};
-use crate::values::{check_float, list};
+use crate::values::{check_float, list_near};
 
 /// Node properties every node has that a file may write as settings: the rest of `Node`'s are
 /// the editor's or Blender's own (`location` and `width` are the `layout` block's, S45).
@@ -297,7 +297,10 @@ impl<'s> Checker<'s> {
                     self.out(file).error_fix(
                         codes::KIND,
                         k.span(),
-                        format!("`{kind}` is not a zone this tree takes: {}", list(&zones)),
+                        format!(
+                            "`{kind}` is not a zone this tree takes: {}",
+                            list_near(kind, &zones)
+                        ),
                         near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
                     );
                     continue;
@@ -329,19 +332,13 @@ impl<'s> Checker<'s> {
             w == words
         });
         let near = reordered.or_else(|| closest(kind, kinds.iter().copied()));
-        let shown: Vec<&str> = kinds.iter().copied().take(12).collect();
-        let more = if kinds.len() > shown.len() {
-            ", …"
-        } else {
-            ""
-        };
         self.out(file).error_fix(
             codes::KIND,
             k.span(),
             format!(
-                "`{kind}` is not a node kind a {} tree takes: {}{more}",
+                "`{kind}` is not a node kind a {} tree takes: {}",
                 tree_word(&tree.rna),
-                list(&shown)
+                list_near(kind, &kinds)
             ),
             near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
         );
@@ -583,7 +580,7 @@ impl<'s> Checker<'s> {
                     if shown.is_empty() {
                         "none".to_string()
                     } else {
-                        list(&shown)
+                        list_near(socket, &shown)
                     }
                 ),
                 near.map(|n| {
@@ -947,7 +944,10 @@ impl<'s> Checker<'s> {
             return self.out(file).error_fix(
                 codes::KIND,
                 t.span(),
-                format!("`{ty}` is not a socket type: it is one of {}", list(&kinds)),
+                format!(
+                    "`{ty}` is not a socket type: it is one of {}",
+                    list_near(ty, &kinds)
+                ),
                 near.map(|n| (format!("write `{n}`"), t.span(), n.to_string())),
             );
         };
