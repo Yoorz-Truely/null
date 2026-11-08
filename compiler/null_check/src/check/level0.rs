@@ -384,7 +384,7 @@ impl Checker<'_> {
                 at,
                 format!(
                     "`{domain}` is not a domain: an attribute's is one of {}",
-                    list(&DOMAINS)
+                    list_near(domain, &DOMAINS)
                 ),
                 closest(domain, DOMAINS.iter().copied())
                     .map(|d| (format!("write `{d}`"), at, d.to_string())),
@@ -397,7 +397,7 @@ impl Checker<'_> {
                 at,
                 format!(
                     "`{ty}` is not an attribute's data type: one of {}",
-                    list(&DATA_TYPES)
+                    list_near(ty, &DATA_TYPES)
                 ),
                 closest(ty, DATA_TYPES.iter().copied())
                     .map(|d| (format!("write `{d}`"), at, d.to_string())),

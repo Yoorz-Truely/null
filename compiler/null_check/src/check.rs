@@ -14,7 +14,7 @@ use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    dimension, list,
+    dimension, list, list_near,
 };
 
 mod anim;
@@ -193,6 +193,23 @@ fn header(node: Node<'_>) -> Header<'_> {
     Header { handle, name, rest }
 }
 
+/// The span that takes attribute `a`'s line out of its file: a line of its own with its
+/// indentation and its line feed, or one of a `{ a; b }` line as far as its `;`. None for a
+/// `key=value` on its owner's line.
+fn removal(a: &Attr<'_>) -> Option<Span> {
+    let node = a.node?;
+    let text = node.0.file_text();
+    let span = node.span();
+    let before = &text[..span.start];
+    let indent_start = before.trim_end_matches([' ', '\t']).len();
+    let own_line = (indent_start == 0 || before[..indent_start].ends_with('\n'))
+        && text[..span.end].ends_with('\n');
+    if own_line {
+        return Some(Span::new(indent_start, span.end));
+    }
+    Some(span)
+}
+
 /// The attributes of `node`: its line's properties, then its child nodes.
 fn attrs(node: Node<'_>) -> Vec<Attr<'_>> {
     let mut out: Vec<Attr<'_>> = props_of(node)
@@ -302,7 +319,7 @@ impl<'s> Checker<'s> {
                 name.span,
                 format!(
                     "`{kind}` is not a kind of datablock the schema knows: {}",
-                    list(&kinds)
+                    list_near(&kind, &kinds)
                 ),
                 suggestion.map(|k| (format!("write `{k}`"), name.span, k.to_string())),
             );
@@ -634,6 +651,14 @@ impl<'s> Checker<'s> {
             );
         }
         let kebab = to_kebab_case(&a.name);
+        // A known property written in another case (`pass_index`): the syntax's `null-name`
+        // already says so, with the same fix, so one mistake gives one error (1d-02c's review).
+        if kebab
+            .as_deref()
+            .is_some_and(|k| k != a.name && names.contains(&k))
+        {
+            return;
+        }
         let suggestion = kebab
             .as_deref()
             .filter(|k| names.contains(k))
@@ -727,10 +752,13 @@ impl<'s> Checker<'s> {
         let mut out = self.out(file);
         let name = a.name.as_str();
         if p.readonly || p.ty == "collection" {
-            out.error(
+            out.error_fix(
                 codes::READONLY,
                 a.name_span,
-                format!("`{name}` is read-only in Blender, so it is not written"),
+                format!(
+                    "`{name}` is read-only in Blender, so a file cannot set it; remove the line"
+                ),
+                removal(a).map(|span| (format!("remove `{name}`"), span, String::new())),
             );
             return;
         }
@@ -1127,7 +1155,7 @@ impl<'s> Checker<'s> {
             return self.out(file).error_fix(
                 codes::KIND,
                 k.span(),
-                format!("`{word}` is not a primitive: {}", list(&kinds)),
+                format!("`{word}` is not a primitive: {}", list_near(word, &kinds)),
                 near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
             );
         };
