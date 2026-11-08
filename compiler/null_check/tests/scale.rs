@@ -185,3 +185,93 @@ fn the_shared_reader_says_what_the_checker_reads() {
         Outside::Scale(3.0)
     );
 }
+
+/// The project schema, which has drivers' structs.
+fn project_errors(texts: &[&str]) -> Vec<Diagnostic> {
+    let schema =
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap();
+    let parses: Vec<_> = texts.iter().map(|t| parse(t)).collect();
+    let files: Vec<_> = parses
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (FileId(i as u32), p))
+        .collect();
+    check(&schema, &files)
+}
+
+#[test]
+fn a_drivers_scaled_unit_outside_every_scene_needs_the_scenes_to_agree() {
+    // Task 1d-07f: a number in a driver is read as a value is, so where the scenes' unit scales
+    // differ and the project sets no `units`, a length in a driver outside them is the same
+    // error as a value's, reported once, at the number.
+    let scenes = "scene @a \"A\" {\n  units metric scale=1\n}\n\nscene @b \"B\" {\n  units metric scale=0.01\n}\n";
+    let lights = "object @d \"D\"\n\nlight @l \"L\" {\n  type point\n  energy driver=\"spin * 1m\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n\nlight @k \"K\" {\n  type point\n  energy driver=\"spin * 2m\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n";
+    let found = project_errors(&[scenes, lights]);
+    let units: Vec<&Diagnostic> = found.iter().filter(|d| d.code == codes::UNIT).collect();
+    assert_eq!(units.len(), 1, "{found:#?}");
+    assert!(units[0].message.contains("scales differ"), "{found:#?}");
+    // At `1m`, in the first driver's string.
+    let at = lights.find("1m").unwrap();
+    assert_eq!(units[0].primary.span.start, at, "{found:#?}");
+    // A unit the scale does not touch is read as written, and agreeing scenes settle it.
+    let degrees = lights.replace("1m", "90deg").replace("2m", "45deg");
+    assert!(project_errors(&[scenes, &degrees]).is_empty());
+    let agreeing = scenes.replace("scale=0.01", "scale=1");
+    assert!(project_errors(&[&agreeing, lights]).is_empty());
+}
+
+#[test]
+fn a_drivers_seconds_on_a_frame_property_read_through_its_scene() {
+    // Task 1d-07f: a property that counts frames reads a driver's seconds as frames through its
+    // scene's frame rate, as a value's (task 1c-01h); outside every scene there is none, so
+    // seconds are refused there, as a value's are.
+    let outside = "object @d \"D\"\n\ncurve @c \"C\" {\n  eval-time driver=\"spin * 2s\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n";
+    let found = project_errors(&[outside]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::UNIT);
+    assert!(
+        found[0]
+            .message
+            .contains("`2s` is in seconds, and this driver's property counts frames"),
+        "{found:#?}"
+    );
+    assert!(project_errors(&[&outside.replace("spin * 2s", "spin * 48")]).is_empty());
+    // Inside a scene, its frame rate: the scene's own driver checks clean.
+    let inside = "object @d \"D\"\n\nscene @s \"S\" {\n  fps 25\n  frame-float driver=\"spin * 2s\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n";
+    assert!(
+        project_errors(&[inside]).is_empty(),
+        "{:#?}",
+        project_errors(&[inside])
+    );
+}
+
+#[test]
+fn a_datablocks_place_is_the_checkers() {
+    // Task 1d-07f, round 2: `driver::place` gives Sau the context the checker reads a driver in.
+    use null_check::driver::{compile_in, place};
+    let a = parse("project \"P\" {}\n\nscene @a \"A\" {\n  units metric scale=1\n  fps 25\n}\n");
+    let b = parse("scene @b \"B\" {\n  units metric scale=0.01\n}\n");
+    let files = [&a, &b];
+    // Outside every scene: the scenes disagree, so a length is the checker's error, word for word.
+    let outside = place(&files, None);
+    assert!(!outside.in_scene);
+    let message = outside.disagreement.clone().expect("the scenes disagree");
+    let e = compile_in("t * 1m", &["t"], &outside.context(false)).unwrap_err();
+    assert_eq!(e.message, message);
+    let lights = "object @d \"D\"\n\nlight @l \"L\" {\n  type point\n  energy driver=\"spin * 1m\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n";
+    let found = project_errors(&[a.print().as_str(), b.print().as_str(), lights]);
+    assert!(found.iter().any(|d| d.message == message), "{found:#?}");
+    // Inside a scene: its scale and its frame rate.
+    let scene_a = a.document().nodes().find(|n| n.name() == "scene").unwrap();
+    let inside = place(&files, Some(scene_a));
+    assert!(inside.in_scene && inside.disagreement.is_none());
+    assert_eq!((inside.scene.scale_length, inside.scene.fps), (1.0, 25));
+    assert_eq!(
+        compile_in("t * 2s", &["t"], &inside.context(true))
+            .unwrap()
+            .expression,
+        "t * 50"
+    );
+    let scene_b = b.document().nodes().find(|n| n.name() == "scene").unwrap();
+    assert_eq!(place(&files, Some(scene_b)).scene.scale_length, 0.01);
+}

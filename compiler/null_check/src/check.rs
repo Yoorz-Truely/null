@@ -56,12 +56,25 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         cycles: HashSet::new(),
         scope: None,
         expanded,
+        outside_place: crate::driver::Place::default(),
+        scene_places: HashMap::new(),
+        scene_place: None,
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
     cx.outside = units::outside(parses);
     cx.scale = cx.outside.scale();
     cx.disagreement = disagreement(&cx.outside);
+    let all: Vec<&Parse> = files.iter().map(|(_, p)| *p).collect();
+    cx.outside_place = crate::driver::place(&all, None);
+    for (file, parse) in files {
+        for node in parse.document().nodes().filter(|n| n.name() == "scene") {
+            cx.scene_places.insert(
+                (file.0, node.span().start),
+                crate::driver::place(&all, Some(node)),
+            );
+        }
+    }
     for (file, parse) in files {
         for node in parse.document().nodes() {
             cx.collect(*file, node, true);
@@ -155,6 +168,12 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
+    /// Where drivers are read (task 1d-07f): outside every scene, and inside each scene node, by
+    /// its file and place, as `driver::place` gives them to the checker and to Sau alike.
+    outside_place: crate::driver::Place,
+    scene_places: HashMap<(u32, usize), crate::driver::Place>,
+    /// The place of the scene whose block is being checked.
+    scene_place: Option<crate::driver::Place>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -360,12 +379,14 @@ impl<'s> Checker<'s> {
                 .scale();
             rate.scale_length = self.scale;
             self.scene = Some(rate);
+            self.scene_place = self.scene_places.get(&(file.0, node.span().start)).cloned();
         }
         match kind.as_str() {
             "light" => self.light(file, node),
             _ => self.body(file, node, &kind, &rna),
         }
         self.scene = None;
+        self.scene_place = None;
         self.scale = self.outside.scale();
     }
 
@@ -1443,7 +1464,7 @@ fn defines(node: Node<'_>) -> bool {
 
 /// The message for a value written with a scaled unit outside a scene when the scenes' scales
 /// disagree and the project sets no `units` (spec, section 6, "Scene scale").
-fn disagreement(outside: &Outside) -> Option<String> {
+pub(crate) fn disagreement(outside: &Outside) -> Option<String> {
     let Outside::Disagree(scenes) = outside else {
         return None;
     };
@@ -1460,7 +1481,7 @@ fn disagreement(outside: &Outside) -> Option<String> {
 
 /// A scene's frame rate from its `fps` and `fps-base` lines, a new scene's (24 and 1) where one
 /// is missing or does not read; those lines' own errors are reported where they are checked.
-fn frame_rate(scene: Node<'_>) -> null_value::Scene {
+pub(crate) fn frame_rate(scene: Node<'_>) -> null_value::Scene {
     let mut rate = null_value::Scene::default();
     for a in attrs(scene) {
         let Some(word) = a.args.first().and_then(|v| v.as_word()) else {

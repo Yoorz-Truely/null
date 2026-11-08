@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @d "D"\nlight @l "L" {\n  type point\n  energy driver="bpy.data.objects['D'].location.z * 100" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n
+case.noll:4:17 note[null-python]: this driver is Python, not one of Blender's simple expressions (`.` is not in Blender's simple expressions): it is kept, and runs only where Blender may run Python

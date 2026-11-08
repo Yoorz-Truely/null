@@ -356,9 +356,20 @@ fn each_form_catches_its_mistakes() {
         ),
         ("transform-type=rot-z", "transform-type=rot-q", "null-enum"),
         (
-            "energy driver=\"spin * 100\"",
-            "energy 100W driver=\"spin * 100\"",
+            "energy driver=\"spin * 100W\"",
+            "energy 100W driver=\"spin * 100W\"",
             "takes no value of its own",
+        ),
+        // A driver's expression (task 1d-07f).
+        (
+            "energy driver=\"spin * 100W\"",
+            "energy driver=\"spn * 100W\"",
+            "null-type this driver has no variable `spn`",
+        ),
+        (
+            "energy driver=\"spin * 100W\"",
+            "energy driver=\"self.energy * 2\"",
+            "null-python this driver is Python",
         ),
     ];
     let mut failures = Vec::new();
