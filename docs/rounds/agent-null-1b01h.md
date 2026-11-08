@@ -63,3 +63,31 @@ The report of agent/null-a working as `agent/null-1b01h` in `work/wt/null-1b01h/
 - **A rename made in Sau** (1b-01g) keeps handles. This is the other direction: the text changes, and the next apply keeps identity through the map.
 - **Sub-object handles** (`@pier/@bevel` → `@pier/@chamfer`) are not renamed by this command. They need the owner's index from `paths.rs`, and the map's sub-object part (S61 (3)).
 - **Patterns' and packages' handles** resolve only once 1d-03 and 1d-04 exist. A copy `@old.7` is renamed with its base, and `@package:old` is left alone.
+
+## 1b-01h, round 2: everything checked before anything is written; S73's blocks kept
+
+The Sau worker's review found two ways the rename could finish half done, and the lead added S73 (4).
+1. **A map that exists but cannot be read was treated as no map.** The files were renamed, and the ID stayed under the old handle.
+   - Now `cosmosis::ids::read` treats only `NotFound` as no map.
+   - A file that cannot be read (a folder where the map should be, say) or a line it cannot use is an error, and the rename stops before any file changes.
+2. **A `.sau` link was read through, then refused at write time.**
+   - `ids::check_not_linked` now refuses a `.sau` or a map that is a link before anything is read.
+   - `layout::check` does not follow one either.
+3. **Staged, then committed.** No file is changed until the map is read and every write has been staged.
+   - Every changed file's new text is written beside its target, the target being the link's file, since writes go through links as write-back's do. Each staged file is synced.
+   - The new map is staged as `.sau/ids.noll.sau-write`.
+   - Only then is each staged file renamed over its file, and the map last.
+   - If staging fails, every staged file is removed and nothing changes.
+   - If a rename fails partway, which a rename within one folder seldom does, the files already renamed are named in the error.
+4. **S73 (4): an entry's block of sub-objects moves with it.** `ids::Map` now holds an `Entry` with the ID and the entry's block text, from `{` to `}`, as written. `text` writes it back after the ID, and `rename` moves the whole entry. This module does not read the block; the core does (1b-02b).
+
+**New tests:**
+- **`cosmosis` unit:** a block is kept and moves with a renamed entry, and reads back the same.
+- **`crates/sau_cli/tests/rename.rs`:**
+  - a map entry's block survives `sau rename`;
+  - a folder where the map should be refuses the rename and changes nothing;
+  - a `.sau` that is a link refuses it before any file is written, and leaves the map through the link as it was;
+  - no `.sau-rename` or `.sau-write` file is left behind;
+  - the corpus test still renames all 72 handles.
+
+Cosmósis's `just check` passes.
