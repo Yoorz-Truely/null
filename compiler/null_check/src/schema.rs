@@ -124,6 +124,13 @@ pub struct Property {
     /// lists ahead (task 1b-03b): another value is not refused.
     #[serde(default, rename = "items-at-run-time")]
     pub items_at_run_time: bool,
+    /// Whether the enum is a flag set, any number of its items at once (task 1c-02b).
+    #[serde(default)]
+    pub flags: bool,
+    /// The most bytes a string holds, its closing NUL included, where Blender's field is fixed
+    /// (task 1c-02b); none where it is not, or the schema does not say.
+    #[serde(default, rename = "max-length")]
+    pub max_length: Option<usize>,
 }
 
 /// A property's ranges.
@@ -138,6 +145,10 @@ pub struct Range {
 pub struct Item {
     /// Null's name, such as `xyz`.
     pub name: String,
+    /// Whether the name is free text, not an identifier (a colour space's), so it is written
+    /// as a string (S16).
+    #[serde(default)]
+    pub quoted: bool,
 }
 
 /// A node kind.
@@ -146,6 +157,9 @@ pub struct NodeDef {
     /// Null's kind, such as `bsdf-principled` (Sau's decision S67: Blender's identifier with its
     /// type prefix removed, in kebab case).
     pub kind: String,
+    /// Its RNA identifier, such as `ShaderNodeBsdfPrincipled`, where the schema gives it.
+    #[serde(default)]
+    pub rna: Option<String>,
     /// The node trees that take it, by RNA identifier (`ShaderNodeTree`), each with the kind it
     /// has there; where two kinds of one tree would share a name, the tree's own family keeps it
     /// (`geometry-switch` in a compositor tree). Absent in the slice's schema, whose nodes are all
@@ -277,6 +291,8 @@ impl Property {
             target: None,
             readonly: false,
             items_at_run_time: false,
+            flags: false,
+            max_length: None,
         }
     }
 
