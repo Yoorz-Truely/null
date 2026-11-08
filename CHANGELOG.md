@@ -4,7 +4,7 @@
 
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
-- November 9, 2026: `null_check::migrate`, the steps between Null formats (Sau's S45, task 1d-04d): `FORMAT` is 1, `MIGRATIONS` is empty, and `rename_properties` is the step a migration generated from a Blender rename takes. No file changes meaning.
+- November 9, 2026: `null_check::migrate`, the steps between Null formats (Sau's S45, task 1d-04d): `FORMAT` is 1, `MIGRATIONS` is empty, and `rename_properties` is the step a migration generated from a Blender rename takes; one step may not chain or swap its renames (`chained`). No file changes meaning.
 
 ## v0, November 8, 2026
 

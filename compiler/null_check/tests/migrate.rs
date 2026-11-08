@@ -2,7 +2,8 @@
 //! newest, a generated rename's step, and what cannot be migrated.
 
 use null_check::migrate::{
-    FORMAT, MIGRATIONS, MigrateError, Migration, Rename, migrate, oldest, rename_properties, steps,
+    FORMAT, MIGRATIONS, MigrateError, Migration, Rename, chained, migrate, oldest,
+    rename_properties, steps,
 };
 
 /// A made-up format 0, before format 1: a camera's `lens` was `focal-length`, and a scene's
@@ -129,4 +130,47 @@ fn a_file_with_syntax_errors_is_not_migrated() {
         migrate("camera @eye {\n  focal-length 50mm\n", 0, 1, &TEST),
         Err(MigrateError::Unparsed)
     );
+}
+
+#[test]
+fn a_step_may_not_chain_or_swap_its_renames() {
+    let r = |old, new| Rename {
+        kind: "camera",
+        path: &[],
+        old,
+        new,
+    };
+    let chain = [r("a", "b"), r("b", "c")];
+    let swap = [r("a", "b"), r("b", "a")];
+    assert!(chained(&chain).is_some());
+    assert!(chained(&swap).is_some());
+    // The same names in other places are no chain.
+    let apart = [
+        r("a", "b"),
+        Rename {
+            kind: "light",
+            path: &[],
+            old: "b",
+            new: "c",
+        },
+    ];
+    assert!(chained(&apart).is_none());
+    for renames in [&chain[..], &swap[..]] {
+        let refused =
+            std::panic::catch_unwind(|| rename_properties("camera @c {\n  a 1\n}\n", renames));
+        let message = refused.unwrap_err();
+        let message = message.downcast_ref::<String>().unwrap();
+        assert!(
+            message.contains("a chain or swap is two steps, one format each"),
+            "{message}"
+        );
+    }
+}
+
+#[test]
+fn null_ships_no_step_with_a_chain() {
+    // Each shipped step is run on an empty file, so a chained rename list panics here first.
+    for m in MIGRATIONS {
+        let _ = (m.run)("");
+    }
 }

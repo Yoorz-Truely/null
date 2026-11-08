@@ -12,7 +12,9 @@
 //! [`MIGRATIONS`] is empty: a migration's tests give their own steps.
 //!
 //! Each step leaves a file it already rewrote unchanged, so a project written back only in
-//! part (a stop between two files) migrates again to the same text.
+//! part (a stop between two files) migrates again to the same text. Cosmósis writes one format
+//! at a time, each step's files and then the manifest raised by one, so a stopped run repeats
+//! only the step it stopped in, never an earlier one.
 //!
 //! ```
 //! use null_check::migrate::{Migration, Rename, migrate, rename_properties};
@@ -145,6 +147,11 @@ pub fn migrate(
 /// One renamed property, as a generated migration lists it: in each datablock of `kind`, the
 /// block at `path` inside it (`&["render"]` for a scene's `render { … }`, `&[]` for the
 /// datablock's own), a property line `old …` or an entry `old=…` becomes `new`.
+///
+/// One step's renames never chain or swap: no `new` of one is the `old` of another in the same
+/// place (`a` to `b` with `b` to `c`, or `a` to `b` with `b` to `a`), since a file that step had
+/// already rewritten would then change again, and a step must leave such a file as it is. A
+/// chain is two steps, one format each; [`rename_properties`] refuses one ([`chained`]).
 #[derive(Clone, Copy, Debug)]
 pub struct Rename {
     /// The datablock's kind, a top-level line's name (`camera`).
@@ -157,9 +164,31 @@ pub struct Rename {
     pub new: &'static str,
 }
 
+/// The first rename of `renames` whose new name another renames in the same place, if any: a
+/// chain or a swap, which one step may not hold (see [`Rename`]).
+pub fn chained(renames: &[Rename]) -> Option<(Rename, Rename)> {
+    renames.iter().find_map(|a| {
+        renames
+            .iter()
+            .find(|b| a.kind == b.kind && a.path == b.path && a.new == b.old)
+            .map(|b| (*a, *b))
+    })
+}
+
 /// `text` with every property `renames` names given its new name, and nothing else changed:
 /// the step of a migration generated from Blender's renames.
+///
+/// # Panics
+///
+/// When `renames` chain or swap ([`chained`]): a step made so is wrong for every file, so it is
+/// refused before any is rewritten, and a test over each migration finds it first.
 pub fn rename_properties(text: &str, renames: &[Rename]) -> String {
+    if let Some((a, b)) = chained(renames) {
+        panic!(
+            "a migration step renames `{}` to `{}` and `{}` to `{}` in {}: a chain or swap is two steps, one format each",
+            a.old, a.new, b.old, b.new, a.kind
+        );
+    }
     let parse = null_syntax::parse(text);
     let mut edits: Vec<(Span, &str)> = Vec::new();
     for top in parse.document().nodes() {
