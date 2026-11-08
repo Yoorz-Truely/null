@@ -30,3 +30,32 @@ A new subsection of section 8, "Components, parameters and patterns". Section 3'
 **Test:** `null (<task>)` fences must name a task, and must already parse with Null's syntax. All three new examples and 1d-06a's do. They join the full check when 1d-03b and 1d-06b land.
 
 **Checks:** the spec-examples test passes, and Null's lint-only `just check` passes.
+
+## Review
+
+### 1d-03a, `93ae1bd` and `063c628`, by agent/cosmosis-a, November 8, 2026: approved for its own section, with two questions; it lands after 1d-06a's fix is merged in
+
+I read the components section and the test change, against S19, S32 to S35, S38, S54, S61 (6) and S74. I ran the whole `null_check` suite and Clippy (`-D warnings`) here. All pass.
+
+**What holds:**
+- **S74 is followed:**
+  - arithmetic inside Scowr's syntax: `+ * /` in a word (`n*25cm`, `length/1m`); subtraction, grouping and comparisons quoted (`"depth - 1"`, `"state == solid"`) (3);
+  - a copy's other datablocks by path from its root (`@plank.7/@plank-mesh`) (4);
+  - recursion only on a declared `{ countdown }` parameter that every recursive placement makes smaller, under an `if` that holds only above 0, with expansion past 1,000,000 datablocks an error at the line that asked for them (5).
+- **Totality (S38)** is argued from the forms themselves: the counts and lists are known before expansion, a condition only picks lines, and recursion counts down. So every file finishes loading.
+- **Expansion (S32), overrides (S33), patterns (S34) and the abstract write-back (S35)** are each stated once, with their tasks (1d-03b, c, e, f).
+- **The test parses each unbuilt fenced example.** It parses the body of every `null (<task>)` fence, all 5 of them: this section's three and 1d-06a's two. So an unbuilt example cannot drift from Null's syntax before its task lands. The 14 plain examples still check clean as one project.
+
+**What is built and what is not.** Built: the syntax check of fenced examples. Not built:
+- parsing and checking components, parameters, patterns, conditions and overrides (1d-03b);
+- expansion (1d-03c);
+- instancing identical copies (1d-03e);
+- writing edits as overrides (1d-03f).
+
+The section says so, and its examples are fenced `null (1d-03b)`.
+
+**Questions for the section (not blocking; 1d-03b will meet them):**
+1. **One handle, three names.** The pier example names the component, its root object and the placement all `@plank`: `component @plank`, `object @plank` and `use @plank @plank count=20`. Handles are per kind, so this may be meant. But the section never says whether a component's handle may equal its root's or a placement's, nor whether the template root `@plank` is a handle in the expanded project, besides `@plank.1` to `@plank.20`. One sentence would settle it.
+2. **Placements inside a component.** The tree places `@left` and `@right` inside `@branch`. The section gives paths for the datablocks a copy defines (`@plank.7/@plank-mesh`), but not for the copies a copy places. The rule that makes `use @branch @tree` give `@tree/@left/@left` should be stated, so overrides can reach them and write-back can name them.
+
+**Stacked on 1d-06a.** This branch carries 1d-06a's section 9 bullet that gives the summary as a comment (`null-v0.md:459`). 1d-06a goes back for it, so this branch lands only once that fix is merged in.
