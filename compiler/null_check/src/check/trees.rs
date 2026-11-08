@@ -100,11 +100,30 @@ pub(super) struct Tree {
     pub rna: String,
     entries: HashMap<String, Entry>,
     interface: Option<Interface>,
+    /// The handle of the datablock the tree is in: a path from it names one of the tree's nodes
+    /// as the short path does (section 7; short form 8, task 1d-03j).
+    owner: Option<String>,
 }
 
 impl Tree {
+    /// `word` with the tree's owner taken off the front (`@clay/@noise.fac` is `@noise.fac` in
+    /// `material @clay`), else as it is.
+    pub(super) fn local<'w>(&self, word: &'w str) -> &'w str {
+        self.owner
+            .as_deref()
+            .and_then(|o| word.strip_prefix(o))
+            .and_then(|rest| rest.strip_prefix('/'))
+            .filter(|rest| rest.starts_with('@'))
+            .unwrap_or(word)
+    }
+
     /// The handles `nodes` defines, zones and the nodes inside them included.
-    pub(super) fn new(rna: &str, nodes: Option<Node<'_>>, interface: Option<Interface>) -> Tree {
+    pub(super) fn new(
+        rna: &str,
+        nodes: Option<Node<'_>>,
+        interface: Option<Interface>,
+        owner: Option<String>,
+    ) -> Tree {
         let mut entries = HashMap::new();
         fn walk(n: Node<'_>, entries: &mut HashMap<String, Entry>) {
             for child in n.children() {
@@ -158,6 +177,7 @@ impl Tree {
             rna: rna.to_string(),
             entries,
             interface,
+            owner,
         }
     }
 }
@@ -480,9 +500,11 @@ impl<'s> Checker<'s> {
     /// `parent @frame`: the frame node a node is drawn in.
     fn parent(&mut self, file: FileId, a: &Attr<'_>, tree: &Tree) {
         match a.args.as_slice() {
-            [v] if v
-                .as_word()
-                .is_some_and(|w| tree.entries.get(w).is_some_and(|e| e.kind == "frame")) => {}
+            [v] if v.as_word().is_some_and(|w| {
+                tree.entries
+                    .get(tree.local(w))
+                    .is_some_and(|e| e.kind == "frame")
+            }) => {}
             [v] => self.out(file).error(
                 codes::HANDLE,
                 v.span(),
@@ -503,7 +525,9 @@ impl<'s> Checker<'s> {
     /// `@zone.item` is the zone's input node's output (an item as it comes into an iteration);
     /// anywhere else, its output node's (the item as it leaves).
     pub(super) fn link(&mut self, file: FileId, v: &Value<'_>, tree: &Tree, zone: Option<&str>) {
-        let word = v.as_word().unwrap_or_default();
+        // A path from the tree's datablock reads as the short one: its first step is the
+        // owner, the rest one of the tree's nodes (section 7).
+        let word = tree.local(v.as_word().unwrap_or_default());
         let Some((node, socket)) = word.split_once('.') else {
             return self.out(file).error(
                 codes::TYPE,

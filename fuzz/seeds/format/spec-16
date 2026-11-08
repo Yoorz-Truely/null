@@ -1,0 +1,14 @@
+compositor @grade "Grade" {
+  input @image color "Image"
+  output @graded color "Image"
+  nodes {
+    node @in group-input
+    node @contrast bright-contrast {
+      image @in.image
+      contrast 10
+    }
+    node @out group-output { graded @contrast.image }
+  }
+}
+
+scene @shot "Shot" { compositing-node-group @grade }

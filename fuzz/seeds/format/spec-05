@@ -1,0 +1,11 @@
+// objects/harbor-lamp.noll
+object @harbor-lamp "Lamp" {
+  location [0.5m -8m 2.5m]
+  data light @harbor-lamp-light
+}
+
+light @harbor-lamp-light "Lamp" {
+  type point
+  energy 800W
+  action @lamp-flicker slot=@lamp
+}

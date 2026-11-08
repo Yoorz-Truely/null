@@ -1,10 +1,12 @@
-//! Short forms (Sau's decision S35; spec, section 8, "Short forms"; task 1d-03d): the shorter
+//! Short forms (Sau's decision S35; spec, section 17, "Short forms"; tasks 1d-03d and 1d-03j): the shorter
 //! ways of writing a thing that has a full form, read as their full forms, and kept by
 //! write-back.
 //!
-//! - [`expand`] writes a project's files with every short form in its full form: what the
+//! - [`full_form`] writes a project's files with every short form in its full form: what the
 //!   checker and Sau's apply read the short form as. It is a view of the meaning, so comments
 //!   and lines commented out with `/-` are not in it, and it is laid out by [`crate::format`].
+//!   A component's block takes the short forms as a file does. Sau's load writes the full form
+//!   first, then expands components (`null_check::expand`, Sau's decision S77).
 //! - [`write_through`] is write-back's edit of one value, addressed as the full form spells it
 //!   (the datablock, the lines down to the value, the value). It finds the value however the
 //!   file writes it, short or full, and changes only that value, so a short form stays short:
@@ -17,7 +19,8 @@
 //!    `modifier @bevel bevel "bevel"`, for a modifier, constraint, pose bone, node or attribute.
 //! 3. **Settings on their owner's line** (section 5): `modifier @bevel bevel width=4mm` is
 //!    `modifier @bevel bevel { width 4mm }`, for a datablock, modifier, constraint or pose bone.
-//! 4. **A bare boolean** (section 5): `use-cyclic` is `use-cyclic on`.
+//! 4. **A bare boolean** (section 5): `use-cyclic` is `use-cyclic on`, where the line's owner (its
+//!    datablock's, sub-object's, struct block's or node's struct) has a boolean of that name.
 //! 5. **`units`' short form** (section 8): `units metric scale=1 length=m rotation=deg` is
 //!    `units { system metric; scale-length 1; length-unit meters; system-rotation degrees }`.
 //! 6. **`slot=` left out** (section 11) where the action has one slot: `action @flicker` is
@@ -26,17 +29,17 @@
 //!    `layer @layer "Layer" { strip @strip keyframe { channels @slot { … } } }`, Blender's own
 //!    name for the first layer, and the strip, which has no name, by its kind.
 //! 8. **A path's owner left out in its own block** (section 7): `@bsdf.roughness` in
-//!    `material @oak` is `@oak/@bsdf.roughness`. Lines name nodes and sub-objects of their own
-//!    datablock the short way, so [`expand`] leaves the text as it is; the index of paths reads
-//!    both the same (`null_check::paths::Index::resolve`), and write-back writes the short way
-//!    in the owner's block.
+//!    `material @oak` is `@oak/@bsdf.roughness`. In a datablock's `nodes` block, a link or a
+//!    `parent` that names one of its nodes is written from the datablock; the checker reads a
+//!    tree's links and frames either way. Write-back keeps the form the word is written in.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
-use null_check::Schema;
 use null_check::forms::{LENGTH_UNITS, ROTATION_UNITS, UNITS_SHORT};
 use null_check::paths::{Index, Path};
 use null_check::units::{self, Outside};
+use null_check::{Property, Schema};
 use null_syntax::ast::{Entry, Node, Value};
 use null_syntax::names::to_kebab_case;
 use null_syntax::{FileId, Parse, Span, parse};
@@ -99,8 +102,9 @@ impl Project {
 }
 
 /// Every file of a project with its short forms written in full, laid out by the formatter.
-/// A file that does not parse cleanly is given back as it is.
-pub fn expand(texts: &[&str], schema: &Schema) -> Vec<String> {
+/// A file that does not parse cleanly is given back as it is, and so is one holding a lone `\`
+/// word, which only the whitespace written after it keeps a word.
+pub fn full_form(texts: &[&str], schema: &Schema) -> Vec<String> {
     let parses: Vec<Parse> = texts.iter().map(|t| parse(t)).collect();
     let project = Project::of(&parses);
     let ex = Expander {
@@ -111,16 +115,64 @@ pub fn expand(texts: &[&str], schema: &Schema) -> Vec<String> {
         .iter()
         .zip(&parses)
         .map(|(text, p)| {
-            if !p.errors().is_empty() {
+            // A lone `\` word is kept a word only by the unusual whitespace after it (a `\` before
+            // a line's end is a continuation), which a file written afresh does not keep.
+            let lone_backslash = null_syntax::lex(text)
+                .0
+                .iter()
+                .scan(0, |at, t| {
+                    let s = &text[*at..*at + t.len as usize];
+                    *at += t.len as usize;
+                    Some(t.kind == null_syntax::TokenKind::Word && s == "\\")
+                })
+                .any(|b| b);
+            if !p.errors().is_empty() || lone_backslash {
                 return (*text).to_string();
             }
             let mut out = String::new();
             for n in p.document().nodes().filter(|n| !n.is_commented_out()) {
-                ex.node(n, true, 0, &mut out);
+                ex.node(n, &At::file(), 0, &mut out);
             }
             format(&out)
         })
         .collect()
+}
+
+/// What a line's owner is, for the bare booleans it takes (form 4).
+#[derive(Clone, Debug)]
+enum Owner {
+    /// None the expansion knows (a placement's block, a slot's, a layout): no line is a boolean.
+    None,
+    /// A struct: a datablock's, a sub-object's, a struct block's.
+    Struct(String),
+    /// A node of a tree (the tree's RNA identifier, the node's kind).
+    Node(String, String),
+}
+
+/// A datablock's node tree: its RNA identifier, the datablock's handle, its nodes' handles.
+#[derive(Debug)]
+struct TreeAt {
+    rna: String,
+    handle: String,
+    nodes: HashSet<String>,
+}
+
+/// Where a line is: at a file's (or a component's) top, in which owner, in which tree.
+#[derive(Clone, Debug)]
+struct At {
+    top: bool,
+    owner: Owner,
+    tree: Option<Rc<TreeAt>>,
+}
+
+impl At {
+    fn file() -> At {
+        At {
+            top: true,
+            owner: Owner::None,
+            tree: None,
+        }
+    }
 }
 
 struct Expander<'s, 'p> {
@@ -133,21 +185,173 @@ impl Expander<'_, '_> {
         self.schema.datablock_kinds().any(|s| s.kind == kind)
     }
 
-    /// Whether some struct has a boolean property of this name (a socket's `boolean` too).
-    fn is_boolean(&self, name: &str) -> bool {
-        self.schema.structs.iter().any(|s| {
-            s.properties
-                .iter()
-                .any(|p| p.name == name && matches!(p.ty.as_str(), "bool" | "boolean"))
-        })
+    /// The struct a datablock's line is: its kind's, a light's by its `type` line.
+    fn datablock_struct(&self, n: Node<'_>, kind: &str) -> Option<String> {
+        let s = self.schema.struct_by_kind(kind)?;
+        if kind == "light"
+            && let Some(ty) = n
+                .children()
+                .find(|c| c.name() == "type")
+                .and_then(|c| c.args().next())
+                .and_then(|v| v.as_word().map(str::to_string))
+            && let Some(t) = self.schema.struct_by_kind(&format!("{ty}-light"))
+        {
+            return Some(t.rna.clone());
+        }
+        Some(s.rna.clone())
     }
 
-    /// One node and its block, written in full at `depth`.
-    fn node(&self, n: Node<'_>, top: bool, depth: usize, out: &mut String) {
+    /// The struct of a sub-object line of kind `kind`, whose base is one of `bases`.
+    fn member_struct(&self, kind: &str, bases: &[&str]) -> Option<String> {
+        self.schema
+            .structs
+            .iter()
+            .find(|s| s.kind == kind && s.base.as_deref().is_some_and(|b| bases.contains(&b)))
+            .map(|s| s.rna.clone())
+    }
+
+    /// Whether the owner of a line has a boolean property, or a node a boolean input, of this
+    /// name: decided by the owner's own struct (task 1d-03j), so a line that is no property is
+    /// never taken for one.
+    fn is_boolean(&self, owner: &Owner, name: &str) -> bool {
+        let is_bool = |p: &&Property| p.name == name && matches!(p.ty.as_str(), "bool" | "boolean");
+        match owner {
+            Owner::None => false,
+            Owner::Struct(rna) => self.schema.properties_of(rna).iter().any(is_bool),
+            Owner::Node(tree, kind) => self.schema.node(tree, kind).is_some_and(|d| {
+                d.inputs.iter().any(|p| is_bool(&p))
+                    || d.rna
+                        .as_deref()
+                        .is_some_and(|r| self.schema.properties_of(r).iter().any(is_bool))
+            }),
+        }
+    }
+
+    /// The owner the lines of `n`'s block are in, `n` being in `at`.
+    fn owner_of(&self, n: Node<'_>, name: &str, at: &At) -> Owner {
+        let args: Vec<Value<'_>> = n.args().collect();
+        let second = || args.get(1).and_then(|v| v.as_word());
+        let found = |o: Option<String>| o.map_or(Owner::None, Owner::Struct);
+        if at.top {
+            return if self.is_datablock(name) {
+                found(self.datablock_struct(n, name))
+            } else {
+                Owner::None
+            };
+        }
+        match name {
+            "modifier" if matches!(&at.owner, Owner::Struct(r) if r == "FCurve") => {
+                found(second().and_then(|k| self.member_struct(k, &["FModifier"])))
+            }
+            "modifier" => found(second().and_then(|k| self.member_struct(k, &["Modifier"]))),
+            "constraint" => found(second().and_then(|k| self.member_struct(k, &["Constraint"]))),
+            "bone" => Owner::Struct("PoseBone".into()),
+            "fcurve" => Owner::Struct("FCurve".into()),
+            "node" if at.tree.is_some() => match (&at.tree, second()) {
+                (Some(t), Some(k)) => Owner::Node(t.rna.clone(), k.to_string()),
+                _ => Owner::None,
+            },
+            _ => match &at.owner {
+                // A struct's block (`cycles { … }`): the struct its pointer property names.
+                Owner::Struct(rna) => found(
+                    self.schema
+                        .properties_of(rna)
+                        .into_iter()
+                        .find(|p| p.name == name && p.ty == "pointer")
+                        .and_then(|p| p.target.clone()),
+                ),
+                _ => Owner::None,
+            },
+        }
+    }
+
+    /// The tree a datablock's `nodes` block is, with its handle and its nodes' handles.
+    fn tree_of(&self, n: Node<'_>, kind: &str) -> Option<Rc<TreeAt>> {
+        let rna = match kind {
+            "material" | "world" | "light" | "shader" => "ShaderNodeTree",
+            "geometry" => "GeometryNodeTree",
+            "compositor" => "CompositorNodeTree",
+            _ => return None,
+        };
+        let nodes = n.children().find(|c| c.name() == "nodes")?;
+        let handle = handle_of(n)?;
+        let mut handles = HashSet::new();
+        fn walk(n: Node<'_>, into: &mut HashSet<String>) {
+            for c in n.children() {
+                if matches!(c.name().as_ref(), "node" | "zone")
+                    && let Some(h) = c.args().next().and_then(|v| v.as_word())
+                {
+                    into.insert(h.to_string());
+                    walk(c, into);
+                }
+            }
+        }
+        walk(nodes, &mut handles);
+        Some(Rc::new(TreeAt {
+            rna: rna.to_string(),
+            handle,
+            nodes: handles,
+        }))
+    }
+
+    /// A value as the full form writes it: in a tree, a link or a frame named by the short path
+    /// is written from the tree's datablock (form 8: `@noise.fac` is `@clay/@noise.fac`).
+    fn value(&self, v: &Value<'_>, at: &At, parent_line: bool) -> String {
+        let Some(tree) = &at.tree else {
+            return v.text().to_string();
+        };
+        match v {
+            Value::Word(t) if t.text.starts_with('@') => {
+                let head = if parent_line {
+                    Some(t.text)
+                } else {
+                    t.text.split_once('.').map(|(h, _)| h)
+                };
+                match head {
+                    Some(h) if tree.nodes.contains(h) => format!("{}/{}", tree.handle, t.text),
+                    _ => t.text.to_string(),
+                }
+            }
+            Value::List(_) if v.items().iter().any(|i| matches!(i, Value::Word(_))) => {
+                let items: Vec<String> = v
+                    .items()
+                    .iter()
+                    .map(|i| self.value(i, at, parent_line))
+                    .collect();
+                format!("[{}]", items.join(" "))
+            }
+            _ => v.text().to_string(),
+        }
+    }
+
+    /// One node and its block, written in full at `depth`, the node being in `at`.
+    fn node(&self, n: Node<'_>, at: &At, depth: usize, out: &mut String) {
         let name = n.name().into_owned();
+        let top = at.top;
         if name == "units" && !top {
             return self.units(n, depth, out);
         }
+        // A component's block holds datablocks as a file does, and so do its `if` and `else`
+        // blocks; a condition's lines are in the place the condition is (task 1d-03j).
+        let inner = match name.as_str() {
+            "component" if top => At {
+                top: true,
+                owner: Owner::None,
+                tree: None,
+            },
+            "if" | "else" => at.clone(),
+            _ => At {
+                top: false,
+                owner: self.owner_of(n, &name, at),
+                // A datablock's tree is its `nodes` block's alone (`child_at` below).
+                tree: if top { None } else { at.tree.clone() },
+            },
+        };
+        let tree_for_children = if top && self.is_datablock(&name) {
+            self.tree_of(n, &name)
+        } else {
+            inner.tree.clone()
+        };
         let mut words: Vec<String> = Vec::new();
         let mut moved: Vec<String> = Vec::new();
         let datablock = top && self.is_datablock(&name);
@@ -173,6 +377,8 @@ impl Expander<'_, '_> {
                         .iter()
                         .any(|v| matches!(v, Value::Str(_) | Value::Raw(_)))
             });
+        // A node's or zone's own line names itself and its kind; its other values may be links.
+        let own_line = matches!(name.as_str(), "node" | "zone");
         let mut arg_i = 0;
         for e in n.entries() {
             match e {
@@ -180,11 +386,15 @@ impl Expander<'_, '_> {
                     if name_at == Some(arg_i) {
                         words.push(quoted(&args[0].text()[1..]));
                     }
-                    words.push(v.text().to_string());
+                    if own_line {
+                        words.push(v.text().to_string());
+                    } else {
+                        words.push(self.value(&v, at, name == "parent"));
+                    }
                     arg_i += 1;
                 }
                 Entry::Keyword { key, value } => {
-                    words.push(format!("{} {}", key.text, value.text()));
+                    words.push(format!("{} {}", key.text, self.value(&value, at, false)));
                     arg_i += 1;
                 }
                 // 3. Settings on their owner's line.
@@ -192,7 +402,7 @@ impl Expander<'_, '_> {
                     moved.push(format!("{} {}", key.text, value.text()));
                 }
                 Entry::Prop { key, value } => {
-                    words.push(format!("{}={}", key.text, value.text()));
+                    words.push(format!("{}={}", key.text, self.value(&value, at, false)));
                 }
             }
         }
@@ -210,12 +420,20 @@ impl Expander<'_, '_> {
         {
             words.push(format!("slot={slot}"));
         }
-        // 4. A bare boolean.
-        if !top && n.entries().next().is_none() && n.block().is_none() && self.is_boolean(&name) {
+        // 4. A bare boolean, a property of its owner's struct.
+        if !top
+            && n.entries().next().is_none()
+            && n.block().is_none()
+            && self.is_boolean(&at.owner, &name)
+        {
             words.push("on".into());
         }
         let pad = "  ".repeat(depth);
-        let head = std::iter::once(name.clone())
+        // The name as written: a quoted one stays quoted (`"("` is no word).
+        let written = n
+            .name_token()
+            .map_or_else(|| name.clone(), |t| t.text.to_string());
+        let head = std::iter::once(written)
             .chain(words)
             .collect::<Vec<_>>()
             .join(" ");
@@ -228,6 +446,16 @@ impl Expander<'_, '_> {
         for m in moved {
             out.push_str(&format!("{pad}  {m}\n"));
         }
+        // The place of the block's lines: a datablock's tree only below its `nodes`.
+        let child_at = |c: &Node<'_>| -> At {
+            let mut a = inner.clone();
+            if top && self.is_datablock(&name) {
+                a.tree = (c.name() == "nodes")
+                    .then(|| tree_for_children.clone())
+                    .flatten();
+            }
+            a
+        };
         // 7. An action's one layer and strip.
         let short_action = top
             && name == "action"
@@ -244,7 +472,7 @@ impl Expander<'_, '_> {
                 channels.push(*c);
                 continue;
             }
-            self.node(*c, false, depth + 1, out);
+            self.node(*c, &child_at(c), depth + 1, out);
         }
         if short_action {
             let taken: Vec<String> = children
@@ -262,11 +490,16 @@ impl Expander<'_, '_> {
                 "{pad}  layer {layer} {} {{\n{pad}    strip {strip} keyframe {{\n",
                 quoted(LAYER)
             ));
+            let in_channels = At {
+                top: false,
+                owner: Owner::None,
+                tree: None,
+            };
             for s in channels {
                 let slot = s.args().next().map_or("", |v| v.text());
                 out.push_str(&format!("{pad}      channels {slot} {{\n"));
                 for f in s.children() {
-                    self.node(f, false, depth + 4, out);
+                    self.node(f, &in_channels, depth + 4, out);
                 }
                 out.push_str(&format!("{pad}      }}\n"));
             }
@@ -291,7 +524,10 @@ impl Expander<'_, '_> {
         }
         for c in n.children() {
             let words: Vec<&str> = c.args().map(|v| v.text()).collect();
-            settings.push((c.name().into_owned(), words.join(" ")));
+            let written = c
+                .name_token()
+                .map_or_else(|| c.name().into_owned(), |t| t.text.to_string());
+            settings.push((written, words.join(" ")));
         }
         for (key, value) in settings {
             let full = full_unit_setting(&key);
@@ -619,9 +855,13 @@ impl Writer<'_, '_> {
         if v.as_word().is_some_and(|w| in_full(w) == full) {
             return None;
         }
+        // Written from the owner where the word it replaces is (the full form), else the short way.
+        let written_full = v
+            .as_word()
+            .is_some_and(|w| w.starts_with(&format!("{handle}/")));
         let short = full
             .strip_prefix(&format!("{handle}/"))
-            .filter(|rest| first_own(rest));
+            .filter(|rest| !written_full && first_own(rest));
         Some(short.unwrap_or(full).to_string())
     }
 

@@ -1,0 +1,17 @@
+scene @harbour "Harbour" {
+  units metric scale=1 length=m rotation=deg
+  object @buoy
+}
+object "Buoy" {
+  hide-render
+  modifier @round bevel width=4mm segments=3
+  action @bob
+}
+action @bob "Bob" {
+  slot @buoy object "Buoy" {
+    fcurve location index=2 {
+      key 1 0m
+      key 24 0.2m interpolation=sine
+    }
+  }
+}

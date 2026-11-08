@@ -1,0 +1,13 @@
+mesh @pier-deck "PierDeck" {
+  primitive cube size=[1.2m 3m 0.08m]     // level 1: a procedure
+}
+
+/* Level 0: exact data, inline. Lists may span lines,
+   and comments /* nest */ inside them. */
+mesh @plank "Plank" {
+  vertices [
+    [-0.5 -0.1 0] [0.5 -0.1 0]
+    [0.5 0.1 0]   [-0.5 0.1 0]   // the far edge
+  ]
+  faces [[0 1 2 3]]
+}

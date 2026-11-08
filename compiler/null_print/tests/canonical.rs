@@ -427,3 +427,38 @@ proptest! {
         prop_assert_eq!(canonical(&once, project_schema()), once);
     }
 }
+
+#[test]
+fn an_empty_pointer_round_trips() {
+    // Sau's task 1c-02j: `parent none`, as write-back writes it, checks clean and comes back from
+    // the formatter and the canonical order unchanged.
+    let text = "object @lamp \"Lamp\" {\n  parent none\n  location [0m -8m 2.5m]\n}\n";
+    let parsed = parse(text);
+    assert_eq!(check(schema(), &[(FileId(0), &parsed)]), vec![]);
+    assert_eq!(null_print::format(text), text);
+    assert_eq!(canonical(text, schema()), text);
+}
+
+#[test]
+fn a_line_of_other_whitespace_is_a_blank_line() {
+    // Found by the `format` fuzz target (task 1d-02d): a line holding a vertical tab was no
+    // blank line to the canonical pass, then one once the layout took the tab, so a second
+    // pass gave other text.
+    for text in ["i{\n\u{b}\nm}", "i {\n\u{c}\u{a0}\n  m\n}\n"] {
+        let once = canonical(text, schema());
+        assert_eq!(canonical(&once, schema()), once, "{text:?}");
+        assert!(!once.contains("\n\n"), "{text:?} gave {once:?}");
+    }
+}
+
+#[test]
+fn a_groups_interface_comes_before_its_nodes() {
+    // Section 10: a group's interface, then its `nodes`, then `layout`; a zone's items, its
+    // input node's lines, `output`, then its nodes (the 1d-08a review found the interface last).
+    let text = "geometry @g \"G\" {\n  nodes {\n    node @in group-input\n    node @out group-output { geometry @in.geometry }\n    zone @loop repeat {\n      node @x set-position\n      output { geometry @x.geometry }\n      repeat-item @geometry geometry \"Geometry\"\n      iterations 4\n    }\n  }\n  layout { @in [0 0] }\n  input @geometry geometry \"Geometry\"\n  output @geometry-out geometry \"Geometry\"\n}\n";
+    let want = "geometry @g \"G\" {\n  input @geometry geometry \"Geometry\"\n  output @geometry-out geometry \"Geometry\"\n  nodes {\n    node @in group-input\n    node @out group-output { geometry @in.geometry }\n    zone @loop repeat {\n      repeat-item @geometry geometry \"Geometry\"\n      iterations 4\n      output { geometry @x.geometry }\n      node @x set-position\n    }\n  }\n  layout { @in [0 0] }\n}\n";
+    let project =
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap();
+    assert_eq!(canonical(text, &project), want);
+    assert_eq!(canonical(want, &project), want);
+}
