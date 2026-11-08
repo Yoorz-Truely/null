@@ -145,6 +145,10 @@ pub struct Range {
 pub struct Item {
     /// Null's name, such as `xyz`.
     pub name: String,
+    /// RNA's identifier, such as `XYZ`, where the schema gives it (the project's does): what
+    /// Sau sets through the bridge (task 1c-02d).
+    #[serde(default)]
+    pub rna: Option<String>,
     /// Whether the name is free text, not an identifier (a colour space's), so it is written
     /// as a string (S16).
     #[serde(default)]
