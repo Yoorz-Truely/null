@@ -50,12 +50,12 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         disagreement: None,
         groups: HashMap::new(),
         actions: HashMap::new(),
+        refs: Vec::new(),
         components: HashMap::new(),
         placements: HashMap::new(),
         cycles: HashSet::new(),
         scope: None,
         expanded,
-        refs: Vec::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -143,6 +143,8 @@ struct Checker<'s> {
     groups: HashMap<String, trees::Interface>,
     /// Every action's slots, by handle (task 1d-07a).
     actions: HashMap<String, anim::Slots>,
+    /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
+    refs: Vec<level0::ArrayRef>,
     /// Every component, by handle (task 1d-03b).
     components: HashMap<String, Component>,
     /// Every placement in a scene or a collection, by its handle (task 1d-03b).
@@ -153,8 +155,6 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
-    /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
-    refs: Vec<level0::ArrayRef>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {

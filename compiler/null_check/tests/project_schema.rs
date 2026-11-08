@@ -336,6 +336,81 @@ fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
     assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
 }
 
+/// Every enum property in `json`, at any depth: (where, property).
+fn enums<'a>(
+    json: &'a serde_json::Value,
+    at: &str,
+    out: &mut Vec<(String, &'a serde_json::Value)>,
+) {
+    match json {
+        serde_json::Value::Object(map) => {
+            if map.get("type").and_then(|t| t.as_str()) == Some("enum") {
+                out.push((at.to_string(), json));
+            }
+            let here = map
+                .get("rna")
+                .and_then(|r| r.as_str())
+                .map_or(at.to_string(), |r| format!("{at}/{r}"));
+            for v in map.values() {
+                enums(v, &here, out);
+            }
+        }
+        serde_json::Value::Array(items) => items.iter().for_each(|v| enums(v, at, out)),
+        _ => {}
+    }
+}
+
+#[test]
+fn every_enum_default_is_one_of_its_items_as_a_file_writes_it() {
+    // Task 1b-03j: a default is written as its item is, so the formatter can leave it out: a
+    // free-text item keeps its case (`Linear`), and a flag set is in the items' order. An enum
+    // whose items are made when it is used (`items-at-run-time`, or the slice's items that
+    // depend on another setting, `when`) may default to one the schema does not list.
+    for (file, text) in [
+        ("null-schema-project.json", PROJECT),
+        (
+            "null-schema.json",
+            include_str!("../../../schema/null-schema.json"),
+        ),
+    ] {
+        let json: serde_json::Value = serde_json::from_str(text).unwrap();
+        let mut found = Vec::new();
+        enums(&json, "", &mut found);
+        assert!(found.len() > 30, "{file}: {} enums", found.len());
+        let mut wrong = Vec::new();
+        for (at, p) in found {
+            let Some(default) = p.get("default") else {
+                continue;
+            };
+            let items: Vec<&serde_json::Value> = p
+                .get("items")
+                .and_then(|i| i.as_array())
+                .map(|i| i.iter().collect())
+                .unwrap_or_default();
+            let at_run_time = p.get("items-at-run-time").is_some()
+                || items.iter().any(|i| i.get("when").is_some());
+            let names: Vec<&str> = items.iter().filter_map(|i| i["name"].as_str()).collect();
+            let ok = match default {
+                serde_json::Value::String(d) => names.contains(&d.as_str()) || at_run_time,
+                serde_json::Value::Array(ds) => {
+                    let ds: Vec<&str> = ds.iter().filter_map(|d| d.as_str()).collect();
+                    let listed: Vec<&str> =
+                        names.iter().copied().filter(|n| ds.contains(n)).collect();
+                    (ds.iter().all(|d| names.contains(d)) || at_run_time) && ds.starts_with(&listed)
+                }
+                _ => false,
+            };
+            if !ok {
+                wrong.push(format!(
+                    "{at}: {} defaults to {default}, items {names:?}",
+                    p["name"]
+                ));
+            }
+        }
+        assert!(wrong.is_empty(), "{file}:\n{}", wrong.join("\n"));
+    }
+}
+
 /// The project schema with `ID.name`'s field length: Blender's, `MAX_ID_NAME - 2` (256 bytes,
 /// the closing NUL included), as Sau's build writes it (task 1b-03h). A schema made before that
 /// task has none, so the test adds it; once the schema carries it, it must be that.

@@ -34,8 +34,7 @@ fn problems(texts: &[(&str, &str)]) -> String {
     map.render_all(&found)
 }
 
-mod examples;
-use examples::{BRANCH, MATERIALS, PIER, PLANK};
+use crate::examples::{BRANCH, MATERIALS, PIER, PLANK};
 
 #[test]
 fn the_spec_s_pier_and_tree_check_clean() {

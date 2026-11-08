@@ -5,8 +5,7 @@
 use null_check::{Expanded, Schema, check, check_expanded, expand};
 use null_syntax::{Diagnostic, FileId, Parse, SourceMap, parse};
 
-mod examples;
-use examples::{BRANCH, MATERIALS, PIER, PLANK};
+use crate::examples::{BRANCH, MATERIALS, PIER, PLANK};
 
 const PROJECT: &str = include_str!("../../../schema/null-schema-project.json");
 
