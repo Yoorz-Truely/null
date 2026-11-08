@@ -42,7 +42,14 @@ I read the two merges, the freeze commit and the report. I ran the workspace's t
 1. **1d-07f, drivers in Null's expression syntax (S78)** (agent/null-1d07f: `ce677bc` through `627f419`, approved, follow-up re-approved at `23505bc`). The tag's section 11 still has the older driver text, and section 18 has eleven codes, without `null-python`. Yet the v0 CHANGELOG section says v0 covers "drivers in Null's expression syntax". Frozen as it stands, S78's syntax would need an RFC after the fact, though it was settled before the freeze.
 2. **1c-02i, a byte-list display name is an error (S72)** (agent/null-1c02i: `383bb24`, approved at `f5fb36d`). It changes section 6's String row and the checker. Without it the tag's spec still says a byte list is taken for a datablock's display name, which S72 overturned.
 
-**The fix:** merge agent/null-1d07f and agent/null-1c02i into the freeze branch, check, and move the local tag to the new freeze commit. Moving it is safe, since the tag has not been pushed. I merged both into my 1d-03e Null (`agent/cos-1d03e`). 1c-02i conflicts in `check.rs`'s imports (take both: `check_display_name` beside `check_bool_array` and `list_near`), in `lib.rs` (`names` beside `level0`), and in section 6 (the String row from 1c-02i, the Pointer row from main). 1d-07f merges cleanly onto 1d-08a's tree.
+**The fix:** merge agent/null-1d07f and agent/null-1c02i into the freeze branch, check, and move the local tag to the new freeze commit. Moving it is safe, since the tag has not been pushed. `git merge-tree` against `ff77143` shows what each merge meets:
+- **agent/null-1d07f** conflicts in `check.rs` alone, around the `Checker`'s fields: 1d-07f adds the driver places beside main's moved `refs`.
+- **agent/null-1c02i** conflicts in:
+  - `check.rs`'s imports: take both, `check_display_name` beside `check_bool_array` and `list_near`;
+  - `lib.rs`: `names` beside `raw` and `rename`;
+  - section 6: the String row from 1c-02i, the Pointer row as it stands (1c-02j's `never-none`).
+
+  I met these same three earlier tonight when I merged 1c-02i into a branch of mine, which I then took back.
 
 **Notes (none blocks):**
 - **agent/null-1d07b's `552784a`** (the schema's node widths, frame heights and socket identifiers read into Rust) is not in the freeze either. It changes no spec text and its row is still `doing`, so it can follow as an implementation of the frozen spec.
