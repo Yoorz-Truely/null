@@ -35,4 +35,4 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | Number | Title | Status |
 | --- | --- | --- |
 | [0001](0001-srgb-table.md) | The sRGB rule by a table of exactly rounded values | accepted (S62) |
-| [0002](0002-zone-names.md) | What a zone's name and block say about its two nodes | proposed |
+| [0002](0002-zone-names.md) | What a zone's name and block say about its two nodes | accepted (S82) |

@@ -1,8 +1,8 @@
 # 0002: What a zone's name and block say about its two nodes
 
-- Status: proposed
+- Status: accepted
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S82
 - Affects: identity, forms over RNA
 - Null format: unchanged
 
@@ -72,4 +72,4 @@ None.
 
 ## Decision
 
-Filled in when decided: accepted or rejected, by whom, when, and why.
+Accepted on November 9, 2026, by the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S82. It writes into the spec what Sau already does under S80 (task 1d-07c), so no file changes meaning. The wording above is in section 10 (task 1d-07m).

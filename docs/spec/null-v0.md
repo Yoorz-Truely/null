@@ -556,14 +556,14 @@ Shader, geometry and compositor node trees are written as their nodes and links 
   - `panel @h "Name" { default-closed; <input and output lines> }`.
   - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
 - **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
-- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). Its name N names both nodes: the input node is `N Input` and the output node `N Output`, as Blender names a zone it makes, so `zone @repeat repeat "Repeat"` is Blender's own. A pair named otherwise, and a zone node's own width, frame, label, mute and colour, have no form in v0 (Sau's decisions S80 and S82, RFC 0002): a printer reports them rather than writing them. The nodes inside a zone's block are those Blender counts as inside it from the links; writing a node inside or outside the block does not move it, and a printer writes each node in the block of the innermost zone holding it. The block holds:
   - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
   - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
   - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
   - the nodes inside the zone.
 
-  Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
-- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+  Inside the zone's block, at any depth, a zone nested in it included, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
+- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's, each at its node kind's default width. A node with no layout line is placed by Sau.
 
 A material, with a frame:
 
