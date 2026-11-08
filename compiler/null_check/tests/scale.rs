@@ -244,3 +244,34 @@ fn a_drivers_seconds_on_a_frame_property_read_through_its_scene() {
         project_errors(&[inside])
     );
 }
+
+#[test]
+fn a_datablocks_place_is_the_checkers() {
+    // Task 1d-07f, round 2: `driver::place` gives Sau the context the checker reads a driver in.
+    use null_check::driver::{compile_in, place};
+    let a = parse("project \"P\" {}\n\nscene @a \"A\" {\n  units metric scale=1\n  fps 25\n}\n");
+    let b = parse("scene @b \"B\" {\n  units metric scale=0.01\n}\n");
+    let files = [&a, &b];
+    // Outside every scene: the scenes disagree, so a length is the checker's error, word for word.
+    let outside = place(&files, None);
+    assert!(!outside.in_scene);
+    let message = outside.disagreement.clone().expect("the scenes disagree");
+    let e = compile_in("t * 1m", &["t"], &outside.context(false)).unwrap_err();
+    assert_eq!(e.message, message);
+    let lights = "object @d \"D\"\n\nlight @l \"L\" {\n  type point\n  energy driver=\"spin * 1m\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n";
+    let found = project_errors(&[a.print().as_str(), b.print().as_str(), lights]);
+    assert!(found.iter().any(|d| d.message == message), "{found:#?}");
+    // Inside a scene: its scale and its frame rate.
+    let scene_a = a.document().nodes().find(|n| n.name() == "scene").unwrap();
+    let inside = place(&files, Some(scene_a));
+    assert!(inside.in_scene && inside.disagreement.is_none());
+    assert_eq!((inside.scene.scale_length, inside.scene.fps), (1.0, 25));
+    assert_eq!(
+        compile_in("t * 2s", &["t"], &inside.context(true))
+            .unwrap()
+            .expression,
+        "t * 50"
+    );
+    let scene_b = b.document().nodes().find(|n| n.name() == "scene").unwrap();
+    assert_eq!(place(&files, Some(scene_b)).scene.scale_length, 0.01);
+}

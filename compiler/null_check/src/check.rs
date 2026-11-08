@@ -1443,7 +1443,7 @@ fn defines(node: Node<'_>) -> bool {
 
 /// The message for a value written with a scaled unit outside a scene when the scenes' scales
 /// disagree and the project sets no `units` (spec, section 6, "Scene scale").
-fn disagreement(outside: &Outside) -> Option<String> {
+pub(crate) fn disagreement(outside: &Outside) -> Option<String> {
     let Outside::Disagree(scenes) = outside else {
         return None;
     };
@@ -1460,7 +1460,7 @@ fn disagreement(outside: &Outside) -> Option<String> {
 
 /// A scene's frame rate from its `fps` and `fps-base` lines, a new scene's (24 and 1) where one
 /// is missing or does not read; those lines' own errors are reported where they are checked.
-fn frame_rate(scene: Node<'_>) -> null_value::Scene {
+pub(crate) fn frame_rate(scene: Node<'_>) -> null_value::Scene {
     let mut rate = null_value::Scene::default();
     for a in attrs(scene) {
         let Some(word) = a.args.first().and_then(|v| v.as_word()) else {

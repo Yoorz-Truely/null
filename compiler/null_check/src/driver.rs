@@ -168,6 +168,13 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
                     "`{number}` is a whole number with a leading 0, which Python refuses"
                 )));
             }
+            // Python's own number forms (`0x1F`, `0b11`, `0o7`, `1_000`, `1j`): Python, not a unit.
+            if let Some(form) = python_number(b, start, i) {
+                return Err(Fail::Python(format!(
+                    "`{}` is a number in Python's form, which Blender's simple expressions do not read",
+                    &text[start..form]
+                )));
+            }
             // A unit right after the number: letters, as `100W`, `35deg`, `2m`.
             let unit_start = i;
             while i < b.len() && (b[i].is_ascii_alphabetic() || b[i] == b'_') {
@@ -256,6 +263,60 @@ fn tokens(text: &str) -> Result<Vec<Token>, Fail> {
         at: (text.len(), text.len()),
     });
     Ok(out)
+}
+
+/// Where Python's own form of the number at `b[start..i]` ends, if it is in one: a `0x`, `0b`
+/// or `0o` prefix (either case), a `_` between digits, or a `j` (imaginary) after it. `None`
+/// for a number Blender reads, or one followed by letters that are none of these (a unit, or
+/// a misspelt one).
+fn python_number(b: &[u8], start: usize, i: usize) -> Option<usize> {
+    let word = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+    let digits = &b[start..i];
+    let next = *b.get(i)?;
+    if digits == b"0" && matches!(next, b'x' | b'X' | b'b' | b'B' | b'o' | b'O') {
+        let mut j = i + 1;
+        while j < b.len() && word(b[j]) {
+            j += 1;
+        }
+        return (j > i + 1).then_some(j);
+    }
+    if next == b'_' && b.get(i + 1).is_some_and(u8::is_ascii_digit) {
+        let mut j = i + 1;
+        while j < b.len() && (b[j].is_ascii_digit() || matches!(b[j], b'_' | b'.' | b'e' | b'E')) {
+            j += 1;
+        }
+        if j < b.len() && matches!(b[j], b'j' | b'J') {
+            j += 1;
+        }
+        return Some(j);
+    }
+    if matches!(next, b'j' | b'J') && !b.get(i + 1).is_some_and(|&c| word(c)) {
+        return Some(i + 1);
+    }
+    None
+}
+
+/// Where the string literal starting at `b[i]` (its quote, `'` or `"`) ends, past its closing
+/// quote, a triple quote's and a `\` escape's included; the text's end if it never closes.
+fn string_end(b: &[u8], i: usize) -> usize {
+    let q = b[i];
+    let triple = b.get(i..i + 3).is_some_and(|t| t == [q, q, q]);
+    let mut j = i + if triple { 3 } else { 1 };
+    while j < b.len() {
+        if b[j] == b'\\' {
+            j += 2;
+            continue;
+        }
+        if triple {
+            if b.get(j..j + 3).is_some_and(|t| t == [q, q, q]) {
+                return j + 3;
+            }
+        } else if b[j] == q {
+            return j + 1;
+        }
+        j += 1;
+    }
+    b.len()
 }
 
 /// The nearest of `names` to `word`, by Scowr's rule for suggestions.
@@ -504,6 +565,67 @@ pub struct Context<'a> {
     pub disagreement: Option<&'a str>,
 }
 
+/// Where a datablock's drivers are read, as the checker reads them (task 1d-07f): inside a
+/// scene, that scene's unit scale (its `units` over the project's) and frame rate; outside every
+/// scene, the scale the scenes agree on, or the message for a scaled unit where they disagree
+/// and the project sets no `units`. Sau's apply and write-back take a driver's [`Context`] from
+/// it, so they read a driver as the checker did.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Place {
+    /// The scene the numbers are read in.
+    pub scene: Scene,
+    /// Inside a scene.
+    pub in_scene: bool,
+    /// Outside every scene where the scenes' scales disagree: the message (section 6).
+    pub disagreement: Option<String>,
+}
+
+impl Place {
+    /// The context of a driver here on a property that counts frames (`frames`) or not.
+    pub fn context(&self, frames: bool) -> Context<'_> {
+        Context {
+            scene: self.scene,
+            in_scene: self.in_scene,
+            frames,
+            disagreement: self.disagreement.as_deref(),
+        }
+    }
+}
+
+/// The [`Place`] of a datablock in `files` (a project's parsed files): inside `scene`, the
+/// scene node it is written in, or outside every scene when `None`.
+pub fn place<'a>(
+    files: &[&'a null_syntax::Parse],
+    scene: Option<null_syntax::ast::Node<'a>>,
+) -> Place {
+    let project = crate::units::project(files.iter().copied()).unwrap_or_default();
+    match scene {
+        Some(node) => {
+            let mut rate = crate::check::frame_rate(node);
+            rate.scale_length = crate::units::Units::of(node)
+                .unwrap_or_default()
+                .over(&project)
+                .scale();
+            Place {
+                scene: rate,
+                in_scene: true,
+                disagreement: None,
+            }
+        }
+        None => {
+            let outside = crate::units::outside(files.iter().copied());
+            Place {
+                scene: Scene {
+                    scale_length: outside.scale(),
+                    ..Scene::default()
+                },
+                in_scene: false,
+                disagreement: crate::check::disagreement(&outside),
+            }
+        }
+    }
+}
+
 /// `text` compiled in `scene` for a property that does not count frames, as a driver inside
 /// that scene is: [`compile_in`] with that context.
 pub fn compile(text: &str, vars: &[&str], scene: &Scene) -> Result<Compiled, ExprError> {
@@ -616,16 +738,24 @@ fn check_python_tokens(toks: &[Token], text: &str, why: String) -> Result<String
     }
 }
 
-/// A Python expression whose tokens did not all lex: look for a unit in the part that did.
+/// A Python expression whose tokens did not all lex: look for a unit in it, outside its strings
+/// and Python's own number forms, which are Python's to read (a name `'3D Text'`, `0x1F`).
 fn check_python(text: &str, why: String) -> Result<Compiled, ExprError> {
-    // Lex the words before the first character outside the subset, as far as they go.
     let mut at = 0;
     let b = text.as_bytes();
     while at < b.len() {
+        if matches!(b[at], b'\'' | b'"') {
+            at = string_end(b, at);
+            continue;
+        }
         if b[at].is_ascii_digit() {
             let start = at;
             while at < b.len() && (b[at].is_ascii_digit() || b[at] == b'.') {
                 at += 1;
+            }
+            if let Some(end) = python_number(b, start, at) {
+                at = end;
+                continue;
             }
             let unit_start = at;
             while at < b.len() && b[at].is_ascii_alphabetic() {
@@ -769,6 +899,36 @@ mod tests {
                 .expression,
             "t * 1.5707963267948966"
         );
+    }
+
+    #[test]
+    fn a_python_drivers_own_numbers_and_strings_are_pythons() {
+        // From a .blend (task 1d-07f, round 2): Python's number forms and anything in quotes are
+        // Python's, not units, so a working Python driver is written in Null as it is.
+        for text in [
+            "spin + 0x1F",
+            "spin + 0b11",
+            "spin * 0o7",
+            "spin * 0XFF",
+            "spin * 1_000",
+            "spin * 1j",
+            "spin & 0x1F",
+            "bpy.data.objects['3D Text'].location.x",
+            "bpy.data.objects[\"2m\"].location.x * spin",
+            "obj['2m'] + obj[\"\"\"5cm\"\"\"]",
+            "obj['it\\'s 2m'] * 2",
+        ] {
+            let c = compile(text, &["spin"], &Scene::default())
+                .unwrap_or_else(|e| panic!("{text}: {e:?}"));
+            assert!(c.python.is_some(), "{text}");
+            assert_eq!(c.expression, text);
+        }
+        // A unit in a Python expression, outside its strings, stays the error it is; so does a
+        // suffix that is no unit and no Python form.
+        let e = wrong("spin & 2m");
+        assert!(e.unit && e.message.contains("`2m` has a unit"), "{e:?}");
+        let e = wrong("spin * 2mtr");
+        assert!(e.message.contains("`mtr` is not a unit"), "{e:?}");
     }
 
     #[test]

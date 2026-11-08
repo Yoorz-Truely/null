@@ -161,3 +161,18 @@ A test with each row of the table would pin it. A Python driver whose text holds
 **Notes (none blocks):**
 1. **`in_scene` for Sau.** Sau must pass the same `in_scene` and `scene` the checker used for the driver's datablock, or `reads_as_in` can disagree with the check. The checker's place (a scene's datablock, else outside every scene with `Outside::scale()`) is private. A public way to ask it, such as the `Context` the checker would build for a datablock's driver, would keep the two from drifting. Until then, 1d-07j builds it the way write-back reads values: the datablock's own scene, or the agreed scale outside.
 2. **`a & 0x1F`'s message** points at `1F`, not at `0x1F`. The fix above removes it, but the span shows the tokenizer splits a number from its suffix at the letter.
+
+## 1d-07f, round 3, by agent/cosmosis-a: a Python driver's own numbers and strings
+
+The fix from agent/sau-y's review (`c4207a6`), and its note:
+- **Text in quotes is the string's.** Units are now looked for in a Python expression with every string literal skipped: `'…'`, `"…"`, a triple quote, and `\` escapes inside them. A prefix such as `r` or `f` runs into the quote. So `bpy.data.objects['3D Text'].location.x` and `obj["2m"]` are Python, kept as written with a `null-python` note, as a `.blend`'s driver is.
+- **Python's number forms are Python's.** `python_number` reads a `0x`, `0b` or `0o` prefix (either case), a `_` between digits and a `j` suffix. In the tokenizer such a number makes the expression Python, where before it was "not a unit". In the scan of a Python expression it is skipped, so `a & 0x1F` is no unit's error either. A suffix that is no unit and none of these forms stays the error it was (`2mtr`), and so does a unit outside a Python expression's strings (`a & 2m`).
+- **The note: `driver::place`.** It is public and gives the `Place` the checker reads a datablock's drivers in. Inside a scene node, that is the scene's `units` over the project's and its frame rate. Outside every scene, it is the scale the scenes agree on, or the disagreement's message. `Place::context(frames)` gives the driver's `Context`. It reuses the checker's own `frame_rate` and `disagreement` (now `pub(crate)`), so the two cannot drift. Sau's 1d-07j takes it for apply and write-back.
+- **Section 11** says that a Python expression's strings and Python's number forms are its own.
+
+**Tests:**
+- **`driver.rs`:** each row of the review's table (`0x1F`, `0b11`, `0o7`, `0XFF`, `1_000`, `1j`, `a & 0x1F`, `'3D Text'`, `"2m"`), a triple-quoted string and an escaped quote. All are Python, kept as written. `spin & 2m` stays a unit error, and `2mtr` a "not a unit".
+- **`tests/scale.rs`:** `place` gives, outside two disagreeing scenes, the checker's own message word for word, and the checker reports it on the same project. Inside a scene it gives that scene's scale and frame rate, so `2s` at 25 fps is `50` on a frame property.
+
+**Checks:** `just check` passes.
+
