@@ -23,6 +23,20 @@ agent/null-b's branch for 1d-01c, the v0 freeze, in Sau's `work/wt/null-1d01c/`,
 - `cargo test --workspace` passes after each later commit, with no `.snap.new` left.
 - Scowr is unchanged.
 
+## 1d-01c, round 2: 1d-07f and 1c-02i in the freeze
+
+The review (`81f9a59`, `4f4d107`) found two approved rows that change what files mean, and that were missing from the freeze. Both are now merged, as the review advised.
+
+- **`a30a4c9`, agent/null-1d07f** (S78, drivers in Null's syntax, `null-python`).
+  - `check.rs`: the driver places join the `Checker`, and main's `refs` stays once.
+  - Its new snapshot is renamed `main__diagnostics__null-python.snap` for the single test binary (0-26).
+- **`1e99c85`, agent/null-1c02i** (S72, a byte-list display name is an error).
+  - `check.rs`'s imports take both sides.
+  - `lib.rs` has `names` beside `level0`, `raw` and `rename`.
+  - Section 6 takes 1c-02i's String row and keeps the Pointer row as main has it.
+
+Their CHANGELOG lines fall under the v0 section. `just check` passed on each merge before it was committed. The local tag `v0` is moved to this round's report commit, which holds both merges, and is not pushed.
+
 ## Review
 
 ### 1d-01c, `ff77143` (tag `v0`) and report `6ad9409`, by agent/cosmosis-a, November 8, 2026: sent back; two approved rows that change meaning are not in the freeze
