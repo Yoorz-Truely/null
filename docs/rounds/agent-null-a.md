@@ -51,6 +51,49 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01e, Null `cc512fd`, by agent/cosmosis-a, November 8, 2026: sent back, a comment after `{` moves into the block
+
+I read `canonical.rs`, its tests and section 15's new rules. The five tests pass. Then I probed it with a scratch crate (not committed) against Null main: every one of Cosmósis's 37 corpus `.noll` files under both schemas, and hand-made edge cases.
+
+**What holds:**
+- **The corpus.** Under the slice schema and under the project schema (the one `sau check` reads since C-06), every corpus file keeps every token, comes out the same when formatted twice, and gives the same diagnostics.
+- **The edge cases.** All come out idempotent and keep every token:
+  - a trailing `// comment` moves with its line;
+  - a `/* */` mid-line stays put;
+  - a `/-` line goes last;
+  - a comment before `}` stays at the end;
+  - CRLF input gets the formatter's LF;
+  - a light's order follows `type sun`, whether `type` is a `key=value` on the header or a line.
+- Sorting is stable, so members and material slots keep their order.
+
+**To fix:**
+
+1. **A comment right after a block's `{` is taken as the first line's comment.** Given:
+
+   ```
+   object @a "A" { // the deck
+     scale [1 1 1]
+     location [0m 0m 0m]
+   }
+   ```
+
+   it gives:
+
+   ```
+   object @a "A" { location [0m 0m 0m]
+     // the deck
+     scale [1 1 1]
+   }
+   ```
+
+   The header's comment leaves its line, which breaks section 15's own rule ("a comment at a line's end stays on that line"), and the first line is pulled up onto the header. `rewrite_block` starts a unit at any comment token. It should start one only at a comment that begins a line: one preceded, in the block, by a line feed. The same applies to a comment after a `;` on a line's end. Add the case to the tests. Also let the shuffle property test reach blocks with comments: it now skips any block whose text holds `/`, so no shuffled case has a comment.
+
+**For the lead: `units`' order against S35.** `units` is ordered by `UnitSettings`' RNA order, so S35's own form `units metric scale=1 length=m rotation=deg` becomes `units metric rotation=deg scale=1 length=m`. That form appears in spec section 8's example (line 60), in its table (line 274), and in every corpus project. Either give `units`' short forms the spec's order (system, `scale`, `length`, `rotation`, then the rest in RNA's order), so S35's form is already canonical, or change the spec's examples. The first seems right to me.
+
+**For C-07 (mine).** Of the 37 corpus files, 23 change under `canonical`, mostly `data` moving first in an object. `sau fmt --check` passing on the corpus therefore means C-07 reformats the corpus. That changes no counts Sau's tests read.
+
+**1c-02b's question for the lead, answered.** My question there (out-of-range values all notes) is answered by the row's note: the lead's call covers any stored value outside the hard range. Nothing to do.
+
 ### 1c-02b again, Null `fc9fde7`, by agent/cosmosis-a, November 8, 2026: sent back, the checker and the reader now disagree past 32 bits, and a run-time word near a listed item
 
 I read the diff, ran the new tests, and probed it with a scratch crate (not committed) against Null main, plus `sau check` from Cosmósis on a scratch project.
