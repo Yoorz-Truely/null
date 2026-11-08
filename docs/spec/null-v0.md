@@ -359,7 +359,7 @@ Shader, geometry and compositor node trees are written as their nodes and links 
   - `panel @h "Name" { default-closed; <input and output lines> }`.
   - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
 - **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
-- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block, `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
   - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
   - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
   - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
@@ -459,17 +459,17 @@ scene @shot "Shot" { compositing-node-group @grade }
 
 Task 1d-07a. Actions follow Blender's slotted, layered model, and everything that plays them is written on the datablock that plays.
 
-- **An action** holds its slots: `slot @h <kind> "Name"`, one for each datablock it animates, of the datablock kind it animates (`object`, `light`, `material`). Its handle is the slot's own; Blender keeps it in `ActionSlot::handle` (section 7).
+- **An action** holds its slots: `slot @h <kind> "Name"`, the handle first as every sub-object line's (S71), one for each datablock it animates, of the datablock kind it animates (`object`, `light`, `material`). Its handle is the slot's own; Blender keeps it in `ActionSlot::handle` (section 7).
 - **F-curves.** `fcurve <path> index=N { … }` animates one property:
   - The path is a property of the slot's kind of datablock: `energy`, `location`. A light's slot reaches its light type's properties too.
   - `index=` picks an array's item, and is required for an array.
-  - A sub-object's property is written as its path and the property (`fcurve @bevel width`), and a node socket as `@bsdf.roughness`. Their keys are bare, in the internal unit, until the checker resolves them through the datablocks that play the action (1d-07g).
+  - A sub-object's property is written as its path and the property (`fcurve @bevel width`), and a node socket as `@bsdf.roughness`. Their keys are bare, in the internal unit, until the checker resolves them through the datablocks that play the action (S71, 1d-07g).
   - The f-curve's block holds its settings (`extrapolation`, `color-mode`, `auto-smoothing`, `mute`, `lock`, `hide`), its keys and its modifiers.
 - **Keys** are `key <frame> <value>`, then the key's settings as `name=value`: `interpolation`, `easing`, `type`, `handle-left-type`, `handle-right-type`, `back`, `amplitude`, `period`, and `handle-left` and `handle-right` as `[frame value]`.
   - A frame is a number of frames, exact as Blender stores it (float32, so sub-frames are allowed and print exactly). An action is outside every scene, so a frame is never written in seconds (section 6).
   - The value is written as the property's own: `800W` for a light's energy, `1.5m` for a location.
 - **An f-curve's modifiers** are `modifier @h <kind> "Name" { … }` lines in its block, of the f-curve modifier kinds (`noise`, `cycles`, `generator`, `limits`, `stepped`, …).
-- **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first). Its full form writes them under layers instead, and never both:
+- **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first; S71). Its full form writes them under layers instead, and never both:
   - `layer @h "Name" { strip @h keyframe { channels @slot { fcurve … } } }`;
   - each `channels` block holds one slot's f-curves in that strip.
 - **What plays.** On any datablock that can be animated:
@@ -477,7 +477,7 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
   - NLA tracks are `track @h "Name" { strip @h "Name" { action @a slot=@s; frame-start 1; repeat 2; blend-type add; … } }`, in the stack's order, each strip with `NlaStrip`'s settings.
 - **Drivers** are written on the property they drive, which then takes no value of its own:
   - `driver=` is the expression in quotes (a scripted driver), or one of `average`, `sum`, `min` and `max`. `index=` picks an array's item, and `use-self=on` lets the expression read its own datablock.
-  - The block holds the variables, `var <name> <type> { target … }`. A variable's name is the name the expression uses (letters, digits and `_`), and its type is one of `single-prop`, `transforms`, `rotation-diff`, `loc-diff` and `context-prop`.
+  - The block holds the variables, `var <name> <type> { target … }`. A variable's name is the name the expression uses (letters, digits and `_`), a plain word, not a handle (S71), and its type is one of `single-prop`, `transforms`, `rotation-diff`, `loc-diff` and `context-prop`.
   - `target @handle <property>` reads one property of a datablock. A transforms target reads its datablock's transform, with `transform-type=`, `transform-space=` and `rotation-mode=`. The two kinds of difference take two targets each.
   - Driver expressions stay in Blender's simple-expression subset where possible, so they evaluate without Python. Null's own expression syntax is task 1d-07f.
 

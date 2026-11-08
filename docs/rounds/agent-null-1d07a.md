@@ -65,7 +65,7 @@ The report of agent/null-a working as `agent/null-1d07a` in `work/wt/null-1d07a/
 
 **Cosmósis** (branch `agent/null-1d07a`). Its test `a_modifier_line_waits_for_its_form`, written in C-06 to flip once this landed, is flipped. It is now `a_misspelt_modifier_property_is_caught_with_its_fix`: `wdth` in a bevel modifier is "a bevel modifier has no `wdth`; did you mean `width`?". `cargo test -p sau_cli` passes against this Null. Cosmósis and Null land together, or Cosmósis's old test fails on the new Null.
 
-**Choices the lead may overrule.**
+**Choices, accepted by the lead as S71.** The spec cites S71 where it states each.
 
 - **Zones are one block,** not two nodes, with item lines named after Blender's collections. Inside the block, `@zone.item` is the item coming in; outside, the item leaving. This is the one place a link's meaning depends on where it is written.
 - **A slot's handle is its own.** `slot @lamp light "Lamp"` replaces section 4's `slot light @lamp-light`, so that it follows section 7's `<kind> @handle` rule. A datablock names the slot it plays with `slot=`.
