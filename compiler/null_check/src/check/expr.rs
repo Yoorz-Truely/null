@@ -35,7 +35,7 @@ impl Dim {
         Dim(d)
     }
 
-    fn times(self, o: Dim) -> Dim {
+    pub(crate) fn times(self, o: Dim) -> Dim {
         let mut d = self.0;
         for (x, y) in d.iter_mut().zip(o.0) {
             *x += y;
@@ -43,7 +43,7 @@ impl Dim {
         Dim(d)
     }
 
-    fn over(self, o: Dim) -> Dim {
+    pub(crate) fn over(self, o: Dim) -> Dim {
         let mut d = self.0;
         for (x, y) in d.iter_mut().zip(o.0) {
             *x -= y;
@@ -150,7 +150,12 @@ impl Kind {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Expr {
     /// A number, with its unit's dimension, whole if written as one.
-    Number { dim: Dim, whole: bool },
+    Number {
+        dim: Dim,
+        whole: bool,
+        /// As written, `25cm`: what the expansion computes with (task 1d-03c).
+        lit: String,
+    },
     /// A name: a parameter, a pattern's `n`, an `each=` item, or a word.
     Name(String),
     /// `-x`.
@@ -169,7 +174,7 @@ pub(crate) struct Condition {
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tok {
-    Num(Dim, bool),
+    Num(Dim, bool, String),
     Name(String),
     Op(char),
     Cmp(&'static str),
@@ -237,7 +242,11 @@ fn tokens(text: &str, quoted: bool) -> Result<Vec<Tok>, String> {
                 }
                 _ => (Dim::NONE, 0),
             };
-            out.push(Tok::Num(dim, whole && dim == Dim::NONE));
+            out.push(Tok::Num(
+                dim,
+                whole && dim == Dim::NONE,
+                rest[..len + used].to_string(),
+            ));
             i += len + used;
         } else if c.is_ascii_alphabetic() {
             // A name: kebab-case in a word; in quotes a `-` with spaces is subtraction.
@@ -310,7 +319,7 @@ impl Parser {
         let t = self.peek().cloned();
         self.at += 1;
         match t {
-            Some(Tok::Num(dim, whole)) => Ok(Expr::Number { dim, whole }),
+            Some(Tok::Num(dim, whole, lit)) => Ok(Expr::Number { dim, whole, lit }),
             Some(Tok::Name(n)) => Ok(Expr::Name(n)),
             Some(Tok::Op('-')) => Ok(Expr::Neg(Box::new(self.factor()?))),
             Some(Tok::Open) => {
@@ -397,7 +406,7 @@ pub(crate) fn is_expression(word: &str) -> bool {
 /// What `e` is, its names read through `lookup`; the error says what is wrong.
 pub(crate) fn kind_of(e: &Expr, lookup: &dyn Fn(&str) -> Option<Kind>) -> Result<Kind, String> {
     match e {
-        Expr::Number { dim, whole } => Ok(Kind::Quantity {
+        Expr::Number { dim, whole, .. } => Ok(Kind::Quantity {
             dim: *dim,
             whole: *whole,
         }),

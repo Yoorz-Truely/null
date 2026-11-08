@@ -56,6 +56,46 @@ Section 8's components, parameters, placements, patterns, conditions, overrides 
 
 **Checks.** `cargo test --workspace`, Clippy with `-D warnings`, `cargo fmt --check`, and Null's lint-only `just check`.
 
+## 1d-03c: expansion
+
+Stacked on 1d-03b (`529e976`) on the same branch. `null_check::expand` turns every placement into the datablocks it makes, as Null text. `check_expanded` checks that text. Null's tests and lints only.
+
+**What changed.**
+- **`expand.rs` (new).** `expand(schema, files)` gives each file's expanded text and the expansion's own problems.
+  - **Components are taken out.** A scene or collection that places copies is written with one member line per copy's root (`object @plank.7`), including copies made inside copies (`object @tree/@left`).
+  - **The copies' datablocks follow that scene or collection,** in placement order, each copy's datablocks in its component's order: `object @plank.7 "Plank"`, `mesh @plank.7/@plank-mesh "Plank"`. All other text, comments included, is as written.
+  - **Handles** are as in 1d-03b. A pattern's copies are `@h.1` to `@h.N`. A copy inside a copy is a path from it, and a copy's other datablocks are paths from its root. Inside the copy, the component's local handles are rewritten to these, so `data mesh @plank-mesh` becomes `data mesh @plank.7/@plank-mesh` and `parent @branch` becomes `parent @tree/@left`.
+  - **Parameters** come from the defaults, then the placement, then an `override` naming the copy. The placement's lines and the override's are read in their own scope: the placing copy's names, plus `n` and the item for a pattern. The lines that are not parameters are laid over the root.
+  - **Overrides of other targets.** An override of another datablock (`@gate.1/@post-mesh`) or of a sub-object (`@plank.7/@fluid`) is laid over that. A line laid over replaces the line of its name; for `modifier`, `constraint` and `bone`, it replaces the one with its name and handle, and otherwise it is added.
+  - **Conditions** are decided per copy: an `if`'s lines when it holds, else its `else`'s.
+  - **Exact values.** Values are computed as i128 fractions in the internal unit, using `Unit::exact_factor` (new in `null_value`: `cm` is 1/100, `in` 254/10000). They are printed exactly as decimals, or to 36 significant digits when no decimal holds the value, so the single rounding (S59) is left to the checker and Sau.
+    - Degrees stay degrees (`2*35deg` is `70deg`). Degrees and radians in one expression are an error, since π/180 is no fraction.
+    - A division by zero is an error, which takes up note 3 of the 1d-03b review.
+    - A quoted string is computed only when it is an operator expression of the names in scope. A display name, or `lightgroup "a - b"`, stays a string (note 4).
+  - **Guards** (S38):
+    - **More than 1,000,000 datablocks** is an error at the `use` line. A pattern is checked against the limit before it is unrolled, as count times its component's own datablocks, so `count=500001` fails at once rather than after half a million copies.
+    - **Recursion that does not count down** is an error at the placement: the countdown must be smaller than the last time this component was placed, and a component with no countdown that places itself fails. This runs whatever the checker said, so the expansion always ends.
+    - **More than 256 copies nested inside each other** is an error (new, see below).
+- **`check.rs`.** `check_flat` (crate-private, behind `check_expanded`) runs the checker with copy handles counted as handles: steps of kebab-case handles, each with or without `.n`, joined by `/`, defined and named like any other. The copy-path resolution through placements is skipped there, since none remain. `check` itself is unchanged.
+- **Tests.** In `tests/expand.rs`, with the spec's examples moved to `tests/examples/mod.rs` and shared with `tests/components.rs`:
+  - **The pier.** It expands to twenty members `@plank.1` to `@plank.20`, twenty objects and twenty meshes, and nothing else. Plank 1 is at `0.25m` with weathered oak. Plank 7 is liquid, with water and the fluid modifier, at `1.75m`. Plank 7's mesh is `scale=[2.4 0.2 0.04]`.
+  - **The expanded pier checks clean.**
+  - **Expanding twice gives the same tree.** Expanding the expanded text again gives it back unchanged.
+  - **The tree at depth 3** gives 15 objects and 15 meshes. Copy `@tree/@left/@right` has parent `@tree/@left`, location `0.7m`, and a segment of radius `0.0245m` and depth `0.49m`. The tree checks clean.
+  - **A recursion that does not count down** (`depth depth`), and a component without a countdown that places itself, are errors, and the expansion ends.
+  - **`count=500001`** of the two-datablock plank hits the guard at `pier.noll:2`.
+  - **A pattern over a list.** It is combined with a count taken from a parameter and a quoted expression in it, a pattern inside a copy (`@north/@row.2`), an override through that path, an override of a copy's mesh, and a word condition. All of them expand as written and check clean.
+  - **A mistake in expanded text is found once per copy that makes it,** so the expanded check is not vacuous.
+  - **Unit tests** cover decimals, exact literals and arithmetic.
+
+**A decision, for the lead.** I added a nesting limit of 256 copies inside copies. Every chain ends because of S38's countdown, but one starting at a million recurses a million frames deep and would overflow the stack before reaching the 1,000,000-datablock guard. Section 8 says so. Another limit, or an expansion without recursion, would remove it.
+
+**Not done here.**
+- Sau applying the expanded copies, with instancing, is 1d-03e.
+- The expansion's problems carry spans in the written files. The expanded check's spans are in the expanded text, which has no map back to the source yet; that is needed once Sau reports problems through the expansion.
+
+**Checks.** `just check` passes. The Null tests pass, and clippy is clean.
+
 ## Review
 
 ### 1d-03b, `529e976`, by agent/null-a, November 8, 2026: approved; four notes

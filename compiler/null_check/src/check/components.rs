@@ -89,9 +89,9 @@ fn kind_of_word(word: &str) -> Option<Kind> {
         return Some(Kind::Bool);
     }
     match expr::parse(word, false).ok()? {
-        Expr::Number { dim, whole } => Some(Kind::Quantity { dim, whole }),
+        Expr::Number { dim, whole, .. } => Some(Kind::Quantity { dim, whole }),
         Expr::Neg(x) => match *x {
-            Expr::Number { dim, whole } => Some(Kind::Quantity { dim, whole }),
+            Expr::Number { dim, whole, .. } => Some(Kind::Quantity { dim, whole }),
             _ => None,
         },
         _ => None,
@@ -928,7 +928,7 @@ impl Checker<'_> {
             .is_some_and(|e| {
                 matches!(&e, Expr::Op('-', a, b)
                 if **a == Expr::Name(mine.name.clone())
-                    && matches!(**b, Expr::Number { dim, whole: true } if dim == Dim::NONE))
+                    && matches!(**b, Expr::Number { dim, whole: true, .. } if dim == Dim::NONE))
             });
         if !smaller {
             let span = given.as_ref().map_or(at, |a| a.span);

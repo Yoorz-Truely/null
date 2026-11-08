@@ -34,59 +34,8 @@ fn problems(texts: &[(&str, &str)]) -> String {
     map.render_all(&found)
 }
 
-/// Materials the examples name, defined elsewhere in a project.
-const MATERIALS: &str = "material @weathered-oak \"Weathered Oak\"\nmaterial @water \"Water\"\n";
-
-const PLANK: &str = r#"component @plank "Plank" {
-  param length 2.4m
-  param state solid { one-of [solid liquid] }
-  object @plank "Plank" {
-    data mesh @plank-mesh
-    if "state == solid" { material @weathered-oak }
-    else {
-      material @water
-      modifier @fluid fluid { fluid-type flow }
-    }
-  }
-  mesh @plank-mesh "Plank" {
-    primitive cube size=1m scale=[length/1m 0.2 0.04]
-  }
-}
-"#;
-
-const PIER: &str = r#"collection @pier "Pier" {
-  use @plank @plank count=20 {
-    location [0m n*25cm 0.35m]
-  }
-  override @plank.7 { state liquid }
-}
-"#;
-
-const BRANCH: &str = r#"component @branch "Branch" {
-  param depth 4 { countdown }
-  param length 1m
-  object @branch "Branch" {
-    data mesh @segment
-  }
-  mesh @segment "Segment" { primitive cylinder radius=length*0.05 depth=length }
-  if "depth > 0" {
-    use @branch @left {
-      depth "depth - 1"
-      length length*0.7
-      parent @branch
-      location [0m 0m length]
-      rotation-euler [0deg 35deg 0deg]
-    }
-    use @branch @right {
-      depth "depth - 1"
-      length length*0.7
-      parent @branch
-      location [0m 0m length]
-      rotation-euler [0deg -35deg 0deg]
-    }
-  }
-}
-"#;
+mod examples;
+use examples::{BRANCH, MATERIALS, PIER, PLANK};
 
 #[test]
 fn the_spec_s_pier_and_tree_check_clean() {

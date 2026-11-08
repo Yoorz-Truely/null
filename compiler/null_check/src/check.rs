@@ -27,6 +27,17 @@ mod trees;
 /// (spec, section 7), and returns the problems in each file's text order. Syntax and
 /// name problems are `null_syntax::diagnostics`'s, not repeated here.
 pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
+    run(schema, files, false)
+}
+
+/// [`check`] on expanded files ([`crate::expand`]): a copy's handles (`@plank.7`,
+/// `@plank.7/@plank-mesh`) are the handles of the datablocks it made, defined and named as any
+/// other, and there are no components or placements left to reach them through.
+pub(crate) fn check_flat(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
+    run(schema, files, true)
+}
+
+fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagnostic> {
     let mut cx = Checker {
         schema,
         defs: HashMap::new(),
@@ -42,6 +53,7 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         placements: HashMap::new(),
         cycles: HashSet::new(),
         scope: None,
+        expanded,
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -124,6 +136,8 @@ struct Checker<'s> {
     cycles: HashSet<(String, String)>,
     /// Inside a component or a placement's block: what names mean (task 1d-03b).
     scope: Option<Scope>,
+    /// The files are expanded (task 1d-03c): copy handles are plain handles.
+    expanded: bool,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -301,10 +315,13 @@ impl<'s> Checker<'s> {
     /// The handle and display name on a datablock's line, and nothing else.
     fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str) {
         let h = header(node);
+        let expanded = self.expanded;
         let mut out = self.out(file);
         match &h.handle {
             Some((handle, span)) => {
-                kebab_handle(handle, *span, &mut out);
+                if !(expanded && is_copy_handle(handle)) {
+                    kebab_handle(handle, *span, &mut out);
+                }
             }
             None if h.name.as_deref().and_then(to_kebab_case).is_none() => {
                 let span = node.name_token().map_or(node.span(), |t| t.span);
@@ -845,6 +862,7 @@ impl<'s> Checker<'s> {
         }
         // A copy, or a datablock a copy made (`@plank.7`, `@plank.7/@plank-mesh`, task 1d-03b).
         if let Some(word) = v.as_word()
+            && !self.expanded
             && (components::is_copy_path(word)
                 || (word.contains('/')
                     && self
@@ -879,7 +897,9 @@ impl<'s> Checker<'s> {
                 ),
             );
         };
-        if !kebab_handle(word, v.span(), &mut self.out(file)) {
+        if !(self.expanded && is_copy_handle(word))
+            && !kebab_handle(word, v.span(), &mut self.out(file))
+        {
             // Respelt, it may name one: then the name's own fix is the whole fix.
             let kebab = to_kebab_case(word.trim_start_matches('@')).map(|k| format!("@{k}"));
             if kebab.is_some_and(|k| self.defs.contains_key(&(kind.to_string(), k))) {
@@ -1266,6 +1286,19 @@ fn frame_rate(scene: Node<'_>) -> null_value::Scene {
 }
 
 /// The handles of a node tree's nodes and their kinds.
+/// A handle an expansion writes: kebab-case handles joined by `/`, each with a copy's number
+/// or not (`@plank.7`, `@tree/@left/@right`, `@plank.7/@plank-mesh`; task 1d-03c).
+fn is_copy_handle(handle: &str) -> bool {
+    handle.split('/').all(|step| {
+        let bare = step.strip_prefix('@').unwrap_or("");
+        let name = match bare.rsplit_once('.') {
+            Some((n, k)) if !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit()) => n,
+            _ => bare,
+        };
+        is_kebab_case(name)
+    })
+}
+
 /// A handle must be `@` and kebab-case (S16, S18).
 fn kebab_handle(handle: &str, span: Span, out: &mut Out<'_>) -> bool {
     let bare = handle.trim_start_matches('@');

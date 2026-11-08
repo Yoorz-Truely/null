@@ -23,6 +23,7 @@
 //! ```
 
 mod check;
+pub mod expand;
 pub mod forms;
 pub mod paths;
 mod schema;
@@ -30,6 +31,7 @@ pub mod units;
 mod values;
 
 pub use check::check;
+pub use expand::{Expanded, check_expanded, expand};
 pub use schema::{
     Datablock, Item, NodeDef, Primitive, Property, Range, SHADER_TREE, Schema, Struct,
 };
