@@ -43,6 +43,17 @@ pub fn canonical(text: &str, schema: &Schema) -> String {
 struct Order {
     /// Names in canonical order; a name not listed goes after them all, as written.
     names: Vec<String>,
+    /// Names that go last, after the names not listed, in this order: a group's `nodes` and its
+    /// trailing `layout` (task 1d-02b).
+    last: Vec<String>,
+    /// The node tree a `nodes` block is, by RNA identifier, which orders each `node` line's
+    /// settings and inputs by that tree's node of its kind (task 1d-02b).
+    tree: Option<String>,
+    /// Sub-object lines of a family (`modifier` of `Modifier`, `constraint` of `Constraint`,
+    /// an f-curve's `modifier` of `FModifier`): each ordered by its kind's struct (task 1d-02b).
+    families: Vec<(String, String)>,
+    /// A component's block: each datablock it defines ordered as a top-level one (task 1d-02b).
+    component: bool,
     /// What a child line's own block is ordered by, by the child's name.
     children: Vec<(String, Order)>,
     /// Whether this is a node tree's `nodes` block, whose `node` lines keep their order but are
@@ -55,17 +66,34 @@ struct Order {
 
 impl Order {
     fn key(&self, name: &str) -> usize {
-        self.names
-            .iter()
-            .position(|n| n == name)
-            .unwrap_or(usize::MAX)
+        if let Some(i) = self.names.iter().position(|n| n == name) {
+            return i;
+        }
+        match self.last.iter().position(|n| n == name) {
+            Some(i) => usize::MAX - self.last.len() + i,
+            None => usize::MAX - self.last.len() - 1,
+        }
     }
 
     fn child(&self, schema: &Schema, node: Node<'_>) -> Order {
         let name = node.name();
+        let tree = self.tree.as_deref().unwrap_or(SHADER_TREE);
         if self.nodes && name == "node" {
             let kind = node.args().nth(1).and_then(|v| v.as_word()).unwrap_or("");
-            return node_order(schema, kind);
+            return node_order(schema, tree, kind);
+        }
+        if self.nodes && name == "zone" {
+            return zone_order(tree);
+        }
+        if let Some((_, base)) = self.families.iter().find(|(n, _)| *n == name) {
+            let kind = node.args().nth(1).and_then(|v| v.as_word()).unwrap_or("");
+            return match family_struct(schema, base, kind) {
+                Some(rna) => struct_order(schema, &rna, kind),
+                None => Order::default(),
+            };
+        }
+        if self.component && schema.struct_by_kind(&name).is_some() {
+            return top_order(schema, node);
         }
         if let Some((_, rna)) = self.pointers.iter().find(|(n, _)| *n == name) {
             let kind = schema
@@ -92,6 +120,14 @@ fn element_text<'a>(e: &SyntaxElement<'a>) -> &'a str {
 /// scenes), anything else as written.
 fn top_order(schema: &Schema, node: Node<'_>) -> Order {
     let kind = node.name();
+    if kind == "component" {
+        // Its parameters first, then its datablocks and placements as written (section 8).
+        return Order {
+            names: vec!["param".into()],
+            component: true,
+            ..Order::default()
+        };
+    }
     if kind == forms::PROJECT {
         return Order {
             names: vec!["units".into(), "scene".into()],
@@ -189,23 +225,140 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
             .unwrap_or(names.len());
         names.insert(at, (*form).to_string());
     }
+    // A sub-object line stands where RNA's collection of it stands (`modifier` at `modifiers`,
+    // `constraint` at `constraints`, an action's `slot` at `slots`; task 1d-02b).
+    let plurals: Vec<(String, String)> = names
+        .iter()
+        .filter_map(|n| n.strip_suffix('s').map(|one| (one.to_string(), n.clone())))
+        .filter(|(one, _)| !names.contains(one))
+        .collect();
+    for (one, many) in plurals {
+        if let Some(at) = names.iter().position(|n| *n == many) {
+            names.insert(at, one);
+        }
+    }
     if kind == "scene" {
         children.push(("units".into(), units_order(schema)));
     }
-    if kind == "material" {
+    // A tree's `nodes`, for a datablock that has one: a material's, a world's and a light's is a
+    // shader tree; a node group's is its own type's (section 10).
+    let tree = match kind {
+        "material" | "world" | "light" => Some(SHADER_TREE.to_string()),
+        _ if schema
+            .struct_by_rna(rna)
+            .and_then(|s| s.base.as_deref())
+            .is_some_and(|b| b == "NodeTree") =>
+        {
+            Some(rna.to_string())
+        }
+        _ => None,
+    };
+    let mut last = Vec::new();
+    if let Some(tree) = &tree {
         children.push((
             "nodes".into(),
             Order {
                 nodes: true,
+                tree: Some(tree.clone()),
+                ..Order::default()
+            },
+        ));
+        if kind != "material" {
+            // A group's interface lines (`input`, `output`, `panel`) keep their order, then its
+            // `nodes`, then its trailing `layout` (section 10).
+            last = vec!["nodes".into(), "layout".into()];
+        }
+    }
+    // Sub-objects of a family, each by its kind's struct; a pose bone's constraints too.
+    let mut families = Vec::new();
+    if kind == "object" {
+        families = vec![
+            ("modifier".to_string(), "Modifier".to_string()),
+            ("constraint".to_string(), "Constraint".to_string()),
+        ];
+        let mut bone = struct_order(schema, "PoseBone", "pose-bone");
+        bone.families = vec![("constraint".to_string(), "Constraint".to_string())];
+        children.push(("bone".into(), bone));
+    }
+    // An action's slots, layers, strips and channels hold f-curves (section 11).
+    if kind == "action" {
+        let fcurves = fcurve_holder(schema);
+        children.push(("slot".into(), fcurves.clone()));
+        let strip = Order {
+            children: vec![("channels".into(), fcurves)],
+            ..Order::default()
+        };
+        let layer = Order {
+            children: vec![("strip".into(), strip)],
+            ..Order::default()
+        };
+        children.push(("layer".into(), layer));
+    }
+    // NLA tracks, on any datablock that can be animated: each strip by `NlaStrip`'s order.
+    if schema.is_datablock_struct(rna) {
+        children.push((
+            "track".into(),
+            Order {
+                children: vec![(
+                    "strip".into(),
+                    struct_order(schema, "NlaStrip", "nla-strip"),
+                )],
                 ..Order::default()
             },
         ));
     }
     Order {
         names,
+        last,
+        tree: None,
+        families,
+        component: false,
         children,
         nodes: false,
         pointers,
+    }
+}
+
+/// What holds f-curves (a slot, a strip's `channels`): each `fcurve` by `FCurve`'s order, its
+/// keys as written, its modifiers by their kind's struct.
+fn fcurve_holder(schema: &Schema) -> Order {
+    let mut fcurve = struct_order(schema, "FCurve", "fcurve");
+    fcurve.families = vec![("modifier".to_string(), "FModifier".to_string())];
+    // `key` lines keep their order (they are no property), after the f-curve's settings.
+    Order {
+        children: vec![("fcurve".into(), fcurve)],
+        ..Order::default()
+    }
+}
+
+/// The struct of `kind` in the family whose structs extend `base` (`bevel` in `Modifier`).
+fn family_struct(schema: &Schema, base: &str, kind: &str) -> Option<String> {
+    schema
+        .structs
+        .iter()
+        .find(|s| s.base.as_deref() == Some(base) && s.kind == kind)
+        .map(|s| s.rna.clone())
+}
+
+/// A zone's block (section 10): its items first, then the input node's lines as written, then
+/// `output`, then the nodes inside it, each ordered by `tree`'s node of its kind.
+fn zone_order(tree: &str) -> Order {
+    Order {
+        names: [
+            "repeat-item",
+            "state-item",
+            "input-item",
+            "main-item",
+            "generation-item",
+            "output-item",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect(),
+        last: vec!["output".into(), "node".into(), "zone".into()],
+        tree: Some(tree.to_string()),
+        nodes: true,
+        ..Order::default()
     }
 }
 
@@ -230,11 +383,11 @@ fn units_order(schema: &Schema) -> Order {
 }
 
 /// A node's order: its settings first, then its inputs as its declaration lists them.
-fn node_order(schema: &Schema, kind: &str) -> Order {
+fn node_order(schema: &Schema, tree: &str, kind: &str) -> Order {
     let mut names = Vec::new();
     // A node is found in its tree: a kind may name a shader node and a compositor node both
     // (`invert`, 1b-03c's review), and a material's tree is a shader tree.
-    if let Some(def) = schema.node(SHADER_TREE, kind) {
+    if let Some(def) = schema.node(tree, kind) {
         // Its own settings (not `Node`'s, whose `color` is the editor's colour for the node, not
         // an input), then its inputs.
         if let Some(s) = def.rna.as_deref().and_then(|rna| schema.struct_by_rna(rna)) {
@@ -355,7 +508,9 @@ fn rewrite_block(schema: &Schema, block: SyntaxNode<'_>, order: &Order, out: &mu
         after_newline = false;
     }
     let mut sorted: Vec<usize> = (0..units.len()).collect();
-    if !order.nodes {
+    // A tree's `nodes` block keeps its lines' order; a zone's sorts its items, input lines,
+    // `output` and nodes (stable, so the nodes keep theirs).
+    if !order.nodes || !order.names.is_empty() || !order.last.is_empty() {
         sorted.sort_by_key(|&i| {
             let n = Node(units[i].node);
             if n.is_commented_out() {

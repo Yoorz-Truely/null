@@ -1,0 +1,11 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  2 datablock: object @harbor-lamp "Lamp"
+  3   attribute: location [0.5m -8m 2.5m]
+  4   attribute: data light @harbor-lamp-light
+  7 datablock: light @harbor-lamp-light "Lamp"
+  8   attribute: type point
+  9   attribute: energy 800W
+ 10   plays: action @lamp-flicker slot=@lamp

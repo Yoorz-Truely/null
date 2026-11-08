@@ -41,6 +41,7 @@ pub use scowr_syntax::{
 pub mod invariants;
 pub mod messages;
 pub mod names;
+pub mod v0;
 
 /// Null's diagnostic codes for the syntax (spec, section 18). They are stable, so
 /// tools and AI can act on them.

@@ -1,0 +1,9 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  2 datablock: collection @pier "Pier"
+  3   pattern: use @plank @plank count=20
+  4     attribute: location [0m n*25cm 0.35m]
+  6   override: override @plank.7
+  6     attribute: state liquid
