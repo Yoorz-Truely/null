@@ -841,15 +841,18 @@ Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists
 object @buoy "Buoy" {
   location [0m 0m 1m]
   raw {
-    transflag 4
-    loc_legacy [0 -0 0x7fa00001]
-    pad_name [80 105 101 0]
+    restore_mode 0
+    col_mask -1
+    collision_boundtype 4
+    constinv [[1 0 0 0] [0 1 0 0] [0 0 1 0] [0 0 0 0x7fa00001]]
   }
 }
 ```
 
+(`restore_mode`, an `int`; `col_mask`, a `short`, so its sixteen bits all set are -1; `collision_boundtype`, a `char`; and `constinv`, a `float[4][4]`, are `Object` fields of Blender 5.3's SDNA that no RNA property reads.)
+
 - **One line per field,** its flat path in the code's names (`transflag`, `r.mode` for `mode` of the embedded `r`), which keep DNA's own spelling: inside a `raw` block, at any depth, names are not held to kebab-case. The `raw` line itself is.
-- **Each value as its DNA type reads.** An integer in decimal, held to its type's range; `char`, `uchar` and `bool` as the byte's value, 0 to 255, the same on every platform. A float or double as the shortest decimal that reads back to its bits, `inf`, `-inf` or `nan`, or as its bits: `0x` and exactly 8 lowercase hexadecimal digits for a float, 16 for a double. A NaN other than the quiet one `nan` reads as (`0x7fc00000` for a float), its sign and payload included, is always written so; nothing else is. Outside a `raw` block a float's bits are an error.
+- **Each value as its DNA type reads.** An integer in decimal, held to its type's range; `char`, `uchar` and `bool` as the byte's value, 0 to 255, the same on every platform. A float or double as the shortest decimal that reads back to its bits, `inf`, `-inf` or `nan`; a NaN other than the quiet one `nan` reads as (`0x7fc00000` for a float), its sign and payload included, as its bits instead: `0x` and exactly 8 lowercase hexadecimal digits for a float, 16 for a double. Bits are for such a NaN alone: any other value written as bits is an error whose fix is its decimal, or `nan`. Outside a `raw` block a float's bits are an error.
 - **An array as a list of exactly its length,** nested for each dimension; a `char` array as the list of every byte, those after its closing NUL included.
 - **Exact.** Bytes are written and set as DNA holds them, bit for bit, through no RNA setter: a `raw` field's value is never clamped (the line above). The checker refuses a field the table does not list for the datablock's struct, a value its type cannot hold and a list of another length. Sau prints every raw field of a datablock until the raw table carries DNA's defaults.
 

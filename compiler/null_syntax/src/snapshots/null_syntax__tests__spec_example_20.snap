@@ -5,6 +5,7 @@ expression: "v0::render(&items)"
   1 datablock: object @buoy "Buoy"
   2   attribute: location [0m 0m 1m]
   3   raw block: raw
-  4     attribute: transflag 4
-  5     attribute: loc_legacy [0 -0 0x7fa00001]
-  6     attribute: pad_name [80 105 101 0]
+  4     attribute: restore_mode 0
+  5     attribute: col_mask -1
+  6     attribute: collision_boundtype 4
+  7     attribute: constinv [[1 0 0 0] [0 1 0 0] [0 0 1 0] [0 0 0 0x7fa00001]]

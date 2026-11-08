@@ -619,7 +619,9 @@ impl<'s> Checker<'s> {
             match (line.args.as_slice(), line.props.is_empty()) {
                 ([v], true) => {
                     if let Err(e) = crate::raw::read_value(v, field) {
-                        self.out(file).error(codes::TYPE, v.span(), e);
+                        let at = e.fix.as_ref().map_or(v.span(), |(s, _)| *s);
+                        let fix = e.fix.map(|(s, w)| (format!("write `{w}`"), s, w));
+                        self.out(file).error_fix(codes::TYPE, at, e.message, fix);
                     }
                 }
                 _ => self.out(file).error(

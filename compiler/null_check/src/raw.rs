@@ -162,8 +162,30 @@ impl RawField {
     }
 }
 
+/// Why a raw value does not read: in words, and, where there is one, the word to write instead
+/// (a float's bits that are not a NaN's: its decimal), with the span of the word written.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RawError {
+    /// What is wrong, in words.
+    pub message: String,
+    /// The word to write in place of the one at its span.
+    pub fix: Option<(null_syntax::Span, String)>,
+}
+
+impl From<String> for RawError {
+    fn from(message: String) -> RawError {
+        RawError { message, fix: None }
+    }
+}
+
+impl std::fmt::Display for RawError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
 /// The bytes of `value` written for `field`, or why it does not read.
-pub fn read_value(value: &Value<'_>, field: &RawField) -> Result<Vec<u8>, String> {
+pub fn read_value(value: &Value<'_>, field: &RawField) -> Result<Vec<u8>, RawError> {
     let scalar = field.scalar().ok_or_else(|| {
         format!(
             "`{}` is a {}, which a raw block does not write",
@@ -181,25 +203,27 @@ fn read_into(
     scalar: Scalar,
     field: &RawField,
     out: &mut Vec<u8>,
-) -> Result<(), String> {
-    let Some((&len, inner)) = dims.split_first() else {
-        let word = value.as_word().ok_or_else(|| {
-            format!(
-                "`{}` takes {}, not `{}`",
-                field.path,
-                field.describe(),
-                value.text()
-            )
-        })?;
-        return read_scalar(word, scalar, field, out);
-    };
-    let Value::List(_) = value else {
-        return Err(format!(
+) -> Result<(), RawError> {
+    let wrong = || {
+        format!(
             "`{}` takes {}, not `{}`",
             field.path,
             field.describe(),
             value.text()
-        ));
+        )
+    };
+    let Some((&len, inner)) = dims.split_first() else {
+        let word = value.as_word().ok_or_else(wrong)?;
+        return read_scalar(word, scalar, field, out).map_err(|e| match e {
+            WordError::Message(m) => RawError::from(m),
+            WordError::Decimal(m, w) => RawError {
+                message: m,
+                fix: Some((value.span(), w)),
+            },
+        });
+    };
+    let Value::List(_) = value else {
+        return Err(wrong().into());
     };
     let items = value.items();
     if items.len() != len {
@@ -208,7 +232,8 @@ fn read_into(
             field.path,
             field.describe(),
             items.len()
-        ));
+        )
+        .into());
     }
     for item in &items {
         read_into(item, inner, scalar, field, out)?;
@@ -216,12 +241,24 @@ fn read_into(
     Ok(())
 }
 
+/// Why one word does not read: in words, or with the decimal to write instead.
+enum WordError {
+    Message(String),
+    Decimal(String, String),
+}
+
+impl From<String> for WordError {
+    fn from(m: String) -> WordError {
+        WordError::Message(m)
+    }
+}
+
 fn read_scalar(
     word: &str,
     scalar: Scalar,
     field: &RawField,
     out: &mut Vec<u8>,
-) -> Result<(), String> {
+) -> Result<(), WordError> {
     let bad = || format!("`{}` is a {}: `{word}` is not one", field.path, field.ty);
     if let Some((lo, hi)) = scalar.range() {
         let n: i128 = word.parse().map_err(|_| bad())?;
@@ -229,7 +266,8 @@ fn read_scalar(
             return Err(format!(
                 "`{}` is a {}, from {lo} to {hi}: {word} is out of its range",
                 field.path, field.ty
-            ));
+            )
+            .into());
         }
         let bytes = n.to_ne_bytes();
         // The low bytes of the two's complement, in the machine's order.
@@ -251,19 +289,38 @@ fn read_scalar(
         return Err(format!(
             "`{}` is a {}: its bits are written `0x` and lowercase hexadecimal digits",
             field.path, field.ty
-        ));
+        )
+        .into());
     }
+    // Bits are a NaN's alone, one the word `nan` does not mean: anything else has one written
+    // form, its decimal (or `nan`), which is the fix.
+    let only_for_nan = |is_nan: bool, quiet: bool, decimal: String| -> Result<(), WordError> {
+        if is_nan && !quiet {
+            return Ok(());
+        }
+        Err(WordError::Decimal(
+            format!(
+                "`{}`: a {}'s bits are written only for a NaN other than `nan`; write `{decimal}`",
+                field.path, field.ty
+            ),
+            decimal,
+        ))
+    };
     match scalar {
         Scalar::F32 => {
             let x = match hex {
                 Some(h) if h.len() == 8 => {
-                    f32::from_bits(u32::from_str_radix(h, 16).map_err(|_| bad())?)
+                    let bits = u32::from_str_radix(h, 16).map_err(|_| bad())?;
+                    let x = f32::from_bits(bits);
+                    only_for_nan(x.is_nan(), bits == QUIET_F32, print_bare(x))?;
+                    x
                 }
                 Some(_) => {
                     return Err(format!(
                         "`{}` is a float: its bits are `0x` and 8 hexadecimal digits",
                         field.path
-                    ));
+                    )
+                    .into());
                 }
                 None => read::<f32>(word, Dimension::None).map_err(|_| bad())?,
             };
@@ -272,13 +329,17 @@ fn read_scalar(
         _ => {
             let x = match hex {
                 Some(h) if h.len() == 16 => {
-                    f64::from_bits(u64::from_str_radix(h, 16).map_err(|_| bad())?)
+                    let bits = u64::from_str_radix(h, 16).map_err(|_| bad())?;
+                    let x = f64::from_bits(bits);
+                    only_for_nan(x.is_nan(), bits == QUIET_F64, print_bare(x))?;
+                    x
                 }
                 Some(_) => {
                     return Err(format!(
                         "`{}` is a double: its bits are `0x` and 16 hexadecimal digits",
                         field.path
-                    ));
+                    )
+                    .into());
                 }
                 None => read::<f64>(word, Dimension::None).map_err(|_| bad())?,
             };
@@ -375,7 +436,7 @@ mod tests {
         let (p, _) = value(text);
         let node = p.document().nodes().next().unwrap();
         let v = node.args().next().unwrap();
-        let bytes = read_value(&v, f)?;
+        let bytes = read_value(&v, f).map_err(|e| e.message)?;
         let back = print_value(&bytes, f).unwrap();
         Ok((bytes, back))
     }
@@ -434,6 +495,9 @@ mod tests {
             ("float", &[][..], "0x7fa0", "8 hexadecimal digits"),
             ("double", &[][..], "0x7fa00001", "16 hexadecimal digits"),
             ("float", &[][..], "0x7FA00001", "lowercase"),
+            ("float", &[][..], "0x3f800000", "write `1`"),
+            ("float", &[][..], "0x7fc00000", "write `nan`"),
+            ("double", &[][..], "0x3ff0000000000000", "write `1`"),
             ("short", &[3][..], "[1 2]", "this list has 2"),
             ("short", &[3][..], "1", "a list of 3 shorts"),
             ("float", &[][..], "[1]", "one float"),
@@ -442,6 +506,17 @@ mod tests {
             let err = round(text, &field(ty, dims)).unwrap_err();
             assert!(err.contains(says), "{ty} {text}: {err}");
         }
+    }
+
+    #[test]
+    fn a_floats_bits_that_are_not_a_nans_have_their_decimal_as_the_fix() {
+        let text = "v [1 0x3f800000]\n";
+        let p = null_syntax::parse(text);
+        let v = p.document().nodes().next().unwrap().args().next().unwrap();
+        let err = read_value(&v, &field("float", &[2])).unwrap_err();
+        let (span, word) = err.fix.unwrap();
+        assert_eq!(word, "1");
+        assert_eq!(&text[span.start..span.end], "0x3f800000");
     }
 
     #[test]

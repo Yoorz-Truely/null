@@ -72,6 +72,12 @@ fn a_raw_field_of_the_wrong_type_or_shape_is_refused() {
         ("loc_legacy 1", codes::TYPE, "a list of 3 floats"),
         ("pad_name [256 0 0 0]", codes::TYPE, "out of its range"),
         ("precise 0x7fa00001", codes::TYPE, "16 hexadecimal digits"),
+        ("precise 0x3ff0000000000000", codes::TYPE, "write `1`"),
+        (
+            "loc_legacy [0 0x3f800000 0]",
+            codes::TYPE,
+            "only for a NaN other than `nan`",
+        ),
         (
             "transflg 1",
             codes::UNKNOWN_PROPERTY,
@@ -123,4 +129,16 @@ fn a_floats_bits_are_taken_only_in_a_raw_block() {
         "{}",
         found[0].message
     );
+}
+
+#[test]
+fn a_floats_bits_that_are_not_a_nans_are_refused_with_the_decimal_as_the_fix() {
+    let found = errors(
+        &schema(true),
+        &object("    loc_legacy [0 0x3f800000 0x7fc00000]"),
+    );
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].fixes[0].edits[0].replacement, "1");
+    let quiet = errors(&schema(true), &object("    loc_legacy [0 0 0x7fc00000]"));
+    assert_eq!(quiet[0].fixes[0].edits[0].replacement, "nan");
 }
