@@ -27,6 +27,7 @@ pub mod expand;
 pub mod forms;
 pub mod level0;
 pub mod paths;
+pub mod rename;
 mod schema;
 pub mod units;
 mod values;
