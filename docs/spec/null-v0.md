@@ -423,7 +423,8 @@ Every message names the file, line and column, says what was expected, and where
 
 - everything RNA reaches is written as named Null properties;
 - data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
-- runtime-only data is skipped, and the list of what counts as runtime is part of the spec.
+- runtime-only data is skipped, and the list of what counts as runtime is part of the spec;
+- a value outside its property's hard range is clamped when Sau sets it through RNA, as Blender's interface clamps (section 5, "Numbers"); so is an infinity in a property whose range is the default, ±`FLT_MAX`, which becomes `FLT_MAX` with its sign. Such a value survives the conversion only where the datablock's `raw` block carries its field (Sau's task 1d-05b).
 
 Correctness is checked by a field-by-field comparison of the original and the round-tripped `.blend` (by DNA structure, not by bytes, since a `.blend` holds memory addresses), and by rendering both. Through Blender's importers, any format Blender reads (glTF, FBX, OBJ, USD, Alembic, PLY, STL) converts into Null the same way.
 
