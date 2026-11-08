@@ -156,7 +156,9 @@ object @other \"Other\" {
 }
 
 #[test]
-fn paths_and_pattern_copies_change_their_first_handle() {
+fn a_path_changes_its_first_handle_and_a_copy_is_its_placements() {
+    // `@pier.7` is a pattern's copy, which takes its placement's handle (section 8): it never
+    // names datablock `@pier`, so it stays.
     let text = "\
 object @pier \"Pier\" {
   modifier @bevel bevel { width 4mm }
@@ -168,9 +170,37 @@ object @copy \"Copy\" {
 }
 ";
     let (out, _, refs) = renamed(&[text], "@pier", "@jetty").unwrap();
-    assert_eq!(refs, 2);
-    assert!(out[0].contains("parent @jetty.7"));
+    assert_eq!(refs, 1);
+    assert!(out[0].contains("parent @pier.7"));
     assert!(out[0].contains("target @jetty/@bevel"));
+}
+
+#[test]
+fn the_handle_of_a_copy_outside_an_override_is_its_placements_not_the_component() {
+    // The batch 3b review's case: component `@plank` placed as `@plank`, and a constraint
+    // outside any override aiming at copy 7. Renaming the component changes its definition and
+    // `use`'s first word; the placement and `target @plank.7` stay, so the copy still resolves.
+    let plank = "component @plank \"Plank\" {\n  object @plank \"Plank\"\n}\n";
+    let pier = "\
+collection @pier \"Pier\" {
+  use @plank @plank count=20
+}
+
+object @lamp \"Lamp\" {
+  constraint @follow copy-location \"Follow\" { target @plank.7 }
+}
+";
+    let (out, kind, refs) = renamed(&[plank, pier], "@plank", "@board").unwrap();
+    assert_eq!(kind, "component");
+    assert_eq!(refs, 1);
+    assert_eq!(
+        out[0],
+        plank.replace("component @plank", "component @board")
+    );
+    assert_eq!(
+        out[1],
+        pier.replace("use @plank @plank", "use @board @plank")
+    );
 }
 
 #[test]
