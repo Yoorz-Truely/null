@@ -25,6 +25,7 @@
 mod check;
 pub mod forms;
 pub mod paths;
+pub mod raw;
 mod schema;
 pub mod units;
 mod values;

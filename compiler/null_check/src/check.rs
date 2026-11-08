@@ -507,6 +507,7 @@ impl<'s> Checker<'s> {
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
                     self.interface_line(file, a)
                 }
+                (_, "raw") => self.raw_block(file, a, kind),
                 (_, "action") if animated => self.plays(file, a, kind),
                 (_, "track") if animated => self.track(file, a, kind),
                 _ => match props.iter().find(|p| p.name == a.name) {
@@ -531,6 +532,102 @@ impl<'s> Checker<'s> {
         }
         if let Some(a) = all.iter().find(|a| kind == "mesh" && a.name == "polygons") {
             self.polygons(file, a, vertex_count);
+        }
+    }
+
+    /// The DNA struct whose raw fields a datablock of `kind` takes: its RNA struct, or the first
+    /// struct up its chain the raw table lists (DNA's name for a datablock's struct is RNA's).
+    fn raw_struct(&self, kind: &str) -> String {
+        let table = self.schema.raw.as_ref();
+        let mut at = self.schema.struct_by_kind(kind);
+        let first = at.map(|s| s.rna.clone()).unwrap_or_default();
+        while let Some(s) = at {
+            if table.is_some_and(|t| t.structs.contains_key(&s.rna)) {
+                return s.rna.clone();
+            }
+            at = s.base.as_deref().and_then(|b| self.schema.struct_by_rna(b));
+        }
+        first
+    }
+
+    /// A `raw` block (section 19, Sau's task 1d-05b): DNA fields RNA does not reach, each a flat
+    /// path of DNA's own names with a value of its DNA type, as the raw table lists them. Without
+    /// a raw table its lines are not checked against DNA.
+    fn raw_block(&mut self, file: FileId, a: &Attr<'_>, kind: &str) {
+        let Some(block) = a.node.filter(|n| n.block().is_some()) else {
+            return self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`raw` is a block of DNA fields, such as `raw { transflag 4 }`".to_string(),
+            );
+        };
+        if !a.args.is_empty() || !a.props.is_empty() {
+            self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`raw` takes no value of its own, only its block of DNA fields".to_string(),
+            );
+        }
+        let Some(table) = self.schema.raw.clone() else {
+            return;
+        };
+        let owner = self.raw_struct(kind);
+        let fields = table.fields(&owner);
+        let mut seen = HashSet::new();
+        for line in attrs(block) {
+            if line.node.is_some_and(|n| n.block().is_some()) {
+                self.out(file).error(
+                    codes::TYPE,
+                    line.span,
+                    format!(
+                        "a raw block's lines are flat DNA paths (`{}.flag 1`), not blocks",
+                        line.name
+                    ),
+                );
+                continue;
+            }
+            if !seen.insert(line.name.clone()) {
+                self.out(file).error(
+                    codes::REPEATED,
+                    line.name_span,
+                    format!("`{}` is given twice in this raw block", line.name),
+                );
+                continue;
+            }
+            let Some(field) = table.field(&owner, &line.name) else {
+                let paths = fields.iter().map(|f| f.path.as_str());
+                let suggestion = closest(&line.name, paths);
+                let message = match (fields.is_empty(), suggestion) {
+                    (true, _) => format!(
+                        "`{owner}` has no raw fields in this build's raw table, so no `{}`",
+                        line.name
+                    ),
+                    (false, Some(s)) => format!(
+                        "`{owner}` has no raw field `{}`; did you mean `{s}`?",
+                        line.name
+                    ),
+                    (false, None) => format!("`{owner}` has no raw field `{}`", line.name),
+                };
+                self.out(file).error_fix(
+                    codes::UNKNOWN_PROPERTY,
+                    line.name_span,
+                    message,
+                    suggestion.map(|s| (format!("write `{s}`"), line.name_span, s.to_string())),
+                );
+                continue;
+            };
+            match (line.args.as_slice(), line.props.is_empty()) {
+                ([v], true) => {
+                    if let Err(e) = crate::raw::read_value(v, field) {
+                        self.out(file).error(codes::TYPE, v.span(), e);
+                    }
+                }
+                _ => self.out(file).error(
+                    codes::TYPE,
+                    line.span,
+                    format!("`{}` takes one value, {}", line.name, field.describe()),
+                ),
+            }
         }
     }
 

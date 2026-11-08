@@ -194,6 +194,15 @@ pub(crate) fn check_float(
     };
     match read_in::<f32>(word, dimension, &scene) {
         Ok(x) => check_range(x as f64, word, value.span(), name, p, out),
+        // A float's bits (`0x7fa00001`) are a `raw` block's form alone (section 19).
+        Err(_) if word.starts_with("0x") => out.error(
+            codes::TYPE,
+            value.span(),
+            format!(
+                "`{name}` takes {}: a float written as its bits, `{word}`, is taken only in a raw block",
+                describe(dimension)
+            ),
+        ),
         Err(e) => unit_error(e, word, value.span(), name, dimension, out),
     }
 }

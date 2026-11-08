@@ -189,7 +189,7 @@ What Null adds to Scowr's syntax is only schema: the node names, the value forms
 
 ## 6. Values
 
-- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59). A value outside a property's hard range, an infinity included, is written and read as it is, since a `.blend` can hold one in DNA though RNA clamps what is set: the checker says so in a `null-range` note, not an error, and Blender clamps it when Sau sets it (the lead's call on task 1c-02b).
+- **Numbers** are written in decimal and read exactly into the property's own type: float32, float64 or an integer, as DNA stores it. The formatter prints the shortest decimal that reads back to the same bits, so `0.1` stays `0.1` and never becomes `0.10000000149`. `inf` and `-inf` are written as such. NaN is written `nan`, the quiet NaN, without its sign or payload: the one value that does not read back to the same bits (S59), except in a `raw` block, where a float may be written as its bits (section 19). A value outside a property's hard range, an infinity included, is written and read as it is, since a `.blend` can hold one in DNA though RNA clamps what is set: the checker says so in a `null-range` note, not an error, and Blender clamps it when Sau sets it (the lead's call on task 1c-02b).
 - **Units** follow the RNA unit of each property, as the table under "Units" below lists them. A bare number is Blender's internal unit (Blender units, radians, frames, seconds, watts). Writing a unit a property cannot take is an error.
 - **Conversion rule.** A value with a unit is converted exactly and rounded once, to nearest even, into the stored type (Sau's decision S59): every factor in the table is an exact rational number except π/180, which is computed as precisely as the rounding needs, and the scene's unit scale and frame rate enter as the exact values of the floats Blender stores. Arithmetic in float64 would round twice. The formatter prints a value in the project's display unit (`rotation=deg`) whenever the shortest such decimal converts back to exactly the stored bits, and in the internal unit otherwise. `90deg` therefore reads back as `90deg`, and a rotation set by dragging prints exactly in radians if no short degree value matches it.
 - **Vectors, colours and matrices** are lists: `[0m 0m 1m]`, `[0.8 0.62 0.41 1]`. Colours are scene-linear floats as Blender stores them; `#rrggbb` is accepted as sRGB input and converted by the fixed colour-management rule, the IEC 61966-2-1 sRGB curve, exactly rounded once into each channel's type from a fixed table of the 256 channel values, with no floating-point `pow` (Sau's decision S62), alpha 1 for a four-channel colour; and printed back in that form only if it converts to the same bits. Blender's colour picker converts hex through its colour management, which differs from the exact curve for most values, so a colour set there prints back as a list of floats, not `#rrggbb`.
@@ -831,9 +831,27 @@ Every message names the file, line and column, says what was expected, and where
 Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists the data RNA does not reach. `sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
 
 - everything RNA reaches is written as named Null properties;
-- data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
+- data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink (the form is below);
 - runtime-only data is skipped, and the list of what counts as runtime is part of the spec;
 - a value outside its property's hard range is clamped when Sau sets it through RNA, as Blender's interface clamps (section 6, "Numbers"); so is an infinity in a property whose range is the default, ±`FLT_MAX`, which becomes `FLT_MAX` with its sign. Such a value survives the conversion only where the datablock's `raw` block carries its field (Sau's task 1d-05b).
+
+**The `raw` block** (Sau's task 1d-05b) holds a datablock's DNA fields that no RNA property reads and no rule over DNA's facts leaves out (Sau's tasks 1b-04a and 1b-04b). Which fields a struct has is the raw table, `schema/null-raw.json`, which Sau's build writes with the other schemas: per DNA struct, each such field of the struct or of a struct embedded in it, by its path, its DNA type and its array dimensions. A field behind a pointer or in a list is not in it yet.
+
+```null
+object @buoy "Buoy" {
+  location [0m 0m 1m]
+  raw {
+    transflag 4
+    loc_legacy [0 -0 0x7fa00001]
+    pad_name [80 105 101 0]
+  }
+}
+```
+
+- **One line per field,** its flat path in the code's names (`transflag`, `r.mode` for `mode` of the embedded `r`), which keep DNA's own spelling: inside a `raw` block, at any depth, names are not held to kebab-case. The `raw` line itself is.
+- **Each value as its DNA type reads.** An integer in decimal, held to its type's range; `char`, `uchar` and `bool` as the byte's value, 0 to 255, the same on every platform. A float or double as the shortest decimal that reads back to its bits, `inf`, `-inf` or `nan`, or as its bits: `0x` and exactly 8 lowercase hexadecimal digits for a float, 16 for a double. A NaN other than the quiet one `nan` reads as (`0x7fc00000` for a float), its sign and payload included, is always written so; nothing else is. Outside a `raw` block a float's bits are an error.
+- **An array as a list of exactly its length,** nested for each dimension; a `char` array as the list of every byte, those after its closing NUL included.
+- **Exact.** Bytes are written and set as DNA holds them, bit for bit, through no RNA setter: a `raw` field's value is never clamped (the line above). The checker refuses a field the table does not list for the datablock's struct, a value its type cannot hold and a list of another length. Sau prints every raw field of a datablock until the raw table carries DNA's defaults.
 
 Correctness is checked by a field-by-field comparison of the original and the round-tripped `.blend` (by DNA structure, not by bytes, since a `.blend` holds memory addresses), and by rendering both. Through Blender's importers, any format Blender reads (glTF, FBX, OBJ, USD, Alembic, PLY, STL) converts into Null the same way.
 

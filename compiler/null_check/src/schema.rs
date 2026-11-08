@@ -40,6 +40,11 @@ pub struct Schema {
     /// Index into `structs` by kind, made by [`Schema::from_json`].
     #[serde(skip)]
     by_kind: HashMap<String, usize>,
+    /// The raw table, the fields each DNA struct's `raw` block takes (section 19, Sau's task
+    /// 1d-05b), when given ([`Schema::with_raw`]); without it a `raw` block's lines are not
+    /// checked against DNA.
+    #[serde(skip)]
+    pub raw: Option<crate::raw::RawTable>,
 }
 
 /// One add-on's section of the project's schema (task 1b-03g).
@@ -209,6 +214,12 @@ pub struct Primitive {
 }
 
 impl Schema {
+    /// The schema with its raw table (`schema/null-raw.json`, section 19).
+    pub fn with_raw(mut self, raw: crate::raw::RawTable) -> Schema {
+        self.raw = Some(raw);
+        self
+    }
+
     /// Reads a schema file's text.
     pub fn from_json(text: &str) -> Result<Schema, serde_json::Error> {
         let mut schema: Schema = serde_json::from_str(text)?;
