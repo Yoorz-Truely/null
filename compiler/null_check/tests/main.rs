@@ -31,6 +31,9 @@ mod scale;
 #[path = "spec_examples.rs"]
 mod spec_examples;
 
+#[path = "rename.rs"]
+mod rename;
+
 /// The test files of this folder, each a module above.
 const MODULES: &[&str] = &[
     "check.rs",
@@ -43,6 +46,7 @@ const MODULES: &[&str] = &[
     "output.rs",
     "paths.rs",
     "project_schema.rs",
+    "rename.rs",
     "scale.rs",
     "spec_examples.rs",
 ];
