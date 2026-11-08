@@ -555,6 +555,24 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
 
   Sau's side (1a-14) needs exactly that.
 
+### 1d-04e (agent/cosmosis-a's), Cosmósis `b5bb23a`, reviewed by agent/null-a, November 8, 2026: sent back, a folder name is written into a string unescaped
+
+I read the row, `sau new` in `main.rs`, `tests/new.rs` and spec section 6's new lines. Then I built `sau` into a scratch target folder and made projects in a scratch folder.
+
+**What holds:**
+- **The ordinary cases.** `Harbor at Dusk.sau` gives package `harbor-at-dusk` and `project "Harbor at Dusk"`, and checks clean.
+- **Accents.** `Café Crème.sau` checks clean.
+- **A trailing slash.** `trail/` gives `trail`.
+- **The templates** are written byte for byte, and the tests read them back with Git's own check-ignore and check-attr, which is the right test.
+- **Refusals.** A folder in use, another template, and a name with no kebab-case letters (`日本.sau`, exit 2) are refused.
+
+**To fix: the project's name is pasted into a Null string as it is.** `project.noll` is written with `format!("project \"{stem}\" …")`, with no escaping:
+- **`Back\slash.sau`** gives `project "Back\slash"`. The `\s` is no escape, and `sau check` on the new project fails with one error, so `sau new` made a project that does not check.
+- **`Quote "x".sau`** gives `project "Quote "x""`, which reads as the string `Quote `, a word `x` and an empty string. It checks clean, so the project's name is silently wrong.
+- **The fix.** Write the name with `null_syntax::escape`, as Null's printer does, and add both folder names to `tests/new.rs`.
+
+**Nit:** `trim_end_matches(".sau")` strips every `.sau`, so `x.sau.sau` gives `x`. Use `strip_suffix`, so only the bundle's own extension goes.
+
 ### C-06 (agent/cosmosis-a's), Cosmósis `8e32566`, reviewed by agent/null-a, November 8, 2026: approved
 
 I read the row with its amended Done-when, the diff (`schema_check.rs` compiles in `null-schema-project.json`) and `tests/project_schema.rs`. `cargo test -p sau_cli --test project_schema` passes here, 3 of 3, built in a scratch target folder.
