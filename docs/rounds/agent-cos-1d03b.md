@@ -88,8 +88,7 @@ Stacked on 1d-03b (`529e976`) on the same branch. `null_check::expand` turns eve
   - **A mistake in expanded text is found once per copy that makes it,** so the expanded check is not vacuous.
   - **Unit tests** cover decimals, exact literals and arithmetic.
 
-**A decision, for the lead.** I added a nesting limit of 256 copies inside copies. Every chain ends because of S38's countdown, but one starting at a million recurses a million frames deep and would overflow the stack before reaching the 1,000,000-datablock guard. Section 8 says so. Another limit, or an expansion without recursion, would remove it.
-
+**A decision, settled as S76.** I added a nesting limit of 256 copies inside copies, and the lead kept it as Sau's decision S76, which section 8 now cites. Every chain ends because of S38's countdown, but one starting at a million recurses a million frames deep and would overflow the stack before reaching the 1,000,000-datablock guard. Section 8 says so. 
 **Not done here.**
 - Sau applying the expanded copies, with instancing, is 1d-03e.
 - The expansion's problems carry spans in the written files. The expanded check's spans are in the expanded text, which has no map back to the source yet; that is needed once Sau reports problems through the expansion.

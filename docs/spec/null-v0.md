@@ -391,7 +391,7 @@ How the flat project is written (task 1d-03c):
 - a condition only picks between lines;
 - recursion is allowed only on a `countdown` parameter that every recursive placement makes smaller and that stops at 0, so every chain of placements ends.
 
-Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. The expansion also stops at a recursion that does not count down, whatever the checker has said of it, and at copies nested more than 256 deep, since a countdown from a million would end, but only after exhausting the expansion's stack. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
+Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. The expansion also stops at a recursion that does not count down, whatever the checker has said of it, and at copies nested more than 256 deep (Sau's decision S76), since a countdown from a million would end, but only after exhausting the expansion's stack. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
 
 The pier of twenty planks, plank 7 liquid:
 
