@@ -271,6 +271,15 @@ impl Expander<'_, '_> {
             "material" | "world" | "light" | "shader" => "ShaderNodeTree",
             "geometry" => "GeometryNodeTree",
             "compositor" => "CompositorNodeTree",
+            "texture-node-tree" => "TextureNodeTree",
+            _ if kind == "texture"
+                || self
+                    .schema
+                    .struct_by_kind(kind)
+                    .is_some_and(|s| s.base.as_deref() == Some("Texture")) =>
+            {
+                "TextureNodeTree"
+            }
             _ => return None,
         };
         let nodes = n.children().find(|c| c.name() == "nodes")?;

@@ -38,7 +38,7 @@ mod values;
 pub use check::check;
 pub use expand::{Expanded, check_expanded, expand};
 pub use schema::{
-    Datablock, Item, NodeDef, Primitive, Property, Range, SHADER_TREE, Schema, Struct,
+    Datablock, Item, NodeDef, Primitive, Property, Range, SHADER_TREE, Schema, Struct, TEXTURE_TREE,
 };
 pub use values::unit_dimension;
 
