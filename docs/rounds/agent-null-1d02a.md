@@ -48,3 +48,9 @@ I read `v0.rs`, the tests, the 19 snapshots and the spec change. I ran `cargo te
 - **A test** with the section 4 shape, and the two snapshots updated.
 
 **A suggestion for links (not blocking).** `is_link` splits at the first `.`. A link to a node inside a copy, `@plank.7/@tex.color` (an override reaching a copy's material, once 1d-03 reads them), splits to `7/@tex.color` and is not a link. Reading the last path step (after the last `/`) and testing its last `.`-segment would take both forms. No example writes one yet, so this can wait for 1d-03b; a line in the doc comment would keep it in view.
+
+## 1d-02a, round 2: a collection defined in a scene is a datablock
+
+The Cosmósis worker's review found that section 4's `collection @harbor "Harbor" { … }` and `collection @boats "Boats"`, defined inside a scene, were outlined as attributes. The checker and sau_core's reader both treat them as datablocks.
+- **Fixed.** Inside a scene or a collection, at the top level or in a component, a `collection` line with a display name or a block is a datablock. One with neither names a member and stays an attribute. Section 4's snapshot is updated (two lines). A test has that shape: a collection defined in a scene, one defined inside it, and a member named without a name.
+- **The review's suggestion, taken now since it was one line.** A link to a node inside a pattern's copy, `@plank.7/@tex.color`, is now read as a link, from the path's last step. The copy itself, `@plank.7`, still is not a link. Tested.

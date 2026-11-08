@@ -44,6 +44,16 @@ enum Place {
     Layout,
     /// An f-curve's block or a driver's.
     Curve,
+    /// A scene's or a collection's block, whose `collection` lines may define collections.
+    Members,
+}
+
+/// Whether a `collection` line defines a collection: it has a display name or a block.
+fn defines(node: Node<'_>) -> bool {
+    node.block().is_some()
+        || node
+            .args()
+            .any(|v| matches!(v, Value::Str(_) | Value::Raw(_)))
 }
 
 /// The sub-object lines (Null spec, section 7).
@@ -150,6 +160,7 @@ fn classify(node: Node<'_>, place: Place) -> (&'static str, Place) {
         (Place::Top, "project") => ("project", Place::Datablock),
         (Place::Top, "component") => ("component", Place::Component),
         (Place::Top, "array") => ("data file", Place::Datablock),
+        (Place::Top, "scene" | "collection") => ("datablock", Place::Members),
         (Place::Top, _) => ("datablock", Place::Datablock),
         (Place::Layout, _) => ("position", Place::Layout),
         (Place::Tree | Place::Zone, "node") => ("node", Place::Datablock),
@@ -175,7 +186,11 @@ fn classify(node: Node<'_>, place: Place) -> (&'static str, Place) {
         (Place::Curve, "key") => ("key", Place::Curve),
         (Place::Curve, "var") => ("driver variable", Place::Curve),
         (Place::Curve, "target") => ("driver target", Place::Curve),
+        (Place::Component, "scene" | "collection") => ("datablock", Place::Members),
         (Place::Component, _) => ("datablock", Place::Datablock),
+        // Inside a scene or a collection, a `collection` line with a display name or a block
+        // defines one (section 8's members); without, it names one.
+        (Place::Members, "collection") if defines(node) => ("datablock", Place::Members),
         (_, "input" | "output") => ("interface socket", Place::Datablock),
         (_, "action") if prop(node, "slot").is_some() => ("plays", place),
         (_, n) if SUB_OBJECTS.contains(&n) => ("sub-object", Place::Datablock),
@@ -232,6 +247,23 @@ mod tests {
                 "node",
                 "link",
                 "link",
+                "datablock",
+                "attribute"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_collection_defined_in_a_scene_is_a_datablock_and_a_member_is_not() {
+        // Section 8: a `collection` line with a display name or a block defines a collection,
+        // in a scene or a collection; one with neither names one (the 1d-02a review).
+        let text = "scene @main \"Main\" {\n  collection @harbor \"Harbor\" {\n    object @pier\n    collection @boats \"Boats\"\n    collection @nets\n  }\n}\n";
+        assert_eq!(
+            kinds(text),
+            [
+                "datablock",
+                "datablock",
+                "attribute",
                 "datablock",
                 "attribute"
             ]

@@ -15,10 +15,10 @@ expression: "v0::render(&items)"
  13   attribute: cycles
  13     attribute: samples 512
  13     attribute: use-denoising
- 15   attribute: collection @harbor "Harbor"
+ 15   datablock: collection @harbor "Harbor"
  16     attribute: object @pier
  17     attribute: object @harbor-lamp
  18     attribute: object @shot-cam
- 19     attribute: collection @boats "Boats"
+ 19     datablock: collection @boats "Boats"
  23 datablock: world @dusk "Dusk"
  23   attribute: color [0.02 0.03 0.06]
