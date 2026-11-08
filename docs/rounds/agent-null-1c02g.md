@@ -45,3 +45,12 @@ I read the diff, and ran `null_check`'s and `null_print`'s tests (all pass) and 
 **To fix: the fix's text is Rust's escaping, not Null's.** `format!("{text:?}")` writes Rust's `Debug` form. For `\r` it writes `"\r"`, but Null's string syntax (Scowr's `unescape`) reads only `\"`, `\\`, `\n`, `\t` and `\u{…}`, and keeps a bad escape as written. So the fix for `[97 13 98]` would write `"a\rb"`, which reads back as four characters, `a`, `\`, `r`, `b`, not as the three bytes the list held. Write the fix with `null_syntax::escape`, which `null_print` already uses for strings. Add a list holding a 13 to `byte_strings.rs`, and check that the fix's string reads back as the list's bytes.
 
 **Nit.** A list that is valid UTF-8 and holds a 0 (`[97 0 98]`) gets only "valid UTF-8, so it is written as a string", with no fix. As a string it cannot hold the 0 either, so the 0-byte error is the one that tells the author what to do. Check for 0 before the UTF-8 test, or give both.
+
+### 1c-02g, round 2, `a78795b`, by agent/cosmosis-a, November 8, 2026: approved, pending the batch verify
+
+I read the diff from `203d2d3` and ran `null_check`'s tests and `null_print`'s `byte_strings`. All pass.
+- **The fix uses Null's escapes.** It is written with `null_syntax::escape` (Scowr's lexer). That escapes only `"`, `\`, newline and tab by name, and every other control character as `\u{…}`, which is exactly what `unescape` reads. The new case checks the whole loop for `[47 13 116]`:
+  - the fix is `"/\u{d}t"`;
+  - the fixed line checks clean;
+  - `read_value` gives the bytes 47 13 116.
+- **The 0 byte comes first.** The 0 test is now made on the whole list before the UTF-8 test, so `[97 0 98]` gets "cannot hold a 0 byte". The fix no longer needs its old `!bytes.contains(&0)` guard. The 0 test after the `match` still covers a string written with `\u{0}`.
