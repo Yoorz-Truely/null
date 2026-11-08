@@ -131,11 +131,17 @@ fn prop<'a>(node: Node<'a>, name: &str) -> Option<Value<'a>> {
 /// Whether a value is a link to a node's output (`@tex.color`) or a list of them.
 fn is_link(v: &Value<'_>) -> bool {
     match v {
+        // The path's last step names the socket (`@tex.color`), also inside a copy
+        // (`@plank.7/@tex.color`); a copy's own number is no socket (`@plank.7`, task 1d-03b).
         Value::Word(t) => {
             t.text.starts_with('@')
-                && t.text.split_once('.').is_some_and(|(_, socket)| {
-                    socket.starts_with(|c: char| c.is_ascii_alphabetic())
-                })
+                && t.text
+                    .rsplit('/')
+                    .next()
+                    .and_then(|step| step.rsplit_once('.'))
+                    .is_some_and(|(_, socket)| {
+                        socket.starts_with(|c: char| c.is_ascii_alphabetic())
+                    })
         }
         Value::List(_) => {
             let items = v.items();
@@ -238,13 +244,14 @@ mod tests {
 
     #[test]
     fn a_link_is_a_socket_value_naming_an_output_and_a_copy_is_not() {
-        let text = "material @m {\n  nodes {\n    node @a mix { factor @b.fac; shader [@c.bsdf @d.bsdf] }\n  }\n}\nobject @o { parent @plank.7 }\n";
+        let text = "material @m {\n  nodes {\n    node @a mix { factor @b.fac; shader [@c.bsdf @d.bsdf]; color @plank.7/@tex.color }\n  }\n}\nobject @o { parent @plank.7 }\n";
         assert_eq!(
             kinds(text),
             [
                 "datablock",
                 "node tree",
                 "node",
+                "link",
                 "link",
                 "link",
                 "datablock",

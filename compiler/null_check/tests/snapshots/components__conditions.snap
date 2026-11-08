@@ -1,0 +1,9 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+components/plank.noll:6:8 error[null-type]: `state == molten`: `molten` is not one of `state`'s words: solid, liquid
+components/plank.noll:6:8 error[null-type]: `state == 3m` compares one of [solid liquid] with a length
+components/plank.noll:6:8 error[null-type]: `stat == solid`: no parameter is called `stat`
+  fix: write `state`
+components/plank.noll:6:5 error[null-type]: `else` follows an `if` directly

@@ -2,6 +2,8 @@
 
 use std::collections::{HashMap, HashSet};
 
+use components::{Component, Placed, Scope};
+
 use null_syntax::ast::{Entry, Node, Value};
 use null_syntax::names::{is_kebab_case, to_kebab_case};
 use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, TextEdit, closest};
@@ -16,6 +18,8 @@ use crate::values::{
 };
 
 mod anim;
+pub(crate) mod components;
+pub(crate) mod expr;
 mod level0;
 mod subs;
 mod trees;
@@ -24,6 +28,17 @@ mod trees;
 /// (spec, section 7), and returns the problems in each file's text order. Syntax and
 /// name problems are `null_syntax::diagnostics`'s, not repeated here.
 pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
+    run(schema, files, false)
+}
+
+/// [`check`] on expanded files ([`crate::expand`]): a copy's handles (`@plank.7`,
+/// `@plank.7/@plank-mesh`) are the handles of the datablocks it made, defined and named as any
+/// other, and there are no components or placements left to reach them through.
+pub(crate) fn check_flat(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
+    run(schema, files, true)
+}
+
+fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagnostic> {
     let mut cx = Checker {
         schema,
         defs: HashMap::new(),
@@ -36,6 +51,11 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         groups: HashMap::new(),
         actions: HashMap::new(),
         refs: Vec::new(),
+        components: HashMap::new(),
+        placements: HashMap::new(),
+        cycles: HashSet::new(),
+        scope: None,
+        expanded,
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -51,9 +71,15 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
                 anim::slots(node, &mut cx.actions);
             } else if cx.tree_of(&kind).is_some_and(|(_, group)| group) {
                 trees::interfaces(node, &mut cx.groups);
+            } else if kind == "component" {
+                // Components and placements, which other files reach (task 1d-03b).
+                cx.collect_component(node);
+            } else if kind == "scene" || kind == "collection" {
+                cx.collect_placements(node);
             }
         }
     }
+    cx.find_cycles();
     for (file, parse) in files {
         for node in parse.document().nodes() {
             if node.name() != "array" {
@@ -117,6 +143,16 @@ struct Checker<'s> {
     actions: HashMap<String, anim::Slots>,
     /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
     refs: Vec<level0::ArrayRef>,
+    /// Every component, by handle (task 1d-03b).
+    components: HashMap<String, Component>,
+    /// Every placement in a scene or a collection, by its handle (task 1d-03b).
+    placements: HashMap<String, Placed>,
+    /// (a, b) for components a and b that place each other, directly or through others.
+    cycles: HashSet<(String, String)>,
+    /// Inside a component or a placement's block: what names mean (task 1d-03b).
+    scope: Option<Scope>,
+    /// The files are expanded (task 1d-03c): copy handles are plain handles.
+    expanded: bool,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -190,6 +226,7 @@ impl<'s> Checker<'s> {
     fn out(&mut self, file: FileId) -> Out<'_> {
         Out {
             file,
+            scope: self.scope.as_ref(),
             list: &mut self.out,
             scene: self.scene,
             scale: self.scale,
@@ -251,8 +288,12 @@ impl<'s> Checker<'s> {
         if kind == forms::PROJECT {
             return self.project(file, node);
         }
+        if kind == "component" {
+            return self.component(file, node);
+        }
         let Some(s) = self.schema.datablock_kinds().find(|s| s.kind == kind) else {
-            let kinds: Vec<&str> = std::iter::once(forms::PROJECT)
+            let kinds: Vec<&str> = [forms::PROJECT, "component"]
+                .into_iter()
                 .chain(self.schema.datablock_kinds().map(|s| s.kind.as_str()))
                 .collect();
             let suggestion = closest(&kind, kinds.iter().copied());
@@ -289,10 +330,13 @@ impl<'s> Checker<'s> {
     /// The handle and display name on a datablock's line, and nothing else.
     fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str) {
         let h = header(node);
+        let expanded = self.expanded;
         let mut out = self.out(file);
         match &h.handle {
             Some((handle, span)) => {
-                kebab_handle(handle, *span, &mut out);
+                if !(expanded && is_copy_handle(handle)) {
+                    kebab_handle(handle, *span, &mut out);
+                }
             }
             None if h.name.as_deref().and_then(to_kebab_case).is_none() => {
                 let span = node.name_token().map_or(node.span(), |t| t.span);
@@ -403,8 +447,16 @@ impl<'s> Checker<'s> {
     ) {
         let tree_kind = self.tree_of(kind);
         let mut forms: Vec<&str> = match kind {
-            "scene" => vec!["object", "collection", "units", "fps", "fps-base"],
-            "collection" => vec!["object", "collection"],
+            "scene" => vec![
+                "object",
+                "collection",
+                "units",
+                "fps",
+                "fps-base",
+                "use",
+                "override",
+            ],
+            "collection" => vec!["object", "collection", "use", "override"],
             "object" => vec!["data", "material", "modifier", "constraint", "bone"],
             "mesh" => vec![
                 "primitive",
@@ -452,7 +504,10 @@ impl<'s> Checker<'s> {
         for a in &all {
             let repeatable = matches!(
                 (kind, a.name.as_str()),
-                ("scene" | "collection", "object" | "collection")
+                (
+                    "scene" | "collection",
+                    "object" | "collection" | "use" | "override"
+                ) | (_, "if" | "else")
                     | ("object", "material" | "modifier" | "constraint" | "bone")
                     | ("pose-bone", "constraint")
                     | ("mesh", "attribute" | "uv-map" | "vertex-group")
@@ -468,6 +523,26 @@ impl<'s> Checker<'s> {
                 continue;
             }
             match (kind, a.name.as_str()) {
+                // Placements and overrides (task 1d-03b).
+                ("scene" | "collection", "use") => self.placement(file, a.node.unwrap(), None),
+                ("scene" | "collection", "override") => self.override_line(file, a.node.unwrap()),
+                // Conditions in a component's datablock: their lines are the datablock's.
+                (_, "if" | "else") if self.scope.is_some() && a.node.is_some() => {
+                    let n = a.node.unwrap();
+                    if a.name == "if" {
+                        self.condition(file, n);
+                    } else {
+                        let at = all.iter().position(|b| b.span == a.span).unwrap_or(0);
+                        if at == 0 || all[at - 1].name != "if" {
+                            self.out(file).error(
+                                codes::TYPE,
+                                a.name_span,
+                                "`else` follows an `if` directly",
+                            );
+                        }
+                    }
+                    self.attributes_with(file, n, kind, props, power, others, light_type);
+                }
                 ("scene" | "collection", "object") => self.reference(file, a, "object"),
                 ("scene" | "collection", "collection") => {
                     if a.node.is_some_and(defines) {
@@ -795,6 +870,56 @@ impl<'s> Checker<'s> {
 
     /// A handle that must name a datablock of `kind`.
     fn handle_ref(&mut self, file: FileId, v: &Value<'_>, kind: &str, what: &str) {
+        // Inside a component: a handle parameter by its name, and the component's own handles
+        // (task 1d-03b).
+        if let Some(scope) = self.scope.clone()
+            && let Some(word) = v.as_word()
+        {
+            if let Some(expr::Kind::Handle(k)) = scope.names.get(word) {
+                if !self.kind_fits(k, kind) {
+                    self.out(file).error(
+                        codes::HANDLE,
+                        v.span(),
+                        format!("`{word}` is a handle of a {k}, and `{what}` takes a {kind}"),
+                    );
+                }
+                return;
+            }
+            if scope
+                .locals
+                .iter()
+                .any(|(k, h)| h == word && self.kind_fits(k, kind))
+            {
+                return;
+            }
+        }
+        // A copy, or a datablock a copy made (`@plank.7`, `@plank.7/@plank-mesh`, task 1d-03b).
+        if let Some(word) = v.as_word()
+            && !self.expanded
+            && (components::is_copy_path(word)
+                || (word.contains('/')
+                    && self
+                        .placements
+                        .contains_key(word.split('/').next().unwrap_or_default())))
+        {
+            match self.copy_path(word) {
+                Ok(components::Reached::Copy(_)) if self.kind_fits("object", kind) => {}
+                Ok(components::Reached::Datablock(k)) if self.kind_fits(&k, kind) => {}
+                Ok(components::Reached::Sub { .. }) => {}
+                Ok(components::Reached::Copy(_)) => self.out(file).error(
+                    codes::HANDLE,
+                    v.span(),
+                    format!("`{word}` is a copy, an object, and `{what}` takes a {kind}"),
+                ),
+                Ok(components::Reached::Datablock(k)) => self.out(file).error(
+                    codes::HANDLE,
+                    v.span(),
+                    format!("`{word}` is a {k}, and `{what}` takes a {kind}"),
+                ),
+                Err(message) => self.out(file).error(codes::HANDLE, v.span(), message),
+            }
+            return;
+        }
         let Some(word) = v.as_word().filter(|w| w.starts_with('@')) else {
             return self.out(file).error(
                 codes::TYPE,
@@ -805,7 +930,9 @@ impl<'s> Checker<'s> {
                 ),
             );
         };
-        if !kebab_handle(word, v.span(), &mut self.out(file)) {
+        if !(self.expanded && is_copy_handle(word))
+            && !kebab_handle(word, v.span(), &mut self.out(file))
+        {
             // Respelt, it may name one: then the name's own fix is the whole fix.
             let kebab = to_kebab_case(word.trim_start_matches('@')).map(|k| format!("@{k}"));
             if kebab.is_some_and(|k| self.defs.contains_key(&(kind.to_string(), k))) {
@@ -1192,6 +1319,19 @@ fn frame_rate(scene: Node<'_>) -> null_value::Scene {
 }
 
 /// The handles of a node tree's nodes and their kinds.
+/// A handle an expansion writes: kebab-case handles joined by `/`, each with a copy's number
+/// or not (`@plank.7`, `@tree/@left/@right`, `@plank.7/@plank-mesh`; task 1d-03c).
+fn is_copy_handle(handle: &str) -> bool {
+    handle.split('/').all(|step| {
+        let bare = step.strip_prefix('@').unwrap_or("");
+        let name = match bare.rsplit_once('.') {
+            Some((n, k)) if !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit()) => n,
+            _ => bare,
+        };
+        is_kebab_case(name)
+    })
+}
+
 /// A handle must be `@` and kebab-case (S16, S18).
 fn kebab_handle(handle: &str, span: Span, out: &mut Out<'_>) -> bool {
     let bare = handle.trim_start_matches('@');

@@ -1,0 +1,10 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+objects/pier.noll:4:12 error[null-handle]: `@plank` has copies `@plank.1` to `@plank.20`, not `@plank.21`
+objects/pier.noll:5:12 error[null-handle]: `@plank` is a pattern: name one of its copies, such as `@plank.1`
+objects/pier.noll:6:12 error[null-handle]: a copy of `@plank` makes no `@plank-mesch`; did you mean `@plank-mesh`?
+objects/pier.noll:8:12 error[null-handle]: `@tree` is one copy, not a pattern: write `@tree`
+objects/pier.noll:10:12 error[null-handle]: a copy of `@branch` makes no `@leftt`; did you mean `@left`?
+objects/pier.noll:15:35 error[null-handle]: `@plank.3` is a copy, an object, and `data` takes a mesh

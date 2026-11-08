@@ -263,7 +263,7 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 - **Made from the name.** A new sub-object's handle is its Blender name in kebab-case, as for datablocks (S18): `Spine.002` gives `spine-002`, `Base Color` gives `base-color`.
 - **Unique within its owner, across kinds.** No two sub-objects of one owner share a handle, whatever their kinds, so `@pier/@bevel` names one thing without saying whether it is a modifier or a constraint. Blender lets a modifier and a constraint of one object share a name; the second then gets `-2` (`@bevel-2`), as Blender itself numbers names. A duplicate handle within an owner is an error.
 - **Paths.** `/` steps from an owner to a sub-object, and may step again where a sub-object owns others (`@rig/@spine-002/@ik`, a bone's constraint on the object's pose). `.` followed by a name names a socket of a node (`@bsdf.roughness`); `.` followed by a number is a copy made by a pattern (`@plank.7`, Sau's decision S61 (6)). Nothing else uses `.`. A path starts at a datablock handle; inside the owner's own block the owner may be left out (`@bevel`). There a path starts at that owner's own sub-objects first, so a datablock elsewhere with the same handle never shadows them, and the owner is that one datablock, its kind and handle (an object and a mesh may both be `@pier`); a path whose first step names none of the owner's sub-objects is read as written, from a datablock; once it names one, the path stays the owner's and its errors are the owner's.
-- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy and a package's datablock parse, and resolve once patterns (task 1d-03) and packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
+- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind>` and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy resolves through its placement (`@plank.7`, `@plank.7/@plank-mesh`, task 1d-03b); a package's datablock parses, and resolves once packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
 - **What keeps identity across a rename.** Where Blender keeps an identity of its own that survives renaming, Sau maps the handle to it. Where Blender identifies the sub-object only by its name, Sau keeps the handle through the project's map, `.sau/ids.noll`, keyed by the owner's persistent ID (Sau's decision S61 (3), task 1b-02b). Either way a rename in Sau changes the quoted name and keeps the handle and every reference.
 
 | Sub-object | Owner | Blender's own identity (checked in Blender 5.3's DNA) | Kept by |
@@ -364,10 +364,10 @@ armature @rig-bones "Rig"
 
 ### Components, parameters and patterns
 
-Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6) and S74). Parsing and checking these forms is 1d-03b, and expanding them 1d-03c, so the examples are fenced `null (1d-03b)`. A component is a part made once and placed many times, as a React component is (S19). Each placement may differ from the others in any regard, and each copy keeps a handle of its own.
+Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6) and S74). The checker reads and checks these forms as they stand (task 1d-03b), and the examples below check clean; `null_check::expand` expands them into the flat project (task 1d-03c). A component is a part made once and placed many times, as a React component is (S19). Each placement may differ from the others in any regard, and each copy keeps a handle of its own.
 
 - **A component** is a top-level `component @h "Name" { … }` in any file. Its block holds its parameters and the datablocks it makes. The first `object` in it is its **root**, the object a placement puts in the scene; the rest (its data, materials made for it, child objects) come with it. A datablock the component names but does not define (`material @oak`) is the project's, shared by every placement, never copied.
-- **Parameters** are `param <name> <default>`, typed by the default: a length (`2.4m`), an angle, a number, a whole number, `on` or `off`, a handle of a kind (`param finish material @oak`), or a word from a list (`param state solid { one-of [solid liquid] }`). A parameter with no default (`param length length`, naming its type) must be given by every placement. Names are kebab-case and local to the component.
+- **Parameters** are `param <name> <default>`, typed by the default: a length (`2.4m`), an angle, a number, a whole number, `on` or `off`, a handle of a kind (`param finish material @oak`), or a word from a list (`param state solid { one-of [solid liquid] }`). A parameter with no default (`param length length`, naming its type) must be given by every placement. The types a parameter names are `length`, `area`, `volume`, `mass`, `angle` and `time` (in seconds), `number`, `whole-number`, `on-off`, a kind of datablock (`param finish material`), and `word` with a `one-of` list (`param state word { one-of [solid liquid] }`). Names are kebab-case and local to the component.
 - **Arithmetic.** Wherever a value goes, a word may be an expression over numbers with units, parameter names and `+`, `*` and `/`, with the usual precedence: `length/1m`, `n*25cm`, `width*0.5`. Subtraction, grouping and comparisons are written as a quoted expression, with spaces around each operator: `"length - 10cm"`, `"(n - 1) * 25cm"`, `"state == liquid"`. A `-` inside a word is part of a name, since names are kebab-case, and Scowr reserves `( )` (S15, S74 (3)). Units follow section 6: an expression's value is computed exactly and rounded once into the property's type (S59), and a length times a length is an error where a length goes.
 - **Placement.** `use @component @handle { … }`, in a scene or a collection, places one copy. Its root object becomes `@handle` and joins that scene or collection. The block gives parameters by name and sets the root object's own properties (`location`, `rotation-euler`, `parent`); a name is a parameter's first. A component from a package is placed the same way, `use @cosmosis-materials:oak-plank @deck` (S54).
 - **Patterns.** `use @component @handle count=N { … }` places N copies in one line (S34). The copies' handles are `@handle.1` to `@handle.N`, counted as the pattern counts (S61 (6)), and in the block `n` is the copy's number. `use … each=[v1 v2 …] as=<name>` places one copy per item of a list, the item named `<name>` in the block, the copies numbered in the list's order.
@@ -380,16 +380,23 @@ Task 1d-03a, November 8, 2026 (Sau's decisions S19, S32 to S35, S38, S54, S61 (6
 
 **Expansion** (S32). On load, after parsing and before checking, every placement is expanded into the datablocks it makes. Parameters are put in, conditions are decided, patterns are unrolled, and overrides are laid over each copy. The checker then checks that flat project, as if it had been written out, and Sau applies it as real Blender data. Copies whose data comes out identical share one datablock underneath, through Blender's instancing (1d-03e), and the handles stay one per copy. Expansion is deterministic: the same text gives the same datablocks, handles and order every time. Write-back keeps the abstract form (S35): a moved copy writes one `override` line, never the expanded data.
 
+How the flat project is written (task 1d-03c):
+- **Components are taken out**, and each scene or collection that places copies is written with a member line for each copy's root (`object @plank.7`), and for each copy made inside one (`object @tree/@left`). The copies' datablocks follow it in its file, in placement order, each copy's in the component's order, under their handles: `object @plank.7 "Plank"`, `mesh @plank.7/@plank-mesh "Plank"`. Every other line is as written.
+- **Parameters** are a copy's defaults, then its placement's, then those of an `override` naming it. The placement's lines and the override's that are not parameters are laid over the root object; an override of another datablock a copy made (`override @gate.1/@post-mesh`) or of a sub-object (`override @plank.7/@fluid`) is laid over that, and so is one of a sub-object inside a sub-object, by its path (`override @rig.2/@spine/@reach { chain-count 3 }`, a pose bone's constraint; task 1d-03i), its lines checked as that sub-object's own. They are laid in layers, the component's lines first, then the placement's, then each override's in the order written: a line replaces the line of its name in every layer before it, or for a `modifier`, `constraint` or `bone`, the one of its name and handle; any other is added. So an override's `location` replaces the placement's.
+- **Values are computed exactly**, as fractions in each dimension's internal unit, and a parameter keeps its fraction from its placement to every use. An angle written in degrees stays in degrees through every step, as a power of its own (`35deg*2m/1m` is `70deg`, `35deg/5deg` is `7`). A value is written as a decimal in its unit: exactly where a decimal holds the value, else to 60 significant digits, enough that for any fraction the one rounding into the property's type (S59) is the checker's and Sau's. `n*25cm` for copy 7 is `1.75m`, `length/1m` is `2.4`, `2*35deg` is `70deg`. Degrees and radians do not add, subtract or compare in one expression, since π/180 is no fraction, and the checker refuses this where a parameter's default shows its unit, as the expansion always does (task 1d-03i); two values of different kinds do not compare; a value with degrees left in a power other than an angle's (`35deg*35deg`, `35deg/1rad`) has no exact form; and a division by zero, or a value beyond what the fractions hold, is an error.
+- **A quoted string** is computed only where it is an expression of the parameters in scope with an operator (`"depth - 1"`); any other string is a string.
+- **Problems point back to the source** (task 1d-03h). The flat project keeps a map from each piece of its text to where it is written: a name or an entry to its own text in the component, placement or override, a value the expansion computed to the expression that made it, a copy's handle to its datablock's line, a member line to its placement. A problem the checker finds in the flat project is reported there, once, with the copies it was found in as a note (`in 20 copies: @plank.1, …`), and so is a problem of the expansion's own. A fix is kept where its edit lands exactly on text as written.
+
 **Why every file finishes loading** (S38). Null is total, not Turing-complete:
 - a pattern's `count=` is a whole number and its `each=` a list, both known before expansion;
 - a condition only picks between lines;
 - recursion is allowed only on a `countdown` parameter that every recursive placement makes smaller and that stops at 0, so every chain of placements ends.
 
-Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
+Expansion therefore always ends. As a guard against a count that is merely huge, a project that expands to more than 1,000,000 datablocks is an error, reported at the line that asked for them, never a hang. The expansion also stops at a recursion that does not count down, whatever the checker has said of it, and at copies nested more than 256 deep (Sau's decision S76), since a countdown from a million would end, but only after exhausting the expansion's stack. Computation without a bound lives in geometry nodes (repeat, simulation and for-each zones) and in generators (section 13).
 
 The pier of twenty planks, plank 7 liquid:
 
-```null (1d-03b)
+```null
 // components/plank.noll
 component @plank "Plank" {
   param length 2.4m
@@ -406,9 +413,12 @@ component @plank "Plank" {
     primitive cube size=1m scale=[length/1m 0.2 0.04]
   }
 }
+
+// The project's own: the component names it and does not define it, so every copy shares it.
+material @water "Water"
 ```
 
-```null (1d-03b)
+```null
 // objects/pier.noll
 collection @pier "Pier" {
   use @plank @plank count=20 {
@@ -420,7 +430,7 @@ collection @pier "Pier" {
 
 A tree whose branches count down:
 
-```null (1d-03b)
+```null
 component @branch "Branch" {
   param depth 4 { countdown }
   param length 1m

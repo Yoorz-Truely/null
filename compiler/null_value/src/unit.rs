@@ -393,6 +393,24 @@ impl Unit {
         self.def().conv
     }
 
+    /// How a value written in this unit becomes the internal unit, exactly: the factor `n / d`
+    /// (`cm`: 1/100, `in`: 254/10000), or `None` for a unit that is no plain multiple (degrees,
+    /// by π/180; a temperature with an offset). For computing with units exactly (Null's
+    /// component expansion, task 1d-03c).
+    pub fn exact_factor(self) -> Option<(u128, u128)> {
+        match self.conv() {
+            Conv::Shift(k) if k >= 0 => Some((10u128.checked_pow(k as u32)?, 1)),
+            Conv::Shift(k) => Some((1, 10u128.checked_pow((-k) as u32)?)),
+            Conv::Ratio(n, d) => Some((n, d)),
+            Conv::Pi | Conv::Affine { .. } => None,
+        }
+    }
+
+    /// Whether this is the degree, which converts to radians by π/180.
+    pub fn is_degrees(self) -> bool {
+        matches!(self.conv(), Conv::Pi)
+    }
+
     /// The unit written as `suffix`, the one of `dimension` first (`mm` is a length, and a
     /// camera's lens in millimetres, and a wavelength).
     pub fn from_suffix(suffix: &str, dimension: Dimension) -> Option<Unit> {

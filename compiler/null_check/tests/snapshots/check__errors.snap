@@ -41,4 +41,4 @@ objects/cases.noll:54:34 error[null-unknown-property]: a bsdf-principled node ha
   fix: write `base-color`
 objects/cases.noll:54:64 error[null-handle]: a bsdf-principled node has no output `out`: it has `bsdf`
 objects/cases.noll:55:15 error[null-kind]: `mix-shader` is not a node kind a shader tree takes: `bsdf-principled`, `output-material`
-objects/cases.noll:59:1 error[null-kind]: `lamp` is not a kind of datablock the schema knows: `project`, `scene`, `collection`, `object`, `mesh`, `material`, `camera`, `light`
+objects/cases.noll:59:1 error[null-kind]: `lamp` is not a kind of datablock the schema knows: `project`, `component`, `scene`, `collection`, `object`, `mesh`, `material`, `camera`, `light`
