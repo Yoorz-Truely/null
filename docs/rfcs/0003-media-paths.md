@@ -1,8 +1,8 @@
 # 0003: How a media datablock's file is written
 
-- Status: proposed
+- Status: accepted
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S83
 - Affects: forms over RNA, diagnostics
 - Null format: unchanged
 
@@ -77,4 +77,4 @@ None.
 
 ## Decision
 
-Filled in when decided.
+Accepted on November 9, 2026, by the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S83. It says how section 12's references are written, which no file of the corpus or the slice used before, so no file changes meaning. The wording above is in section 12 (task 1d-05h), and Sau and Cosmósis follow it (task 1d-05f).

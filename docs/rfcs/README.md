@@ -35,4 +35,4 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | Number | Title | Status |
 | --- | --- | --- |
 | [0001](0001-srgb-table.md) | The sRGB rule by a table of exactly rounded values | accepted (S62) |
-| [0003](0003-media-paths.md) | How a media datablock's file is written | proposed (Sau's task 1d-05h) |
+| [0003](0003-media-paths.md) | How a media datablock's file is written | accepted (S83) |

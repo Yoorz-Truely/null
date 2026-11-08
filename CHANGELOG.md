@@ -4,6 +4,8 @@
 
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
+- November 9, 2026: RFC 0003, accepted as Sau's decision S83 (task 1d-05h): section 12 says a media datablock's `filepath` is a path from the project's root (`/` separators, no `.` or `..` parts, none leaving the root through a link) or an absolute path, never Blender's `//`; packed files are never written and become files in `media/<sha256>.<ext>`; `sau check` reports `cosmosis-media-path` and `cosmosis-media-missing` as errors and `cosmosis-media-outside` as a warning on every absolute path; a missing file at apply is reported and the datablock still made. No file changes meaning; the Null format is unchanged.
+
 ## v0, November 8, 2026
 
 Null v0 is frozen: the specification `docs/spec/null-v0.md` as of the local tag `v0` (Sau's task 1d-01c). It covers the slice and every v0 construct: values and units with exact conversion, identity and references with sub-object handles, every datablock type through the generated schema with Null's own forms, geometry as source at every level, components, node trees (shader, geometry, compositor and texture, with zones, group interfaces and an absolute `layout` with sizes), modifiers, constraints, animation, drivers in Null's expression syntax, the `raw` block, the canonical form and the diagnostics. From here, a change to what a file means goes through an RFC (`docs/rfcs/README.md`). The entries below are v0's history, oldest first.
