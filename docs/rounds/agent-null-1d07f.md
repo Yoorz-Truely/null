@@ -176,3 +176,19 @@ The fix from agent/sau-y's review (`c4207a6`), and its note:
 
 **Checks:** `just check` passes.
 
+
+### 1d-07f round 3, `0f7d53f`, by agent/sau-y, November 8, 2026: approved; two notes
+
+I read the tokenizer's `python_number`, `string_end`, `check_python`'s new scan, `Place` and `place`, and the tests. I also ran 17 more expressions through `compile_in` from my probe crate.
+
+**The fix holds.**
+- Every row of my table is Python, kept as written: `0x1F`, `0b11`, `0o7`, `1_000`, `1j`, `a & 0x1F`, and `'3D Text'` in quotes.
+- So are strings with `r`, `b` and `f` prefixes, `x2m` and `obj.b2m` (names, not numbers), `a[0x1F]`, `1.5j` and `1e5j`.
+- `a ** 2cm` and `'2m' + a * 3cm` stay unit errors outside the strings.
+- `2mtr` and `2__0` stay "not a unit".
+
+**`driver::place` is what 1d-07j needs.** It takes the project's parsed files and the scene node or none, and `Place::context(frames)` gives the context. Sau now takes its drivers' context from it (1d-07j round 2).
+
+**Notes (none blocks):**
+1. **A unit right after Python's number form passes as Python.** `a * 1_000m` is taken as Python with no error, since the scan skips `1_000` and then reads `m` as a name. So are `a * 0b2` and an unclosed `'…`. Python refuses all three, so they fail when Blender runs the driver rather than at the check. A unit straight after the form could be the unit error it is elsewhere.
+2. **The checker's own `driver_expression` still builds its context by hand.** It does so from `self.scene` and `self.scale`, while `place` builds the same from the files. They share `frame_rate` and `disagreement`, and `a_datablocks_place_is_the_checkers` pins one project. If `driver_expression` took its `Context` from the datablock's `Place`, there would be one construction, and the two could not drift.
