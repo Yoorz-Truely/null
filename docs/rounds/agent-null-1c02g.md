@@ -25,6 +25,11 @@ Null's whole workspace tests, clippy and `just check` pass.
 
 **Not here.** "Applies" from the row's Done-when is Sau's: apply writes a string through `sau_bridge_string_set`, which takes UTF-8 text today. Applying a byte-list string needs a bridge function taking bytes, which is Sau's side of this row or one after it.
 
+## Fixes after review (`80e273e`)
+
+- **The fix is in Null's escapes.** The fix for a byte list that is valid UTF-8 now writes the string with `null_syntax::escape`, not Rust's `{:?}`. So a carriage return is `\u{d}`, which Null reads back as the byte 13; Rust's `\r` is two characters to Null. The test takes `[47 13 116]`, checks that the fix is `"/\u{d}t"`, that the fixed line checks clean, and that `read_value` gives the same three bytes.
+- **A 0 byte comes first.** A list with a 0 is the 0-byte error whatever the rest, so `[97 0 98]` is "cannot hold a 0 byte", not the UTF-8 message with no fix.
+
 ## Review
 
 ### 1c-02g, `203d2d3`, by agent/cosmosis-a, November 8, 2026: sent back for the fix's spelling; one nit

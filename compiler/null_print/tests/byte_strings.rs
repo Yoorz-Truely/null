@@ -138,6 +138,29 @@ fn a_byte_list_is_only_for_bytes_that_are_not_utf8() {
             found[0].1
         );
     }
+    // The fix is in Null's escapes, so it reads back as the same bytes: a carriage return is
+    // `\u{d}`, not Rust's `\r`, which Null reads as two characters (1c-02g's review).
+    let text = line("[47 13 116]");
+    let parsed = parse(&text);
+    let found = check(&schema, &[(FileId(0), &parsed)]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let fix = found[0].fixes[0].edits[0].replacement.clone();
+    assert_eq!(fix, "\"/\\u{d}t\"");
+    assert_eq!(codes_of(&schema, &line(&fix)), vec![]);
+    let p = schema
+        .properties_of("Image")
+        .into_iter()
+        .find(|p| p.name == "filepath")
+        .unwrap()
+        .clone();
+    assert_eq!(
+        read_value(&fix, &p, &Scene::default()).unwrap(),
+        Typed::Text(vec![47, 13, 116])
+    );
+    // A 0 byte is that error, whether or not the rest is UTF-8.
+    let found = codes_of(&schema, &line("[97 0 98]"));
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].1.contains("cannot hold a 0 byte"), "{found:?}");
     let found = codes_of(&schema, &line("[47 0 252]"));
     assert!(
         found

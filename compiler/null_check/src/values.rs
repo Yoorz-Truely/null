@@ -531,16 +531,26 @@ pub(crate) fn check_string(value: &Value<'_>, name: &str, p: &Property, out: &mu
                     }
                 }
             }
+            // A 0 byte first: Blender's strings end at one, whatever the rest.
+            if bytes.contains(&0) {
+                return out.error(
+                    codes::TYPE,
+                    span,
+                    format!("`{name}` cannot hold a 0 byte: Blender's strings end at one"),
+                );
+            }
             if let Ok(text) = std::str::from_utf8(&bytes) {
-                // One spelling (S65): a string that is UTF-8 is always written as a string.
-                let fix = format!("{text:?}");
+                // One spelling (S65): a string that is UTF-8 is always written as a string, with
+                // Null's own escapes, so the fix reads back as the same bytes (a carriage return
+                // is `\u{d}`, not Rust's `\r`; 1c-02g's review).
+                let fix = null_syntax::escape(text);
                 return out.error_fix(
                     codes::TYPE,
                     span,
                     format!(
                         "`{name}`'s bytes are valid UTF-8, so it is written as a string: {fix}"
                     ),
-                    (!bytes.contains(&0)).then(|| (format!("write {fix}"), span, fix.clone())),
+                    Some((format!("write {fix}"), span, fix.clone())),
                 );
             }
             bytes
