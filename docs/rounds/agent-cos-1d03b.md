@@ -212,3 +212,5 @@ Stacked on 1d-03c round 2 (`66e498f`, approved at `38e6d68`), on the same branch
 
 **Checks.** `just check` passes.
 
+**Added after the 1d-03d review.** That review found that a component's datablock written with only a display name (`object "Plank"`, S18) fell outside this expansion: it was skipped, though the 1d-03b checker reads it. The expansion now takes a datablock's handle as the checker does, the written one or `@` and the kebab-case form of its name. It writes the copy's handle onto a line that had none, and maps the handles of datablocks under a component's `if` and `else` too. A test covers a nameless root, a mesh named "Plank Mesh" and a material under a condition, and the expanded project checks clean.
+

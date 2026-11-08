@@ -547,6 +547,19 @@ fn first_word<'a>(node: Node<'a>) -> Option<&'a str> {
     node.args().next().and_then(|v| v.as_word())
 }
 
+/// The handle a datablock's line defines: written, or `@` and the kebab-case form of its display
+/// name (S18), as the checker reads it.
+fn handle_of(node: Node<'_>) -> Option<String> {
+    if let Some(h) = node.handle() {
+        return Some(h.text.to_string());
+    }
+    let name = node.args().find_map(|v| match v {
+        Value::Str(_) | Value::Raw(_) => v.as_string(),
+        _ => None,
+    })?;
+    Some(format!("@{}", null_syntax::names::to_kebab_case(&name)?))
+}
+
 /// A node's text from `span`, which lies inside it.
 fn text_in<'a>(node: Node<'a>, span: Span) -> &'a str {
     let start = node.span().start;
@@ -587,6 +600,22 @@ impl<'a> Ex<'a, '_> {
 
     fn is_datablock(&self, kind: &str) -> bool {
         self.schema.datablock_kinds().any(|s| s.kind == kind)
+    }
+
+    /// A component's datablocks with their handles, those under its `if`s and `else`s
+    /// included, in order.
+    fn datablocks(&self, node: Node<'a>, out: &mut Vec<(Node<'a>, String)>) {
+        for c in node.children() {
+            match c.name().as_ref() {
+                "if" | "else" => self.datablocks(c, out),
+                kind if self.is_datablock(kind) => {
+                    if let Some(h) = handle_of(c) {
+                        out.push((c, h));
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     /// A block's lines, conditions decided: an `if`'s when it holds, else its `else`'s.
@@ -662,9 +691,17 @@ impl<'a> Ex<'a, '_> {
     ) {
         let pad = "  ".repeat(depth);
         let mut line = node.name().into_owned();
+        // A datablock whose handle is made from its name (S18) has its copy's handle written.
+        let written = node.handle().is_some();
+        if let Some(h) = head
+            && !written
+        {
+            line.push(' ');
+            line.push_str(h);
+        }
         for (i, e) in node.entries().enumerate() {
             let text = match (e, head) {
-                (Entry::Arg(_), Some(h)) if i == 0 => Ok(h.to_string()),
+                (Entry::Arg(_), Some(h)) if i == 0 && written => Ok(h.to_string()),
                 (Entry::Arg(v), _) => ctx.value(&v),
                 (Entry::Prop { key, value }, _) => {
                     ctx.value(&value).map(|v| format!("{}={v}", key.text))
@@ -956,16 +993,14 @@ impl<'a> Ex<'a, '_> {
             handles: HashMap::new(),
         };
         let mut root = None;
-        for c in comp.children() {
-            if let Some(h) = first_word(c).filter(|h| h.starts_with('@'))
-                && self.is_datablock(&c.name())
-            {
-                if c.name() == "object" && root.is_none() {
-                    root = Some(h.to_string());
-                    ctx.handles.insert(h.to_string(), copy.to_string());
-                } else {
-                    ctx.handles.insert(h.to_string(), format!("{copy}/{h}"));
-                }
+        let mut datablocks = Vec::new();
+        self.datablocks(comp, &mut datablocks);
+        for (c, h) in datablocks {
+            if c.name() == "object" && root.is_none() {
+                root = Some(h.clone());
+                ctx.handles.insert(h, copy.to_string());
+            } else {
+                ctx.handles.insert(h.clone(), format!("{copy}/{h}"));
             }
         }
         members.push(copy.to_string());
@@ -987,11 +1022,11 @@ impl<'a> Ex<'a, '_> {
                 break;
             }
             self.made += 1;
-            let Some(h) = first_word(c).filter(|h| h.starts_with('@')) else {
+            let Some(h) = handle_of(c) else {
                 continue; // the checker says so
             };
-            let new = ctx.handles.get(h).cloned().unwrap_or_else(|| h.to_string());
-            let over = if root.as_deref() == Some(h) {
+            let new = ctx.handles.get(&h).cloned().unwrap_or_else(|| h.clone());
+            let over = if root.as_deref() == Some(h.as_str()) {
                 root_over.clone()
             } else {
                 self.overrides_of(file, &new)

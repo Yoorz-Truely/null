@@ -469,3 +469,46 @@ fn a_misspelt_step_of_a_sub_object_path_is_reported_with_the_nearest() {
     assert!(p.contains("`chain-cont`"), "{p}");
     assert!(p.contains("chain-count"), "{p}");
 }
+
+#[test]
+fn a_component_s_datablocks_may_take_their_handles_from_their_names() {
+    // S18 inside a component: `object "Plank"` is `@plank`, `mesh "Plank Mesh"` `@plank-mesh`,
+    // and a datablock under a condition is the copy's too.
+    let plank = r#"component @plank "Plank" {
+  param state dry { one-of [dry wet] }
+  object "Plank" {
+    data mesh @plank-mesh
+    if "state == wet" { material @water }
+  }
+  mesh "Plank Mesh" { primitive cube size=1m }
+  if "state == wet" {
+    material "Puddle" {}
+  }
+}
+"#;
+    let pier = "collection @pier \"Pier\" {\n  use @plank @plank count=2 {}\n  override @plank.2 { state wet }\n}\n";
+    let (out, problems) = run(
+        &[
+            ("m.noll", MATERIALS),
+            ("plank.noll", plank),
+            ("pier.noll", pier),
+        ],
+        true,
+    );
+    assert_eq!(problems, "");
+    let text = &out[2].text;
+    assert!(
+        text.contains("object @plank.1 \"Plank\" {\n  data mesh @plank.1/@plank-mesh\n}\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("mesh @plank.2/@plank-mesh \"Plank Mesh\""),
+        "{text}"
+    );
+    assert!(
+        text.contains("material @plank.2/@puddle \"Puddle\""),
+        "{text}"
+    );
+    assert!(!text.contains("@plank.1/@puddle"), "{text}");
+    assert_eq!(expanded_problems(&out), "");
+}
