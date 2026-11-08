@@ -28,7 +28,7 @@ No proposal is needed for:
 
 ## Versions and migrations
 
-Every project names the Null format it is written for (`null-format 1` in `cosmosis.noll`, Cosmósis spec, section 4). A change that breaks old files raises the format. Cosmósis migrates an older project when it reads it: the generated migrations of Sau's decision S45, one per step, each with a test that turns a file of the old format into the new one. A project in a format newer than the reader knows is an error, never guessed at.
+Every project names the Null format it is written for (`null-format 1` in `cosmosis.noll`, Cosmósis spec, section 4). A change that breaks old files raises the format. Cosmósis migrates an older project when it reads it: the generated migrations of Sau's decision S45, one per step, each with a test that turns a file of the old format into the new one. A project in a format newer than the reader knows is an error, never guessed at. The steps are `null_check::migrate`'s: `FORMAT` is the format this Null reads, and each RFC that raises it adds a `Migration` from the old format to `MIGRATIONS`, most of them a list of `Rename`s generated from Blender's own (`rename_properties`). A step leaves a file it already rewrote as it is. Cosmósis's `sau migrate` runs them (Cosmósis spec, section 4, "Migrations"; Sau task 1d-04d).
 
 ## Proposals
 
