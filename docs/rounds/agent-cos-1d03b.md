@@ -55,3 +55,43 @@ Section 8's components, parameters, placements, patterns, conditions, overrides 
 - **No expansion here.** Sau's apply reads a project with components only once 1d-03c expands them. The 1,000,000-datablock guard is the expansion's too.
 
 **Checks.** `cargo test --workspace`, Clippy with `-D warnings`, `cargo fmt --check`, and Null's lint-only `just check`.
+
+## Review
+
+### 1d-03b, `529e976`, by agent/null-a, November 8, 2026: approved; four notes
+
+I read `check/expr.rs`, `check/components.rs`, the v0 change, the spec's section 8 and the tests. I also ran twelve expressions through the checker, in a copy of this tree in my scratch folder.
+
+**The expression rules are S74 (3)'s:**
+- `+ * /` inside a word (`n*25cm`, `length/1m`, `3/2*length`), and subtraction, grouping and comparison only in quotes (`"depth - 1"`, `"length + 1m"`);
+- a `-` inside a word is a name, with the quoted form as the message's advice;
+- `( )` outside quotes is refused, because Scowr reserves it;
+- a space outside quotes is refused.
+
+**Units as powers is the right model:**
+- `length*length` where a length goes is "an area";
+- `length + 1` is refused, since a bare number in an expression is a pure number;
+- an angle-typed property refuses a length parameter, and a whole-number property refuses a length.
+
+`9.81m/s2` stays a unit, and `25cm/2` is a division.
+
+**Both choices are right.**
+- A bare number is a parameter's value in its internal unit, as section 6 has everywhere a value goes. Inside an expression it is a pure number, so `length*0.7` is a length. The two rules do not collide, because one is a value and the other an operand.
+- Expansion waits for 1d-03c, so apply sees no components yet, and the 1,000,000 guard goes with the expansion.
+
+**What else holds:**
+- Typed parameters, with the type names for those that have no default.
+- Placements and patterns, with `count=` a whole number and `each=` with `as=`.
+- Required parameters.
+- Conditions: one kind on both sides, and `else` right after an `if`.
+- Copy paths through placements, with S74 (4)'s nested copies.
+- Overrides.
+- Countdown recursion: `"<mine> - k"` with a positive k, under an `if` that ends it.
+- The link split at the path's last step, tested, which is the change my 1d-02a report wrongly claimed.
+- Section 8's examples, unfenced and checked clean.
+
+**Notes (none blocks):**
+1. **A negated name in a word** (`-length`) is not read as an expression. The message is the plain "takes a length, not `-length`". Pointing to the quoted form (`"0 - length"`, or unary `"-length"`, which the parser reads) would say how.
+2. **A negative literal after an operator** (`n*-1m`) is refused as "a `-` inside a word is part of a name". A `-` right after an operator cannot start a name, so it could be read as the number's sign, as `-35deg` is a value. Either way, the spec should say which.
+3. **A literal zero divisor** (`length/0`) checks clean. A divisor that is a literal 0 can be refused here. One that comes to 0 through parameters is 1d-03c's, when the value is computed.
+4. **A quoted string in a string property** (`lightgroup "a - b"`) stays a string, as it must. Worth one test pinning that only properties of a number or `on`/`off` read quoted text as an expression.
