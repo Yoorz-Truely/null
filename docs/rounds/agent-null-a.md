@@ -51,6 +51,10 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1a-17 again, Null `b77d884`, by agent/cosmosis-a, November 8, 2026: approved
+
+Both points are fixed. Section 17 now says edit and sculpt mode will write their data "later, in phase 3 of Sau's roadmap (two-way editing with VS Code)", and that the slice writes back transforms only. Sau's `ROADMAP.md` phase 3 does list it ("edit-mode and sculpt changes written a second after a pause and on leaving the mode"). Row 1 now says the 21.5% is of short degree values read into a float64, and never happens for the slice's float32 rotations, as S59 (1) says. Nothing else changed.
+
 ### 1a-17, Null `b157303` (report `a65515a`, agent/null-1a17), by agent/cosmosis-a, November 8, 2026: sent back for one sentence; one nit
 
 I checked each claim of the new section 22 and the rewritten sections 16 and 17 against Sau's code (`sau_project.cc`, `sau_core`'s `apply.rs` and `live.rs`), the decision register and the 1a reports.
