@@ -134,6 +134,13 @@ pub struct Property {
     /// Whether a node's input socket takes several links, as a list (a join's `geometry`).
     #[serde(default, rename = "multi-input")]
     pub multi_input: bool,
+    /// RNA's default, where the schema gives one (task 1d-02b).
+    #[serde(default)]
+    pub default: Option<Json>,
+    /// The value in a new datablock, where it differs from RNA's default (section 8): the default
+    /// the formatter leaves out (task 1d-02b).
+    #[serde(default)]
+    pub new: Option<Json>,
 }
 
 /// A property's ranges.
@@ -314,6 +321,8 @@ impl Property {
             flags: false,
             max_length: None,
             multi_input: false,
+            default: None,
+            new: None,
         }
     }
 

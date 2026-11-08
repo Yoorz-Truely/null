@@ -1,0 +1,12 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" { location [0m 0m 1deg] }\n
+case.noll:1:34 error[null-unit]: `location` cannot take `deg`: it takes m, cm, mm, km, um, nm, pm, mi, yd, ft, in, thou or a bare number
+--- camera @c "C" { clip-start 1s }\n
+case.noll:1:29 error[null-unit]: `clip-start` cannot take `s`: it takes m, cm, mm, km, um, nm, pm, mi, yd, ft, in, thou or a bare number
+--- camera @c "C" { lens 5zz }\n
+case.noll:1:23 error[null-unit]: `zz` is not a unit `lens` takes; it takes mm, cm, m, um or a bare number
+  fix: write `mm`
+  `write `mm`` gives: camera @c "C" { lens 5mm }\n

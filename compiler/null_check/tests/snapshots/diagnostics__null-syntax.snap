@@ -1,0 +1,12 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" {\n  location [0m 0m 1m\n}\n
+case.noll:2:12 error[null-syntax]: this [ is never closed; add ] after the last value
+  fix: add ] after the last value
+  `add ] after the last value` gives: object @o "O" {\n  location [0m 0m 1m]\n}\n
+--- object @o "O" {\n  name = "x"\n}\n
+case.noll:2:8 error[null-syntax]: `=` takes no spaces: write `name=…` on its owner's line, or `name …` as a line of its own
+  fix: write `name` and its value as a line of its own
+  `write `name` and its value as a line of its own` gives: object @o "O" {\n  name "x"\n}\n

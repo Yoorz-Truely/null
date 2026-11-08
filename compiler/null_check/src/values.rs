@@ -264,11 +264,20 @@ fn check_range(x: f64, word: &str, span: Span, name: &str, p: &Property, out: &m
             // A note, not an error (the lead's call on task 1c-02b): a `.blend` can hold a value
             // outside RNA's range (an infinity in DNA), and Null writes what Blender stores. Blender
             // clamps it when the value is set (spec, section 6, "Types").
+            // What it becomes: RNA's setters clamp to the hard range (`CLAMP`), which leaves a
+            // NaN as it is, since no comparison with one holds.
+            let then = if x < lo {
+                format!("Blender clamps it to {} when it is set", show(lo))
+            } else if x > hi {
+                format!("Blender clamps it to {} when it is set", show(hi))
+            } else {
+                "Blender's clamp leaves a NaN as it is".to_string()
+            };
             out.note(
                 codes::RANGE,
                 span,
                 format!(
-                    "`{word}` is outside `{name}`'s range, {} to {}; Blender clamps it when it is set",
+                    "`{word}` is outside `{name}`'s range, {} to {}; {then}",
                     show(lo),
                     show(hi)
                 ),
@@ -475,7 +484,7 @@ fn check_flags(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
                 item.span(),
                 format!(
                     "`{word}` is not a value of `{name}`: it takes {}",
-                    list(&items)
+                    list_near(word, &items)
                 ),
                 fix.map(|f| (format!("write `{f}`"), item.span(), f.to_string())),
             );
@@ -532,7 +541,7 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
             value.span(),
             format!(
                 "`{name}` takes one of {}, not `{}`",
-                list(&items),
+                list_near(value.text(), &items),
                 value.text()
             ),
         );
@@ -580,7 +589,7 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
         ),
         _ => format!(
             "`{word}` is not a value of `{name}`: it takes {}",
-            list(&items)
+            list_near(word, &items)
         ),
     };
     let code = if suggestion == Some(lowered.as_str()) {
@@ -603,6 +612,39 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
             (format!("write `{text}`"), value.span(), text)
         }),
     );
+}
+
+/// Items for a message about `word`, which is none of them: all of them in their order where
+/// there are twelve or fewer, else the twelve nearest `word` by edit distance (ties in their
+/// order) and a count, so the list shows where the word went wrong (1d-02c's review).
+pub(crate) fn list_near(word: &str, items: &[&str]) -> String {
+    if items.len() <= 12 {
+        return list(items);
+    }
+    let mut near: Vec<(usize, usize, &str)> = items
+        .iter()
+        .enumerate()
+        .map(|(i, it)| (edit_distance(word, it), i, *it))
+        .collect();
+    near.sort_unstable();
+    let nearest: Vec<&str> = near.iter().map(|(_, _, it)| *it).collect();
+    list(&nearest)
+}
+
+/// Levenshtein's distance between `a` and `b`, by characters.
+fn edit_distance(a: &str, b: &str) -> usize {
+    let b: Vec<char> = b.chars().collect();
+    let mut row: Vec<usize> = (0..=b.len()).collect();
+    for (i, ca) in a.chars().enumerate() {
+        let mut prev = row[0];
+        row[0] = i + 1;
+        for (j, &cb) in b.iter().enumerate() {
+            let cur = row[j + 1];
+            row[j + 1] = (prev + usize::from(ca != cb)).min(row[j] + 1).min(cur + 1);
+            prev = cur;
+        }
+    }
+    row[b.len()]
 }
 
 /// Items for a message: all of them, or the first twelve and a count.

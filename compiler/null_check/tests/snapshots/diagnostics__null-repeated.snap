@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- object @o "O" {\n  pass-index 1\n  pass-index 2\n}\n
+case.noll:3:3 error[null-repeated]: `pass-index` is given twice; an object has one

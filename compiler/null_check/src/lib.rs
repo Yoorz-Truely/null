@@ -25,6 +25,7 @@
 mod check;
 pub mod expand;
 pub mod forms;
+pub mod level0;
 pub mod paths;
 mod schema;
 pub mod units;
@@ -59,4 +60,23 @@ pub mod codes {
     pub const REPEATED: &str = "null-repeated";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
+    /// Text that does not fit the node syntax (`null_syntax`'s).
+    pub const SYNTAX: &str = null_syntax::codes::SYNTAX;
+
+    /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
+    /// the spec's order. A test fails when the spec's list and this one differ, and when a code
+    /// has no snapshot test.
+    pub const ALL: [&str; 11] = [
+        SYNTAX,
+        NAME,
+        KIND,
+        UNKNOWN_PROPERTY,
+        TYPE,
+        UNIT,
+        RANGE,
+        ENUM,
+        HANDLE,
+        READONLY,
+        REPEATED,
+    ];
 }

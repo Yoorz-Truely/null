@@ -14,12 +14,13 @@ use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    dimension, list,
+    dimension, list, list_near,
 };
 
 mod anim;
 pub(crate) mod components;
 pub(crate) mod expr;
+mod level0;
 mod subs;
 mod trees;
 
@@ -54,6 +55,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         cycles: HashSet::new(),
         scope: None,
         expanded,
+        refs: Vec::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -80,9 +82,20 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
     cx.find_cycles();
     for (file, parse) in files {
         for node in parse.document().nodes() {
-            cx.top(*file, node);
+            if node.name() != "array" {
+                cx.top(*file, node);
+            }
         }
     }
+    // Level 0 data files, each against the line that names it (section 9, task 1d-06b).
+    for (file, parse) in files {
+        for node in parse.document().nodes() {
+            if node.name() == "array" {
+                cx.data_file(*file, node);
+            }
+        }
+    }
+    cx.unmatched_refs();
     let mut out = cx.out;
     // Sub-object handles are unique within their owner, whatever their kinds (section 7).
     out.extend(crate::paths::Index::build(files).duplicates());
@@ -138,6 +151,8 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
+    /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
+    refs: Vec<level0::ArrayRef>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -176,6 +191,23 @@ fn header(node: Node<'_>) -> Header<'_> {
         }
     }
     Header { handle, name, rest }
+}
+
+/// The span that takes attribute `a`'s line out of its file: a line of its own with its
+/// indentation and its line feed, or one of a `{ a; b }` line as far as its `;`. None for a
+/// `key=value` on its owner's line.
+fn removal(a: &Attr<'_>) -> Option<Span> {
+    let node = a.node?;
+    let text = node.0.file_text();
+    let span = node.span();
+    let before = &text[..span.start];
+    let indent_start = before.trim_end_matches([' ', '\t']).len();
+    let own_line = (indent_start == 0 || before[..indent_start].ends_with('\n'))
+        && text[..span.end].ends_with('\n');
+    if own_line {
+        return Some(Span::new(indent_start, span.end));
+    }
+    Some(span)
 }
 
 /// The attributes of `node`: its line's properties, then its child nodes.
@@ -287,7 +319,7 @@ impl<'s> Checker<'s> {
                 name.span,
                 format!(
                     "`{kind}` is not a kind of datablock the schema knows: {}",
-                    list(&kinds)
+                    list_near(&kind, &kinds)
                 ),
                 suggestion.map(|k| (format!("write `{k}`"), name.span, k.to_string())),
             );
@@ -443,7 +475,15 @@ impl<'s> Checker<'s> {
             ],
             "collection" => vec!["object", "collection", "use", "override"],
             "object" => vec!["data", "material", "modifier", "constraint", "bone"],
-            "mesh" => vec!["primitive", "vertices", "polygons"],
+            "mesh" => vec![
+                "primitive",
+                "vertices",
+                "edges",
+                "polygons",
+                "attribute",
+                "uv-map",
+                "vertex-group",
+            ],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
         };
@@ -487,6 +527,7 @@ impl<'s> Checker<'s> {
                 ) | (_, "if" | "else")
                     | ("object", "material" | "modifier" | "constraint" | "bone")
                     | ("pose-bone", "constraint")
+                    | ("mesh", "attribute" | "uv-map" | "vertex-group")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -536,8 +577,10 @@ impl<'s> Checker<'s> {
                 ("object", "data") => self.data(file, a),
                 ("object", "material") => self.reference(file, a, "material"),
                 ("mesh", "primitive") => self.primitive(file, a),
+                ("mesh", "vertices") if a.props.iter().any(|(k, _)| k.text == "file") => {}
                 ("mesh", "vertices") => vertex_count = self.vertices(file, a),
-                ("mesh", "polygons") => {} // after the loop, against the vertex count
+                // After the loop, against the vertex count and the other arrays (task 1d-06b).
+                ("mesh", "polygons" | "edges" | "attribute" | "uv-map" | "vertex-group") => {}
                 ("object", "modifier") => self.family_member(file, a, "Modifier"),
                 ("object" | "pose-bone", "constraint") => self.family_member(file, a, "Constraint"),
                 ("object", "bone") => self.pose_bone(file, a),
@@ -568,8 +611,15 @@ impl<'s> Checker<'s> {
                 },
             }
         }
-        if let Some(a) = all.iter().find(|a| kind == "mesh" && a.name == "polygons") {
+        if let Some(a) = all.iter().find(|a| {
+            kind == "mesh" && a.name == "polygons" && !a.props.iter().any(|(k, _)| k.text == "file")
+        }) {
             self.polygons(file, a, vertex_count);
+        }
+        if kind == "mesh"
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.level0(file, ("mesh".to_string(), handle), &all);
         }
     }
 
@@ -601,6 +651,14 @@ impl<'s> Checker<'s> {
             );
         }
         let kebab = to_kebab_case(&a.name);
+        // A known property written in another case (`pass_index`): the syntax's `null-name`
+        // already says so, with the same fix, so one mistake gives one error (1d-02c's review).
+        if kebab
+            .as_deref()
+            .is_some_and(|k| k != a.name && names.contains(&k))
+        {
+            return;
+        }
         let suggestion = kebab
             .as_deref()
             .filter(|k| names.contains(k))
@@ -694,10 +752,13 @@ impl<'s> Checker<'s> {
         let mut out = self.out(file);
         let name = a.name.as_str();
         if p.readonly || p.ty == "collection" {
-            out.error(
+            out.error_fix(
                 codes::READONLY,
                 a.name_span,
-                format!("`{name}` is read-only in Blender, so it is not written"),
+                format!(
+                    "`{name}` is read-only in Blender, so a file cannot set it; remove the line"
+                ),
+                removal(a).map(|span| (format!("remove `{name}`"), span, String::new())),
             );
             return;
         }
@@ -1094,7 +1155,7 @@ impl<'s> Checker<'s> {
             return self.out(file).error_fix(
                 codes::KIND,
                 k.span(),
-                format!("`{word}` is not a primitive: {}", list(&kinds)),
+                format!("`{word}` is not a primitive: {}", list_near(word, &kinds)),
                 near.map(|n| (format!("write `{n}`"), k.span(), n.to_string())),
             );
         };
