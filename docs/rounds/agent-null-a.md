@@ -51,6 +51,92 @@ Done, November 7, 2026 (code in `95f836b`, approved). The two choices below went
 
 ## Review
 
+### 1c-01e, Null `cc512fd`, by agent/cosmosis-a, November 8, 2026: sent back, a comment after `{` moves into the block
+
+I read `canonical.rs`, its tests and section 15's new rules. The five tests pass. Then I probed it with a scratch crate (not committed) against Null main: every one of Cosmósis's 37 corpus `.noll` files under both schemas, and hand-made edge cases.
+
+**What holds:**
+- **The corpus.** Under the slice schema and under the project schema (the one `sau check` reads since C-06), every corpus file keeps every token, comes out the same when formatted twice, and gives the same diagnostics.
+- **The edge cases.** All come out idempotent and keep every token:
+  - a trailing `// comment` moves with its line;
+  - a `/* */` mid-line stays put;
+  - a `/-` line goes last;
+  - a comment before `}` stays at the end;
+  - CRLF input gets the formatter's LF;
+  - a light's order follows `type sun`, whether `type` is a `key=value` on the header or a line.
+- Sorting is stable, so members and material slots keep their order.
+
+**To fix:**
+
+1. **A comment right after a block's `{` is taken as the first line's comment.** Given:
+
+   ```
+   object @a "A" { // the deck
+     scale [1 1 1]
+     location [0m 0m 0m]
+   }
+   ```
+
+   it gives:
+
+   ```
+   object @a "A" { location [0m 0m 0m]
+     // the deck
+     scale [1 1 1]
+   }
+   ```
+
+   The header's comment leaves its line, which breaks section 15's own rule ("a comment at a line's end stays on that line"), and the first line is pulled up onto the header. `rewrite_block` starts a unit at any comment token. It should start one only at a comment that begins a line: one preceded, in the block, by a line feed. The same applies to a comment after a `;` on a line's end. Add the case to the tests. Also let the shuffle property test reach blocks with comments: it now skips any block whose text holds `/`, so no shuffled case has a comment.
+
+**For the lead: `units`' order against S35.** `units` is ordered by `UnitSettings`' RNA order, so S35's own form `units metric scale=1 length=m rotation=deg` becomes `units metric rotation=deg scale=1 length=m`. That form appears in spec section 8's example (line 60), in its table (line 274), and in every corpus project. Either give `units`' short forms the spec's order (system, `scale`, `length`, `rotation`, then the rest in RNA's order), so S35's form is already canonical, or change the spec's examples. The first seems right to me.
+
+**For C-07 (mine).** Of the 37 corpus files, 23 change under `canonical`, mostly `data` moving first in an object. `sau fmt --check` passing on the corpus therefore means C-07 reformats the corpus. That changes no counts Sau's tests read.
+
+**1c-02b's question for the lead, answered.** My question there (out-of-range values all notes) is answered by the row's note: the lead's call covers any stored value outside the hard range. Nothing to do.
+
+### 1c-02b again, Null `fc9fde7`, by agent/cosmosis-a, November 8, 2026: sent back, the checker and the reader now disagree past 32 bits, and a run-time word near a listed item
+
+I read the diff, ran the new tests, and probed it with a scratch crate (not committed) against Null main, plus `sau check` from Cosmósis on a scratch project.
+
+**What holds:**
+- **Run-time items.** `Some Item`, the empty name, `UVMap` and `a"b` are strings and read back; the checker takes a string for a run-time enum.
+- **Infinity.** `location [inf -inf nan]` prints and reads back exactly; `roughness 1.5` and `roughness inf` round-trip.
+- **The checker.** `roughness 1.5` and `clip-start 0` are `null-range` notes, as the lead's call says. Spec sections 6 and 18 match.
+
+**To fix:**
+
+1. **Past 32 bits, the checker passes what the reader refuses.** `read_value` now refuses an integer past 32 bits, but the checker's only bound was the hard range, which is now a note. `scene @main "Main" { frame-start 3000000000 }` gives `note[null-range]` and `sau check` exits 0, yet `read_value` refuses `3000000000` ("is a 32-bit integer"). `print_value` has the same gap: `Typed::Int(2147483648)` and `Typed::Int(i64::MIN)` print, and neither reads back. Fix: past 32 bits is an error in the checker (`null-range` as an error, or `null-type`), and `print_value` refuses it as `read_value` does. Test both bounds (`i32::MAX + 1` and `i32::MIN - 1`) on all three paths: check, print, read.
+
+2. **A run-time item that is one kebab word but near a listed item prints bare, and the checker refuses it.** `print_item` writes any kebab-case name bare. The checker refuses a bare word that is near a listed item of a run-time enum, as a misspelling (1b-03e). So an attribute `domain` of `faces`, `edges`, `points` or `corners` prints as `faces`, and `check_enum` fails it as `null-enum`, "did you mean `face`?". Writing it as a string passes, since the checker takes any string for a run-time enum. Fix: a run-time item the schema does not list is printed bare only if the checker would take it bare: one kebab word with no `closest` listed item. Otherwise print it as a string. Add `faces` to the test, and assert that each printed form checks clean, not only that it reads back.
+
+**For the lead.** The row now makes every out-of-range value a note, not only infinity: `roughness 1.5` written by hand no longer fails `sau check`. That follows from "Null writes what a `.blend` holds" (a printed file must check), and the spec says so, but it is broader than infinity alone. Confirm that this is what you meant.
+
+### 1c-02b, Null `ab67f72`, by agent/cosmosis-a, November 8, 2026: sent back, a run-time item that is not one word cannot be written
+
+I read the row, `null_print::typed`, the checker's flag-set and free-text changes, and section 6's new lines. Then I ran a scratch test, not committed, on a clean copy of `ab67f72`. Through `print_value` then `read_value`, it tried values at the edges against the project schema's own properties.
+
+**What holds:**
+- **Strings.**
+  - A quote, backslash, newline and tab are escaped and read back.
+  - The empty string reads back as `""`.
+  - A control character is written `\u{1}`.
+  - An emoji keeps its UTF-8 bytes.
+  - Bytes outside UTF-8 become `[97 255 98]` and read back.
+  - A 0 byte is refused with section 6's reason.
+- **Integers:** `frame-start`'s maximum, 1048574, round-trips, and 2^40 is refused with the range.
+- **Floats:** `-0`, a subnormal and NaN (`nan`) round-trip in `location`.
+- **Run-time enum items:** a run-time enum (`target-id-type`) takes an unlisted kebab item (`some-item`) both ways.
+
+**To fix:**
+
+**An unlisted item of a run-time enum is printed bare, whatever it is.** `print_item` writes the name as it is, so an item that is not one kebab-case word cannot be read back:
+- `Some Item` prints as `Some Item`, which reads as two values ("takes one value");
+- the empty name prints as nothing.
+
+The items of run-time enums come from data: attribute names, UV maps, view layers, which may hold spaces and capitals. So this is the case run-time enums exist for. Print an unlisted item as a string (`escape`) unless it is a valid bare word. `read_item` already takes a string for an unlisted item. Add `Some Item` and `""` to the property test.
+
+**For the lead: infinity in a float with a finite hard range.** `location [-0 … inf]` is refused on printing: "takes -3.4028235e38 to 3.4028235e38, not inf". NaN skips the range check, but infinity does not. RNA clamps what Python sets, but a `.blend` can still hold an infinite float in DNA, so a file converted from such data could not be written. Either let infinity pass the range as NaN does (it is a value Blender holds), or say in section 6 that a non-finite value outside a property's range is refused, and how a conversion reports it.
+
 ### 1c-01d again, the fix `e0d1519`, by agent/cosmosis-a, November 7, 2026: approved, one nit
 
 I re-ran my scratch test against `e0d1519`, with the camera whose `clip-start 0.00000002m` is in range only at scale 0.01, and added five cases.
@@ -528,6 +614,33 @@ Reviewed Null `4ee87a9` (code; report `77d667d`) on an exact copy (`git archive`
   - So the caller applies them from the last to the first, or sorted with an offset.
 
   Sau's side (1a-14) needs exactly that.
+
+### 1d-04e (agent/cosmosis-a's), Cosmósis `b5bb23a`, reviewed by agent/null-a, November 8, 2026: sent back, a folder name is written into a string unescaped
+
+I read the row, `sau new` in `main.rs`, `tests/new.rs` and spec section 6's new lines. Then I built `sau` into a scratch target folder and made projects in a scratch folder.
+
+**What holds:**
+- **The ordinary cases.** `Harbor at Dusk.sau` gives package `harbor-at-dusk` and `project "Harbor at Dusk"`, and checks clean.
+- **Accents.** `Café Crème.sau` checks clean.
+- **A trailing slash.** `trail/` gives `trail`.
+- **The templates** are written byte for byte, and the tests read them back with Git's own check-ignore and check-attr, which is the right test.
+- **Refusals.** A folder in use, another template, and a name with no kebab-case letters (`日本.sau`, exit 2) are refused.
+
+**To fix: the project's name is pasted into a Null string as it is.** `project.noll` is written with `format!("project \"{stem}\" …")`, with no escaping:
+- **`Back\slash.sau`** gives `project "Back\slash"`. The `\s` is no escape, and `sau check` on the new project fails with one error, so `sau new` made a project that does not check.
+- **`Quote "x".sau`** gives `project "Quote "x""`, which reads as the string `Quote `, a word `x` and an empty string. It checks clean, so the project's name is silently wrong.
+- **The fix.** Write the name with `null_syntax::escape`, as Null's printer does, and add both folder names to `tests/new.rs`.
+
+**Nit:** `trim_end_matches(".sau")` strips every `.sau`, so `x.sau.sau` gives `x`. Use `strip_suffix`, so only the bundle's own extension goes.
+
+### C-06 (agent/cosmosis-a's), Cosmósis `8e32566`, reviewed by agent/null-a, November 8, 2026: approved
+
+I read the row with its amended Done-when, the diff (`schema_check.rs` compiles in `null-schema-project.json`) and `tests/project_schema.rs`. `cargo test -p sau_cli --test project_schema` passes here, 3 of 3, built in a scratch target folder.
+- **The corpus checks clean on the project's schema.** I also checked it on agent/schema2's, with S67's `bsdf-principled` and the Cycles section: Cosmósis's `just check` passes there with the corpus renamed.
+- **A datablock type the slice never knew is checked.** A `world` is checked, and `colr` gives "a world has no `colr`; did you mean `color`?" at `world.noll:2:3`. That is the amended Done-when.
+- **The modifier line** is an error until 1d-07's form, not a silent pass. That is right, and the row says the case moved to 1d-07.
+
+**Nit:** the test's comment calls the modifier's struct `bevel-modifier`. By S67 it is `bevel` once agent/schema2 merges; update it then.
 
 ### 1d-04b again, Cosmósis `e99db99`, re-reviewed by agent/null-a, November 8, 2026: approved
 
@@ -1215,6 +1328,17 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
     - The slice's `principled-bsdf` would be `bsdf-principled` by the rule. It is either an exception, or the slice's spelling changes. `output-material` already follows the rule.
 - **1d-01a** needs 1a-17, which needs 1a-16, so it is not ready.
 - **0-13** (the check record and documents changed mid-check) is ready and builds on my 0-10 work. It spans Sau, Null and Cosmósis, so it would need a worktree.
+
+- **1b-03c and 1b-03g** (as agent/schema2; report `docs/rounds/agent-schema2.md` on Sau's `agent/schema2`). Done, with Sau, Null and Cosmósis committed:
+  - node sockets and S67's kinds (581 nodes, `bsdf-principled`, the corpus renamed on Cosmósis's branch);
+  - Cycles' settings as their own section, read as blocks.
+
+  `just verify` is running, and both go to review when it passes.
+- **1c-02b**, in review (`ab67f72`): `null_print::read_value` and `print_value` for every RNA type. The property tests run over the project schema's own properties, and the checker reads flag sets and free-text items. Sau's schema does not yet give a string's field length (`max-length`); the writer should add it.
+- **Reviews.**
+  - C-06 approved.
+  - 1a-13 approved, second round (its modal and edit-mode guard).
+  - 0-14 approved, second round.
 
 Whatever the lead routes next.
 

@@ -22,6 +22,11 @@ pub(crate) struct Out<'o> {
 }
 
 impl Out<'_> {
+    pub fn note(&mut self, code: &'static str, span: Span, message: impl Into<String>) {
+        let d = Diagnostic::new(null_syntax::Severity::Note, code, self.file, span, message);
+        self.list.push(d);
+    }
+
     pub fn error(&mut self, code: &'static str, span: Span, message: impl Into<String>) {
         let d = Diagnostic::error(code, self.file, span, message);
         self.list.push(d);
@@ -209,6 +214,16 @@ pub(crate) fn check_int(
         return None;
     };
     match read_int(word) {
+        // Past 32 bits Blender cannot store it at all: an error, not the range's note (the
+        // lead's call on the 1c-02b review).
+        Ok(n) if i32::try_from(n).is_err() => {
+            out.error(
+                codes::RANGE,
+                value.span(),
+                format!("`{word}` does not fit `{name}`, a 32-bit whole number"),
+            );
+            None
+        }
         Ok(n) => {
             check_range(n as f64, word, value.span(), name, p, out);
             Some(n)
@@ -236,11 +251,14 @@ fn check_range(x: f64, word: &str, span: Span, name: &str, p: &Property, out: &m
                 "int" => format!("{v}"),
                 _ => null_value::print_bare(v as f32),
             };
-            out.error(
+            // A note, not an error (the lead's call on task 1c-02b): a `.blend` can hold a value
+            // outside RNA's range (an infinity in DNA), and Null writes what Blender stores. Blender
+            // clamps it when the value is set (spec, section 6, "Types").
+            out.note(
                 codes::RANGE,
                 span,
                 format!(
-                    "`{word}` is outside `{name}`'s range, {} to {}",
+                    "`{word}` is outside `{name}`'s range, {} to {}; Blender clamps it when it is set",
                     show(lo),
                     show(hi)
                 ),
@@ -417,6 +435,68 @@ pub(crate) fn check_float_matrix(
     }
 }
 
+/// Checks a flag set: a list of the enum's items, each once, in the schema's item order, `[]`
+/// for none (spec, section 6, "Types"; task 1c-02b). Another order is an error whose fix is the
+/// schema's.
+fn check_flags(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let items = p.item_names();
+    let Value::List(_) = value else {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!("`{name}` is a set of its items: write a list, `[]` for none"),
+        );
+        return;
+    };
+    let mut written = Vec::new();
+    for item in value.items() {
+        let Some(word) = item.as_word() else {
+            out.error(
+                codes::TYPE,
+                item.span(),
+                format!("`{name}`'s items are words"),
+            );
+            return;
+        };
+        if !items.contains(&word) && !p.items_at_run_time {
+            let fix = closest(word, items.iter().copied());
+            out.error_fix(
+                codes::ENUM,
+                item.span(),
+                format!(
+                    "`{word}` is not a value of `{name}`: it takes {}",
+                    list(&items)
+                ),
+                fix.map(|f| (format!("write `{f}`"), item.span(), f.to_string())),
+            );
+            return;
+        }
+        if written.contains(&word) {
+            out.error(
+                codes::TYPE,
+                item.span(),
+                format!("`{word}` is given twice in `{name}`"),
+            );
+            return;
+        }
+        written.push(word);
+    }
+    let ordered: Vec<&str> = items
+        .iter()
+        .copied()
+        .filter(|i| written.contains(i))
+        .collect();
+    if !p.items_at_run_time && ordered != written {
+        let fixed = format!("[{}]", ordered.join(" "));
+        out.error_fix(
+            codes::TYPE,
+            value.span(),
+            format!("`{name}`'s items are written in the schema's order: {fixed}"),
+            Some((format!("write `{fixed}`"), value.span(), fixed.clone())),
+        );
+    }
+}
+
 /// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve, exactly rounded once into
 /// float32 from the fixed table in `null_value` (spec, section 6; Sau's decision S62).
 pub fn srgb(word: &str) -> Option<[f32; 3]> {
@@ -425,9 +505,16 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
 
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    if p.flags {
+        return check_flags(value, name, p, out);
+    }
     let items = p.item_names();
-    if p.items_at_run_time && value.as_string().is_some() {
-        return; // a free-text item, such as a colour space's name
+    if let Some(text) = value.as_string() {
+        // A free-text item (a colour space's name) is written as a string (S16).
+        let quoted = p.items.iter().flatten().any(|i| i.quoted && i.name == text);
+        if quoted || p.items_at_run_time {
+            return;
+        }
     }
     let Some(word) = value.as_word() else {
         out.error(
