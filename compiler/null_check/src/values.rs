@@ -667,6 +667,39 @@ pub(crate) fn list(items: &[&str]) -> String {
     }
 }
 
+/// Checks an array of booleans (`lock-location [on off on]`, spec, section 5): a list of `on`
+/// and `off`, of the property's length, or of any length from its minimum for a dynamic one.
+pub(crate) fn check_bool_array(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let len = p.fixed_len();
+    let shape = match len {
+        Some(n) => format!(
+            "`{name}` takes {n} values, each on or off, as a list such as [{}]",
+            vec!["off"; n].join(" ")
+        ),
+        None => format!("`{name}` takes a list of values, each on or off, such as [on off]"),
+    };
+    let Value::List(_) = value else {
+        out.error(codes::TYPE, value.span(), shape);
+        return;
+    };
+    let items = value.items();
+    let short = match len {
+        Some(n) => items.len() != n,
+        None => items.len() < p.min_length.unwrap_or(0),
+    };
+    if short {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!("{shape}; this list has {}", items.len()),
+        );
+        return;
+    }
+    for item in &items {
+        check_bool(std::slice::from_ref(item), name, item.span(), out);
+    }
+}
+
 /// Checks a boolean: written bare for on, or `on` or `off`.
 pub(crate) fn check_bool(args: &[Value<'_>], name: &str, span: Span, out: &mut Out<'_>) {
     match args {

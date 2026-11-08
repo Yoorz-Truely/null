@@ -11,8 +11,8 @@ use crate::forms;
 use crate::schema::{Property, SHADER_TREE, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
-    Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    check_string, dimension, list,
+    Out, check_bool, check_bool_array, check_enum, check_float, check_float_array,
+    check_float_matrix, check_int, check_string, dimension, list,
 };
 
 /// Checks every file of a project together, since handles are visible project-wide
@@ -619,7 +619,7 @@ impl<'s> Checker<'s> {
             out.error(codes::TYPE, a.span, format!("`{name}` takes no block"));
             return;
         }
-        if p.ty == "bool" {
+        if p.ty == "bool" && p.dimensions().is_empty() && !p.is_dynamic() {
             return check_bool(&a.args, name, a.span, &mut out);
         }
         let [value] = a.args.as_slice() else {
@@ -649,6 +649,7 @@ impl<'s> Checker<'s> {
                     }
                 }
             },
+            "bool" => check_bool_array(value, name, p, &mut out),
             "enum" => check_enum(value, name, p, &mut out),
             "string" => check_string(value, name, p, &mut out),
             "pointer" => {
