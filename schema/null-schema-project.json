@@ -1022,242 +1022,202 @@
       {
        "name": "action",
        "rna": "ACTION",
-       "label": "Action",
-       "value": 17217
+       "label": "Action"
       },
       {
        "name": "armature",
        "rna": "ARMATURE",
-       "label": "Armature",
-       "value": 21057
+       "label": "Armature"
       },
       {
        "name": "brush",
        "rna": "BRUSH",
-       "label": "Brush",
-       "value": 21058
+       "label": "Brush"
       },
       {
        "name": "cachefile",
        "rna": "CACHEFILE",
-       "label": "Cache File",
-       "value": 17987
+       "label": "Cache File"
       },
       {
        "name": "camera",
        "rna": "CAMERA",
-       "label": "Camera",
-       "value": 16707
+       "label": "Camera"
       },
       {
        "name": "collection",
        "rna": "COLLECTION",
-       "label": "Collection",
-       "value": 21063
+       "label": "Collection"
       },
       {
        "name": "curve",
        "rna": "CURVE",
-       "label": "Curve",
-       "value": 21827
+       "label": "Curve"
       },
       {
        "name": "curves",
        "rna": "CURVES",
-       "label": "Curves",
-       "value": 22083
+       "label": "Curves"
       },
       {
        "name": "font",
        "rna": "FONT",
-       "label": "Font",
-       "value": 18006
+       "label": "Font"
       },
       {
        "name": "greasepencil",
        "rna": "GREASEPENCIL",
-       "label": "Grease Pencil",
-       "value": 17479
+       "label": "Grease Pencil"
       },
       {
        "name": "greasepencil-v3",
        "rna": "GREASEPENCIL_V3",
-       "label": "Grease Pencil v3",
-       "value": 20551
+       "label": "Grease Pencil v3"
       },
       {
        "name": "image",
        "rna": "IMAGE",
-       "label": "Image",
-       "value": 19785
+       "label": "Image"
       },
       {
        "name": "key",
        "rna": "KEY",
-       "label": "Key",
-       "value": 17739
+       "label": "Key"
       },
       {
        "name": "lattice",
        "rna": "LATTICE",
-       "label": "Lattice",
-       "value": 21580
+       "label": "Lattice"
       },
       {
        "name": "library",
        "rna": "LIBRARY",
-       "label": "Library",
-       "value": 18764
+       "label": "Library"
       },
       {
        "name": "light",
        "rna": "LIGHT",
-       "label": "Light",
-       "value": 16716
+       "label": "Light"
       },
       {
        "name": "light-probe",
        "rna": "LIGHT_PROBE",
-       "label": "Light Probe",
-       "value": 20556
+       "label": "Light Probe"
       },
       {
        "name": "linestyle",
        "rna": "LINESTYLE",
-       "label": "Line Style",
-       "value": 21324
+       "label": "Line Style"
       },
       {
        "name": "mask",
        "rna": "MASK",
-       "label": "Mask",
-       "value": 21325
+       "label": "Mask"
       },
       {
        "name": "material",
        "rna": "MATERIAL",
-       "label": "Material",
-       "value": 16717
+       "label": "Material"
       },
       {
        "name": "mesh",
        "rna": "MESH",
-       "label": "Mesh",
-       "value": 17741
+       "label": "Mesh"
       },
       {
        "name": "meta",
        "rna": "META",
-       "label": "Metaball",
-       "value": 16973
+       "label": "Metaball"
       },
       {
        "name": "movieclip",
        "rna": "MOVIECLIP",
-       "label": "Movie Clip",
-       "value": 17229
+       "label": "Movie Clip"
       },
       {
        "name": "nodetree",
        "rna": "NODETREE",
-       "label": "Node Tree",
-       "value": 21582
+       "label": "Node Tree"
       },
       {
        "name": "object",
        "rna": "OBJECT",
-       "label": "Object",
-       "value": 16975
+       "label": "Object"
       },
       {
        "name": "paintcurve",
        "rna": "PAINTCURVE",
-       "label": "Paint Curve",
-       "value": 17232
+       "label": "Paint Curve"
       },
       {
        "name": "palette",
        "rna": "PALETTE",
-       "label": "Palette",
-       "value": 19536
+       "label": "Palette"
       },
       {
        "name": "particle",
        "rna": "PARTICLE",
-       "label": "Particle",
-       "value": 16720
+       "label": "Particle"
       },
       {
        "name": "pointcloud",
        "rna": "POINTCLOUD",
-       "label": "Point Cloud",
-       "value": 21584
+       "label": "Point Cloud"
       },
       {
        "name": "scene",
        "rna": "SCENE",
-       "label": "Scene",
-       "value": 17235
+       "label": "Scene"
       },
       {
        "name": "screen",
        "rna": "SCREEN",
-       "label": "Screen",
-       "value": 21075
+       "label": "Screen"
       },
       {
        "name": "sound",
        "rna": "SOUND",
-       "label": "Sound",
-       "value": 20307
+       "label": "Sound"
       },
       {
        "name": "speaker",
        "rna": "SPEAKER",
-       "label": "Speaker",
-       "value": 19283
+       "label": "Speaker"
       },
       {
        "name": "text",
        "rna": "TEXT",
-       "label": "Text",
-       "value": 22612
+       "label": "Text"
       },
       {
        "name": "texture",
        "rna": "TEXTURE",
-       "label": "Texture",
-       "value": 17748
+       "label": "Texture"
       },
       {
        "name": "volume",
        "rna": "VOLUME",
-       "label": "Volume",
-       "value": 20310
+       "label": "Volume"
       },
       {
        "name": "windowmanager",
        "rna": "WINDOWMANAGER",
-       "label": "Window Manager",
-       "value": 19799
+       "label": "Window Manager"
       },
       {
        "name": "workspace",
        "rna": "WORKSPACE",
-       "label": "Workspace",
-       "value": 21335
+       "label": "Workspace"
       },
       {
        "name": "world",
        "rna": "WORLD",
-       "label": "World",
-       "value": 20311
+       "label": "World"
       },
       {
        "name": "unspecified",
        "rna": "UNSPECIFIED",
-       "label": "Unspecified",
-       "value": 0
+       "label": "Unspecified"
       }
      ],
      "items-at-run-time": true
@@ -11169,446 +11129,382 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 10,
        "quoted": true
       },
       {
        "name": "ACES 2.0 sRGB",
        "rna": "ACES 2.0 sRGB",
        "label": "ACES 2.0 sRGB",
-       "value": 11,
        "quoted": true
       },
       {
        "name": "ACES2065-1",
        "rna": "ACES2065-1",
        "label": "ACES2065-1",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "ACEScc",
        "rna": "ACEScc",
        "label": "ACEScc",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ACEScct",
        "rna": "ACEScct",
        "label": "ACEScct",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ACEScg",
        "rna": "ACEScg",
        "label": "ACEScg",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "adx10",
        "rna": "ADX10",
-       "label": "ADX10",
-       "value": 49
+       "label": "ADX10"
       },
       {
        "name": "adx16",
        "rna": "ADX16",
-       "label": "ADX16",
-       "value": 50
+       "label": "ADX16"
       },
       {
        "name": "ARRI LogC3 (EI800)",
        "rna": "ARRI LogC3 (EI800)",
        "label": "ARRI LogC3 (EI800)",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ARRI LogC4",
        "rna": "ARRI LogC4",
        "label": "ARRI LogC4",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "AgX Base sRGB",
        "rna": "AgX Base sRGB",
        "label": "AgX Base sRGB",
-       "value": 9,
        "quoted": true
       },
       {
        "name": "AgX Log",
        "rna": "AgX Log",
        "label": "AgX Log",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "Apple Log",
        "rna": "Apple Log",
        "label": "Apple Log",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "Apple Log 2",
        "rna": "Apple Log 2",
        "label": "Apple Log 2",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "BMDFilm WideGamut Gen5",
        "rna": "BMDFilm WideGamut Gen5",
        "label": "BMDFilm WideGamut Gen5",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "CanonLog2 CinemaGamut D55",
        "rna": "CanonLog2 CinemaGamut D55",
        "label": "CanonLog2 CinemaGamut D55",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "CanonLog3 CinemaGamut D55",
        "rna": "CanonLog3 CinemaGamut D55",
        "label": "CanonLog3 CinemaGamut D55",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "D-Log D-Gamut",
        "rna": "D-Log D-Gamut",
        "label": "D-Log D-Gamut",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "DaVinci Intermediate WideGamut",
        "rna": "DaVinci Intermediate WideGamut",
        "label": "DaVinci Intermediate WideGamut",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "Display P3",
        "rna": "Display P3",
        "label": "Display P3",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "Filmic Log",
        "rna": "Filmic Log",
        "label": "Filmic Log",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "Filmic sRGB",
        "rna": "Filmic sRGB",
        "label": "Filmic sRGB",
-       "value": 8,
        "quoted": true
       },
       {
        "name": "Gamma 1.8 Encoded Rec.709",
        "rna": "Gamma 1.8 Encoded Rec.709",
        "label": "Gamma 1.8 Encoded Rec.709",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AP1",
        "rna": "Gamma 2.2 Encoded AP1",
        "label": "Gamma 2.2 Encoded AP1",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AdobeRGB",
        "rna": "Gamma 2.2 Encoded AdobeRGB",
        "label": "Gamma 2.2 Encoded AdobeRGB",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded Rec.709",
        "rna": "Gamma 2.2 Encoded Rec.709",
        "label": "Gamma 2.2 Encoded Rec.709",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "Gamma 2.4 Encoded Rec.709",
        "rna": "Gamma 2.4 Encoded Rec.709",
        "label": "Gamma 2.4 Encoded Rec.709",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "Khronos PBR Neutral sRGB",
        "rna": "Khronos PBR Neutral sRGB",
        "label": "Khronos PBR Neutral sRGB",
-       "value": 12,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 3",
        "rna": "Linear ARRI Wide Gamut 3",
        "label": "Linear ARRI Wide Gamut 3",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 4",
        "rna": "Linear ARRI Wide Gamut 4",
        "label": "Linear ARRI Wide Gamut 4",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "Linear Adobe RGB",
        "rna": "Linear Adobe RGB",
        "label": "Linear Adobe RGB",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "Linear Apple Wide Gamut",
        "rna": "Linear Apple Wide Gamut",
        "label": "Linear Apple Wide Gamut",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "Linear BMD WideGamut Gen5",
        "rna": "Linear BMD WideGamut Gen5",
        "label": "Linear BMD WideGamut Gen5",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ D65",
        "rna": "Linear CIE-XYZ D65",
        "label": "Linear CIE-XYZ D65",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ E",
        "rna": "Linear CIE-XYZ E",
        "label": "Linear CIE-XYZ E",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "Linear CinemaGamut D55",
        "rna": "Linear CinemaGamut D55",
        "label": "Linear CinemaGamut D55",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "Linear D-Gamut",
        "rna": "Linear D-Gamut",
        "label": "Linear D-Gamut",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "Linear DCI-P3 D65",
        "rna": "Linear DCI-P3 D65",
        "label": "Linear DCI-P3 D65",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "Linear DaVinci WideGamut",
        "rna": "Linear DaVinci WideGamut",
        "label": "Linear DaVinci WideGamut",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "Linear FilmLight E-Gamut",
        "rna": "Linear FilmLight E-Gamut",
        "label": "Linear FilmLight E-Gamut",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "Linear REDWideGamutRGB",
        "rna": "Linear REDWideGamutRGB",
        "label": "Linear REDWideGamutRGB",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "Linear Rec.2020",
        "rna": "Linear Rec.2020",
        "label": "Linear Rec.2020",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "Linear Rec.709",
        "rna": "Linear Rec.709",
        "label": "Linear Rec.709",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3",
        "rna": "Linear S-Gamut3",
        "label": "Linear S-Gamut3",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3.Cine",
        "rna": "Linear S-Gamut3.Cine",
        "label": "Linear S-Gamut3.Cine",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "Linear V-Gamut",
        "rna": "Linear V-Gamut",
        "label": "Linear V-Gamut",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3",
        "rna": "Linear Venice S-Gamut3",
        "label": "Linear Venice S-Gamut3",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3.Cine",
        "rna": "Linear Venice S-Gamut3.Cine",
        "label": "Linear Venice S-Gamut3.Cine",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "Log3G10 REDWideGamutRGB",
        "rna": "Log3G10 REDWideGamutRGB",
        "label": "Log3G10 REDWideGamutRGB",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "Non-Color",
        "rna": "Non-Color",
        "label": "Non-Color",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "Rec.1886",
        "rna": "Rec.1886",
        "label": "Rec.1886",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "Rec.2020",
        "rna": "Rec.2020",
        "label": "Rec.2020",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "Rec.2100-HLG",
        "rna": "Rec.2100-HLG",
        "label": "Rec.2100-HLG",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "Rec.2100-PQ",
        "rna": "Rec.2100-PQ",
        "label": "Rec.2100-PQ",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "Rec.709-A",
        "rna": "Rec.709-A",
        "label": "Rec.709-A",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3",
        "rna": "S-Log3 S-Gamut3",
        "label": "S-Log3 S-Gamut3",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3.Cine",
        "rna": "S-Log3 S-Gamut3.Cine",
        "label": "S-Log3 S-Gamut3.Cine",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3",
        "rna": "S-Log3 Venice S-Gamut3",
        "label": "S-Log3 Venice S-Gamut3",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3.Cine",
        "rna": "S-Log3 Venice S-Gamut3.Cine",
        "label": "S-Log3 Venice S-Gamut3.Cine",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "V-Log V-Gamut",
        "rna": "V-Log V-Gamut",
        "label": "V-Log V-Gamut",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "sRGB",
        "rna": "sRGB",
        "label": "sRGB",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "sRGB Encoded AP1",
        "rna": "sRGB Encoded AP1",
        "label": "sRGB Encoded AP1",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "sRGB Encoded P3-D65",
        "rna": "sRGB Encoded P3-D65",
        "label": "sRGB Encoded P3-D65",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "scene_linear",
        "rna": "scene_linear",
        "label": "Working Space",
-       "value": 66,
        "quoted": true
       }
      ],
@@ -11623,448 +11519,384 @@
       {
        "name": "none",
        "rna": "NONE",
-       "label": "None",
-       "value": 1024
+       "label": "None"
       },
       {
        "name": "blender:agxlog_rec2020_scene",
        "rna": "blender:agxlog_rec2020_scene",
        "label": "blender:agxlog_rec2020_scene",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "blender:filmiclog_rec709_scene",
        "rna": "blender:filmiclog_rec709_scene",
        "label": "blender:filmiclog_rec709_scene",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "blender:g1961_rec709_display",
        "rna": "blender:g1961_rec709_display",
        "label": "blender:g1961_rec709_display",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "blender:g24_rec2020_display",
        "rna": "blender:g24_rec2020_display",
        "label": "blender:g24_rec2020_display",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "blender:lin_ciexyze_scene",
        "rna": "blender:lin_ciexyze_scene",
        "label": "blender:lin_ciexyze_scene",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "blender:lin_egamut_scene",
        "rna": "blender:lin_egamut_scene",
        "label": "blender:lin_egamut_scene",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "data",
        "rna": "data",
        "label": "data",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "g18_rec709_scene",
        "rna": "g18_rec709_scene",
        "label": "g18_rec709_scene",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "g22_adobergb_scene",
        "rna": "g22_adobergb_scene",
        "label": "g22_adobergb_scene",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "g22_ap1_scene",
        "rna": "g22_ap1_scene",
        "label": "g22_ap1_scene",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "g22_rec709_scene",
        "rna": "g22_rec709_scene",
        "label": "g22_rec709_scene",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "g24_rec709_display",
        "rna": "g24_rec709_display",
        "label": "g24_rec709_display",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "g24_rec709_scene",
        "rna": "g24_rec709_scene",
        "label": "g24_rec709_scene",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "hlg_rec2020_display",
        "rna": "hlg_rec2020_display",
        "label": "hlg_rec2020_display",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "lin_adobergb_scene",
        "rna": "lin_adobergb_scene",
        "label": "lin_adobergb_scene",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "lin_ap0_scene",
        "rna": "lin_ap0_scene",
        "label": "lin_ap0_scene",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "lin_ap1_scene",
        "rna": "lin_ap1_scene",
        "label": "lin_ap1_scene",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "lin_ciexyzd65_scene",
        "rna": "lin_ciexyzd65_scene",
        "label": "lin_ciexyzd65_scene",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "lin_p3d65_scene",
        "rna": "lin_p3d65_scene",
        "label": "lin_p3d65_scene",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "lin_rec2020_scene",
        "rna": "lin_rec2020_scene",
        "label": "lin_rec2020_scene",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "lin_rec709_scene",
        "rna": "lin_rec709_scene",
        "label": "lin_rec709_scene",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "ocio:acescc_ap1_scene",
        "rna": "ocio:acescc_ap1_scene",
        "label": "ocio:acescc_ap1_scene",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ocio:acescct_ap1_scene",
        "rna": "ocio:acescct_ap1_scene",
        "label": "ocio:acescct_ap1_scene",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ocio:adx10_apd_scene",
        "rna": "ocio:adx10_apd_scene",
        "label": "ocio:adx10_apd_scene",
-       "value": 49,
        "quoted": true
       },
       {
        "name": "ocio:adx16_apd_scene",
        "rna": "ocio:adx16_apd_scene",
        "label": "ocio:adx16_apd_scene",
-       "value": 50,
        "quoted": true
       },
       {
        "name": "ocio:applelog_applewg_scene",
        "rna": "ocio:applelog_applewg_scene",
        "label": "ocio:applelog_applewg_scene",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "ocio:applelog_rec2020_scene",
        "rna": "ocio:applelog_rec2020_scene",
        "label": "ocio:applelog_rec2020_scene",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc3_awg3_scene",
        "rna": "ocio:arrilogc3_awg3_scene",
        "label": "ocio:arrilogc3_awg3_scene",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc4_awg4_scene",
        "rna": "ocio:arrilogc4_awg4_scene",
        "label": "ocio:arrilogc4_awg4_scene",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "ocio:bmdfilm5_wg5_scene",
        "rna": "ocio:bmdfilm5_wg5_scene",
        "label": "ocio:bmdfilm5_wg5_scene",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "ocio:canonlog2_cgamutd55_scene",
        "rna": "ocio:canonlog2_cgamutd55_scene",
        "label": "ocio:canonlog2_cgamutd55_scene",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "ocio:canonlog3_cgamutd55_scene",
        "rna": "ocio:canonlog3_cgamutd55_scene",
        "label": "ocio:canonlog3_cgamutd55_scene",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "ocio:davinci_dwg_scene",
        "rna": "ocio:davinci_dwg_scene",
        "label": "ocio:davinci_dwg_scene",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "ocio:djilog_dgamut_scene",
        "rna": "ocio:djilog_dgamut_scene",
        "label": "ocio:djilog_dgamut_scene",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg3_scene",
        "rna": "ocio:lin_awg3_scene",
        "label": "ocio:lin_awg3_scene",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg4_scene",
        "rna": "ocio:lin_awg4_scene",
        "label": "ocio:lin_awg4_scene",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "ocio:lin_bmdwg5_scene",
        "rna": "ocio:lin_bmdwg5_scene",
        "label": "ocio:lin_bmdwg5_scene",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "ocio:lin_cgamutd55_scene",
        "rna": "ocio:lin_cgamutd55_scene",
        "label": "ocio:lin_cgamutd55_scene",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "ocio:lin_dgamut_scene",
        "rna": "ocio:lin_dgamut_scene",
        "label": "ocio:lin_dgamut_scene",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "ocio:lin_dwg_scene",
        "rna": "ocio:lin_dwg_scene",
        "label": "ocio:lin_dwg_scene",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "ocio:lin_rwg_scene",
        "rna": "ocio:lin_rwg_scene",
        "label": "ocio:lin_rwg_scene",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3_scene",
        "rna": "ocio:lin_sgamut3_scene",
        "label": "ocio:lin_sgamut3_scene",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cine_scene",
        "rna": "ocio:lin_sgamut3cine_scene",
        "label": "ocio:lin_sgamut3cine_scene",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cinevenice_scene",
        "rna": "ocio:lin_sgamut3cinevenice_scene",
        "label": "ocio:lin_sgamut3cinevenice_scene",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3venice_scene",
        "rna": "ocio:lin_sgamut3venice_scene",
        "label": "ocio:lin_sgamut3venice_scene",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "ocio:lin_vgamut_scene",
        "rna": "ocio:lin_vgamut_scene",
        "label": "ocio:lin_vgamut_scene",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "ocio:linear_applewg_scene",
        "rna": "ocio:linear_applewg_scene",
        "label": "ocio:linear_applewg_scene",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "ocio:redlog3g10_rwg_scene",
        "rna": "ocio:redlog3g10_rwg_scene",
        "label": "ocio:redlog3g10_rwg_scene",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3_scene",
        "rna": "ocio:slog3_sgamut3_scene",
        "label": "ocio:slog3_sgamut3_scene",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cine_scene",
        "rna": "ocio:slog3_sgamut3cine_scene",
        "label": "ocio:slog3_sgamut3cine_scene",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cinevenice_scene",
        "rna": "ocio:slog3_sgamut3cinevenice_scene",
        "label": "ocio:slog3_sgamut3cinevenice_scene",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3venice_scene",
        "rna": "ocio:slog3_sgamut3venice_scene",
        "label": "ocio:slog3_sgamut3venice_scene",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "ocio:vlog_vgamut_scene",
        "rna": "ocio:vlog_vgamut_scene",
        "label": "ocio:vlog_vgamut_scene",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "pq_rec2020_display",
        "rna": "pq_rec2020_display",
        "label": "pq_rec2020_display",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "srgb_ap1_scene",
        "rna": "srgb_ap1_scene",
        "label": "srgb_ap1_scene",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_display",
        "rna": "srgb_p3d65_display",
        "label": "srgb_p3d65_display",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_scene",
        "rna": "srgb_p3d65_scene",
        "label": "srgb_p3d65_scene",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "srgb_rec709_display",
        "rna": "srgb_rec709_display",
        "label": "srgb_rec709_display",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "g22_rec709_display",
        "rna": "g22_rec709_display",
        "label": "g22_rec709_display",
-       "value": 120,
        "quoted": true
       },
       {
        "name": "lin_p3d65_display",
        "rna": "lin_p3d65_display",
        "label": "lin_p3d65_display",
-       "value": 81,
        "quoted": true
       },
       {
        "name": "lin_rec2020_display",
        "rna": "lin_rec2020_display",
        "label": "lin_rec2020_display",
-       "value": 82,
        "quoted": true
       },
       {
        "name": "lin_rec709_display",
        "rna": "lin_rec709_display",
        "label": "lin_rec709_display",
-       "value": 80,
        "quoted": true
       },
       {
        "name": "srgb_rec709_scene",
        "rna": "srgb_rec709_scene",
        "label": "srgb_rec709_scene",
-       "value": 67,
        "quoted": true
       }
      ],
@@ -12093,446 +11925,382 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 1024,
        "quoted": true
       },
       {
        "name": "ACES 2.0 sRGB",
        "rna": "ACES 2.0 sRGB",
        "label": "ACES 2.0 sRGB",
-       "value": 11,
        "quoted": true
       },
       {
        "name": "ACES2065-1",
        "rna": "ACES2065-1",
        "label": "ACES2065-1",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "ACEScc",
        "rna": "ACEScc",
        "label": "ACEScc",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ACEScct",
        "rna": "ACEScct",
        "label": "ACEScct",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ACEScg",
        "rna": "ACEScg",
        "label": "ACEScg",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "adx10",
        "rna": "ADX10",
-       "label": "ADX10",
-       "value": 49
+       "label": "ADX10"
       },
       {
        "name": "adx16",
        "rna": "ADX16",
-       "label": "ADX16",
-       "value": 50
+       "label": "ADX16"
       },
       {
        "name": "ARRI LogC3 (EI800)",
        "rna": "ARRI LogC3 (EI800)",
        "label": "ARRI LogC3 (EI800)",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ARRI LogC4",
        "rna": "ARRI LogC4",
        "label": "ARRI LogC4",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "AgX Base sRGB",
        "rna": "AgX Base sRGB",
        "label": "AgX Base sRGB",
-       "value": 9,
        "quoted": true
       },
       {
        "name": "AgX Log",
        "rna": "AgX Log",
        "label": "AgX Log",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "Apple Log",
        "rna": "Apple Log",
        "label": "Apple Log",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "Apple Log 2",
        "rna": "Apple Log 2",
        "label": "Apple Log 2",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "BMDFilm WideGamut Gen5",
        "rna": "BMDFilm WideGamut Gen5",
        "label": "BMDFilm WideGamut Gen5",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "CanonLog2 CinemaGamut D55",
        "rna": "CanonLog2 CinemaGamut D55",
        "label": "CanonLog2 CinemaGamut D55",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "CanonLog3 CinemaGamut D55",
        "rna": "CanonLog3 CinemaGamut D55",
        "label": "CanonLog3 CinemaGamut D55",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "D-Log D-Gamut",
        "rna": "D-Log D-Gamut",
        "label": "D-Log D-Gamut",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "DaVinci Intermediate WideGamut",
        "rna": "DaVinci Intermediate WideGamut",
        "label": "DaVinci Intermediate WideGamut",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "Display P3",
        "rna": "Display P3",
        "label": "Display P3",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "Filmic Log",
        "rna": "Filmic Log",
        "label": "Filmic Log",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "Filmic sRGB",
        "rna": "Filmic sRGB",
        "label": "Filmic sRGB",
-       "value": 8,
        "quoted": true
       },
       {
        "name": "Gamma 1.8 Encoded Rec.709",
        "rna": "Gamma 1.8 Encoded Rec.709",
        "label": "Gamma 1.8 Encoded Rec.709",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AP1",
        "rna": "Gamma 2.2 Encoded AP1",
        "label": "Gamma 2.2 Encoded AP1",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AdobeRGB",
        "rna": "Gamma 2.2 Encoded AdobeRGB",
        "label": "Gamma 2.2 Encoded AdobeRGB",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded Rec.709",
        "rna": "Gamma 2.2 Encoded Rec.709",
        "label": "Gamma 2.2 Encoded Rec.709",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "Gamma 2.4 Encoded Rec.709",
        "rna": "Gamma 2.4 Encoded Rec.709",
        "label": "Gamma 2.4 Encoded Rec.709",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "Khronos PBR Neutral sRGB",
        "rna": "Khronos PBR Neutral sRGB",
        "label": "Khronos PBR Neutral sRGB",
-       "value": 12,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 3",
        "rna": "Linear ARRI Wide Gamut 3",
        "label": "Linear ARRI Wide Gamut 3",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 4",
        "rna": "Linear ARRI Wide Gamut 4",
        "label": "Linear ARRI Wide Gamut 4",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "Linear Adobe RGB",
        "rna": "Linear Adobe RGB",
        "label": "Linear Adobe RGB",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "Linear Apple Wide Gamut",
        "rna": "Linear Apple Wide Gamut",
        "label": "Linear Apple Wide Gamut",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "Linear BMD WideGamut Gen5",
        "rna": "Linear BMD WideGamut Gen5",
        "label": "Linear BMD WideGamut Gen5",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ D65",
        "rna": "Linear CIE-XYZ D65",
        "label": "Linear CIE-XYZ D65",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ E",
        "rna": "Linear CIE-XYZ E",
        "label": "Linear CIE-XYZ E",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "Linear CinemaGamut D55",
        "rna": "Linear CinemaGamut D55",
        "label": "Linear CinemaGamut D55",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "Linear D-Gamut",
        "rna": "Linear D-Gamut",
        "label": "Linear D-Gamut",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "Linear DCI-P3 D65",
        "rna": "Linear DCI-P3 D65",
        "label": "Linear DCI-P3 D65",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "Linear DaVinci WideGamut",
        "rna": "Linear DaVinci WideGamut",
        "label": "Linear DaVinci WideGamut",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "Linear FilmLight E-Gamut",
        "rna": "Linear FilmLight E-Gamut",
        "label": "Linear FilmLight E-Gamut",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "Linear REDWideGamutRGB",
        "rna": "Linear REDWideGamutRGB",
        "label": "Linear REDWideGamutRGB",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "Linear Rec.2020",
        "rna": "Linear Rec.2020",
        "label": "Linear Rec.2020",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "Linear Rec.709",
        "rna": "Linear Rec.709",
        "label": "Linear Rec.709",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3",
        "rna": "Linear S-Gamut3",
        "label": "Linear S-Gamut3",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3.Cine",
        "rna": "Linear S-Gamut3.Cine",
        "label": "Linear S-Gamut3.Cine",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "Linear V-Gamut",
        "rna": "Linear V-Gamut",
        "label": "Linear V-Gamut",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3",
        "rna": "Linear Venice S-Gamut3",
        "label": "Linear Venice S-Gamut3",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3.Cine",
        "rna": "Linear Venice S-Gamut3.Cine",
        "label": "Linear Venice S-Gamut3.Cine",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "Log3G10 REDWideGamutRGB",
        "rna": "Log3G10 REDWideGamutRGB",
        "label": "Log3G10 REDWideGamutRGB",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "Non-Color",
        "rna": "Non-Color",
        "label": "Non-Color",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "Rec.1886",
        "rna": "Rec.1886",
        "label": "Rec.1886",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "Rec.2020",
        "rna": "Rec.2020",
        "label": "Rec.2020",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "Rec.2100-HLG",
        "rna": "Rec.2100-HLG",
        "label": "Rec.2100-HLG",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "Rec.2100-PQ",
        "rna": "Rec.2100-PQ",
        "label": "Rec.2100-PQ",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "Rec.709-A",
        "rna": "Rec.709-A",
        "label": "Rec.709-A",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3",
        "rna": "S-Log3 S-Gamut3",
        "label": "S-Log3 S-Gamut3",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3.Cine",
        "rna": "S-Log3 S-Gamut3.Cine",
        "label": "S-Log3 S-Gamut3.Cine",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3",
        "rna": "S-Log3 Venice S-Gamut3",
        "label": "S-Log3 Venice S-Gamut3",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3.Cine",
        "rna": "S-Log3 Venice S-Gamut3.Cine",
        "label": "S-Log3 Venice S-Gamut3.Cine",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "V-Log V-Gamut",
        "rna": "V-Log V-Gamut",
        "label": "V-Log V-Gamut",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "sRGB",
        "rna": "sRGB",
        "label": "sRGB",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "sRGB Encoded AP1",
        "rna": "sRGB Encoded AP1",
        "label": "sRGB Encoded AP1",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "sRGB Encoded P3-D65",
        "rna": "sRGB Encoded P3-D65",
        "label": "sRGB Encoded P3-D65",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "scene_linear",
        "rna": "scene_linear",
        "label": "Working Space",
-       "value": 66,
        "quoted": true
       }
      ],
@@ -12547,448 +12315,384 @@
       {
        "name": "none",
        "rna": "NONE",
-       "label": "None",
-       "value": 1024
+       "label": "None"
       },
       {
        "name": "blender:agxlog_rec2020_scene",
        "rna": "blender:agxlog_rec2020_scene",
        "label": "blender:agxlog_rec2020_scene",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "blender:filmiclog_rec709_scene",
        "rna": "blender:filmiclog_rec709_scene",
        "label": "blender:filmiclog_rec709_scene",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "blender:g1961_rec709_display",
        "rna": "blender:g1961_rec709_display",
        "label": "blender:g1961_rec709_display",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "blender:g24_rec2020_display",
        "rna": "blender:g24_rec2020_display",
        "label": "blender:g24_rec2020_display",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "blender:lin_ciexyze_scene",
        "rna": "blender:lin_ciexyze_scene",
        "label": "blender:lin_ciexyze_scene",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "blender:lin_egamut_scene",
        "rna": "blender:lin_egamut_scene",
        "label": "blender:lin_egamut_scene",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "data",
        "rna": "data",
        "label": "data",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "g18_rec709_scene",
        "rna": "g18_rec709_scene",
        "label": "g18_rec709_scene",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "g22_adobergb_scene",
        "rna": "g22_adobergb_scene",
        "label": "g22_adobergb_scene",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "g22_ap1_scene",
        "rna": "g22_ap1_scene",
        "label": "g22_ap1_scene",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "g22_rec709_scene",
        "rna": "g22_rec709_scene",
        "label": "g22_rec709_scene",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "g24_rec709_display",
        "rna": "g24_rec709_display",
        "label": "g24_rec709_display",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "g24_rec709_scene",
        "rna": "g24_rec709_scene",
        "label": "g24_rec709_scene",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "hlg_rec2020_display",
        "rna": "hlg_rec2020_display",
        "label": "hlg_rec2020_display",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "lin_adobergb_scene",
        "rna": "lin_adobergb_scene",
        "label": "lin_adobergb_scene",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "lin_ap0_scene",
        "rna": "lin_ap0_scene",
        "label": "lin_ap0_scene",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "lin_ap1_scene",
        "rna": "lin_ap1_scene",
        "label": "lin_ap1_scene",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "lin_ciexyzd65_scene",
        "rna": "lin_ciexyzd65_scene",
        "label": "lin_ciexyzd65_scene",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "lin_p3d65_scene",
        "rna": "lin_p3d65_scene",
        "label": "lin_p3d65_scene",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "lin_rec2020_scene",
        "rna": "lin_rec2020_scene",
        "label": "lin_rec2020_scene",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "lin_rec709_scene",
        "rna": "lin_rec709_scene",
        "label": "lin_rec709_scene",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "ocio:acescc_ap1_scene",
        "rna": "ocio:acescc_ap1_scene",
        "label": "ocio:acescc_ap1_scene",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ocio:acescct_ap1_scene",
        "rna": "ocio:acescct_ap1_scene",
        "label": "ocio:acescct_ap1_scene",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ocio:adx10_apd_scene",
        "rna": "ocio:adx10_apd_scene",
        "label": "ocio:adx10_apd_scene",
-       "value": 49,
        "quoted": true
       },
       {
        "name": "ocio:adx16_apd_scene",
        "rna": "ocio:adx16_apd_scene",
        "label": "ocio:adx16_apd_scene",
-       "value": 50,
        "quoted": true
       },
       {
        "name": "ocio:applelog_applewg_scene",
        "rna": "ocio:applelog_applewg_scene",
        "label": "ocio:applelog_applewg_scene",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "ocio:applelog_rec2020_scene",
        "rna": "ocio:applelog_rec2020_scene",
        "label": "ocio:applelog_rec2020_scene",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc3_awg3_scene",
        "rna": "ocio:arrilogc3_awg3_scene",
        "label": "ocio:arrilogc3_awg3_scene",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc4_awg4_scene",
        "rna": "ocio:arrilogc4_awg4_scene",
        "label": "ocio:arrilogc4_awg4_scene",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "ocio:bmdfilm5_wg5_scene",
        "rna": "ocio:bmdfilm5_wg5_scene",
        "label": "ocio:bmdfilm5_wg5_scene",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "ocio:canonlog2_cgamutd55_scene",
        "rna": "ocio:canonlog2_cgamutd55_scene",
        "label": "ocio:canonlog2_cgamutd55_scene",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "ocio:canonlog3_cgamutd55_scene",
        "rna": "ocio:canonlog3_cgamutd55_scene",
        "label": "ocio:canonlog3_cgamutd55_scene",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "ocio:davinci_dwg_scene",
        "rna": "ocio:davinci_dwg_scene",
        "label": "ocio:davinci_dwg_scene",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "ocio:djilog_dgamut_scene",
        "rna": "ocio:djilog_dgamut_scene",
        "label": "ocio:djilog_dgamut_scene",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg3_scene",
        "rna": "ocio:lin_awg3_scene",
        "label": "ocio:lin_awg3_scene",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg4_scene",
        "rna": "ocio:lin_awg4_scene",
        "label": "ocio:lin_awg4_scene",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "ocio:lin_bmdwg5_scene",
        "rna": "ocio:lin_bmdwg5_scene",
        "label": "ocio:lin_bmdwg5_scene",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "ocio:lin_cgamutd55_scene",
        "rna": "ocio:lin_cgamutd55_scene",
        "label": "ocio:lin_cgamutd55_scene",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "ocio:lin_dgamut_scene",
        "rna": "ocio:lin_dgamut_scene",
        "label": "ocio:lin_dgamut_scene",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "ocio:lin_dwg_scene",
        "rna": "ocio:lin_dwg_scene",
        "label": "ocio:lin_dwg_scene",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "ocio:lin_rwg_scene",
        "rna": "ocio:lin_rwg_scene",
        "label": "ocio:lin_rwg_scene",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3_scene",
        "rna": "ocio:lin_sgamut3_scene",
        "label": "ocio:lin_sgamut3_scene",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cine_scene",
        "rna": "ocio:lin_sgamut3cine_scene",
        "label": "ocio:lin_sgamut3cine_scene",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cinevenice_scene",
        "rna": "ocio:lin_sgamut3cinevenice_scene",
        "label": "ocio:lin_sgamut3cinevenice_scene",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3venice_scene",
        "rna": "ocio:lin_sgamut3venice_scene",
        "label": "ocio:lin_sgamut3venice_scene",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "ocio:lin_vgamut_scene",
        "rna": "ocio:lin_vgamut_scene",
        "label": "ocio:lin_vgamut_scene",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "ocio:linear_applewg_scene",
        "rna": "ocio:linear_applewg_scene",
        "label": "ocio:linear_applewg_scene",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "ocio:redlog3g10_rwg_scene",
        "rna": "ocio:redlog3g10_rwg_scene",
        "label": "ocio:redlog3g10_rwg_scene",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3_scene",
        "rna": "ocio:slog3_sgamut3_scene",
        "label": "ocio:slog3_sgamut3_scene",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cine_scene",
        "rna": "ocio:slog3_sgamut3cine_scene",
        "label": "ocio:slog3_sgamut3cine_scene",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cinevenice_scene",
        "rna": "ocio:slog3_sgamut3cinevenice_scene",
        "label": "ocio:slog3_sgamut3cinevenice_scene",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3venice_scene",
        "rna": "ocio:slog3_sgamut3venice_scene",
        "label": "ocio:slog3_sgamut3venice_scene",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "ocio:vlog_vgamut_scene",
        "rna": "ocio:vlog_vgamut_scene",
        "label": "ocio:vlog_vgamut_scene",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "pq_rec2020_display",
        "rna": "pq_rec2020_display",
        "label": "pq_rec2020_display",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "srgb_ap1_scene",
        "rna": "srgb_ap1_scene",
        "label": "srgb_ap1_scene",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_display",
        "rna": "srgb_p3d65_display",
        "label": "srgb_p3d65_display",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_scene",
        "rna": "srgb_p3d65_scene",
        "label": "srgb_p3d65_scene",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "srgb_rec709_display",
        "rna": "srgb_rec709_display",
        "label": "srgb_rec709_display",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "g22_rec709_display",
        "rna": "g22_rec709_display",
        "label": "g22_rec709_display",
-       "value": 120,
        "quoted": true
       },
       {
        "name": "lin_p3d65_display",
        "rna": "lin_p3d65_display",
        "label": "lin_p3d65_display",
-       "value": 81,
        "quoted": true
       },
       {
        "name": "lin_rec2020_display",
        "rna": "lin_rec2020_display",
        "label": "lin_rec2020_display",
-       "value": 82,
        "quoted": true
       },
       {
        "name": "lin_rec709_display",
        "rna": "lin_rec709_display",
        "label": "lin_rec709_display",
-       "value": 80,
        "quoted": true
       },
       {
        "name": "srgb_rec709_scene",
        "rna": "srgb_rec709_scene",
        "label": "srgb_rec709_scene",
-       "value": 67,
        "quoted": true
       }
      ],
@@ -14096,446 +13800,382 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 1024,
        "quoted": true
       },
       {
        "name": "ACES 2.0 sRGB",
        "rna": "ACES 2.0 sRGB",
        "label": "ACES 2.0 sRGB",
-       "value": 11,
        "quoted": true
       },
       {
        "name": "ACES2065-1",
        "rna": "ACES2065-1",
        "label": "ACES2065-1",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "ACEScc",
        "rna": "ACEScc",
        "label": "ACEScc",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ACEScct",
        "rna": "ACEScct",
        "label": "ACEScct",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ACEScg",
        "rna": "ACEScg",
        "label": "ACEScg",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "adx10",
        "rna": "ADX10",
-       "label": "ADX10",
-       "value": 49
+       "label": "ADX10"
       },
       {
        "name": "adx16",
        "rna": "ADX16",
-       "label": "ADX16",
-       "value": 50
+       "label": "ADX16"
       },
       {
        "name": "ARRI LogC3 (EI800)",
        "rna": "ARRI LogC3 (EI800)",
        "label": "ARRI LogC3 (EI800)",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ARRI LogC4",
        "rna": "ARRI LogC4",
        "label": "ARRI LogC4",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "AgX Base sRGB",
        "rna": "AgX Base sRGB",
        "label": "AgX Base sRGB",
-       "value": 9,
        "quoted": true
       },
       {
        "name": "AgX Log",
        "rna": "AgX Log",
        "label": "AgX Log",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "Apple Log",
        "rna": "Apple Log",
        "label": "Apple Log",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "Apple Log 2",
        "rna": "Apple Log 2",
        "label": "Apple Log 2",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "BMDFilm WideGamut Gen5",
        "rna": "BMDFilm WideGamut Gen5",
        "label": "BMDFilm WideGamut Gen5",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "CanonLog2 CinemaGamut D55",
        "rna": "CanonLog2 CinemaGamut D55",
        "label": "CanonLog2 CinemaGamut D55",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "CanonLog3 CinemaGamut D55",
        "rna": "CanonLog3 CinemaGamut D55",
        "label": "CanonLog3 CinemaGamut D55",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "D-Log D-Gamut",
        "rna": "D-Log D-Gamut",
        "label": "D-Log D-Gamut",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "DaVinci Intermediate WideGamut",
        "rna": "DaVinci Intermediate WideGamut",
        "label": "DaVinci Intermediate WideGamut",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "Display P3",
        "rna": "Display P3",
        "label": "Display P3",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "Filmic Log",
        "rna": "Filmic Log",
        "label": "Filmic Log",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "Filmic sRGB",
        "rna": "Filmic sRGB",
        "label": "Filmic sRGB",
-       "value": 8,
        "quoted": true
       },
       {
        "name": "Gamma 1.8 Encoded Rec.709",
        "rna": "Gamma 1.8 Encoded Rec.709",
        "label": "Gamma 1.8 Encoded Rec.709",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AP1",
        "rna": "Gamma 2.2 Encoded AP1",
        "label": "Gamma 2.2 Encoded AP1",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AdobeRGB",
        "rna": "Gamma 2.2 Encoded AdobeRGB",
        "label": "Gamma 2.2 Encoded AdobeRGB",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded Rec.709",
        "rna": "Gamma 2.2 Encoded Rec.709",
        "label": "Gamma 2.2 Encoded Rec.709",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "Gamma 2.4 Encoded Rec.709",
        "rna": "Gamma 2.4 Encoded Rec.709",
        "label": "Gamma 2.4 Encoded Rec.709",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "Khronos PBR Neutral sRGB",
        "rna": "Khronos PBR Neutral sRGB",
        "label": "Khronos PBR Neutral sRGB",
-       "value": 12,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 3",
        "rna": "Linear ARRI Wide Gamut 3",
        "label": "Linear ARRI Wide Gamut 3",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 4",
        "rna": "Linear ARRI Wide Gamut 4",
        "label": "Linear ARRI Wide Gamut 4",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "Linear Adobe RGB",
        "rna": "Linear Adobe RGB",
        "label": "Linear Adobe RGB",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "Linear Apple Wide Gamut",
        "rna": "Linear Apple Wide Gamut",
        "label": "Linear Apple Wide Gamut",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "Linear BMD WideGamut Gen5",
        "rna": "Linear BMD WideGamut Gen5",
        "label": "Linear BMD WideGamut Gen5",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ D65",
        "rna": "Linear CIE-XYZ D65",
        "label": "Linear CIE-XYZ D65",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ E",
        "rna": "Linear CIE-XYZ E",
        "label": "Linear CIE-XYZ E",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "Linear CinemaGamut D55",
        "rna": "Linear CinemaGamut D55",
        "label": "Linear CinemaGamut D55",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "Linear D-Gamut",
        "rna": "Linear D-Gamut",
        "label": "Linear D-Gamut",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "Linear DCI-P3 D65",
        "rna": "Linear DCI-P3 D65",
        "label": "Linear DCI-P3 D65",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "Linear DaVinci WideGamut",
        "rna": "Linear DaVinci WideGamut",
        "label": "Linear DaVinci WideGamut",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "Linear FilmLight E-Gamut",
        "rna": "Linear FilmLight E-Gamut",
        "label": "Linear FilmLight E-Gamut",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "Linear REDWideGamutRGB",
        "rna": "Linear REDWideGamutRGB",
        "label": "Linear REDWideGamutRGB",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "Linear Rec.2020",
        "rna": "Linear Rec.2020",
        "label": "Linear Rec.2020",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "Linear Rec.709",
        "rna": "Linear Rec.709",
        "label": "Linear Rec.709",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3",
        "rna": "Linear S-Gamut3",
        "label": "Linear S-Gamut3",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3.Cine",
        "rna": "Linear S-Gamut3.Cine",
        "label": "Linear S-Gamut3.Cine",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "Linear V-Gamut",
        "rna": "Linear V-Gamut",
        "label": "Linear V-Gamut",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3",
        "rna": "Linear Venice S-Gamut3",
        "label": "Linear Venice S-Gamut3",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3.Cine",
        "rna": "Linear Venice S-Gamut3.Cine",
        "label": "Linear Venice S-Gamut3.Cine",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "Log3G10 REDWideGamutRGB",
        "rna": "Log3G10 REDWideGamutRGB",
        "label": "Log3G10 REDWideGamutRGB",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "Non-Color",
        "rna": "Non-Color",
        "label": "Non-Color",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "Rec.1886",
        "rna": "Rec.1886",
        "label": "Rec.1886",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "Rec.2020",
        "rna": "Rec.2020",
        "label": "Rec.2020",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "Rec.2100-HLG",
        "rna": "Rec.2100-HLG",
        "label": "Rec.2100-HLG",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "Rec.2100-PQ",
        "rna": "Rec.2100-PQ",
        "label": "Rec.2100-PQ",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "Rec.709-A",
        "rna": "Rec.709-A",
        "label": "Rec.709-A",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3",
        "rna": "S-Log3 S-Gamut3",
        "label": "S-Log3 S-Gamut3",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3.Cine",
        "rna": "S-Log3 S-Gamut3.Cine",
        "label": "S-Log3 S-Gamut3.Cine",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3",
        "rna": "S-Log3 Venice S-Gamut3",
        "label": "S-Log3 Venice S-Gamut3",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3.Cine",
        "rna": "S-Log3 Venice S-Gamut3.Cine",
        "label": "S-Log3 Venice S-Gamut3.Cine",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "V-Log V-Gamut",
        "rna": "V-Log V-Gamut",
        "label": "V-Log V-Gamut",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "sRGB",
        "rna": "sRGB",
        "label": "sRGB",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "sRGB Encoded AP1",
        "rna": "sRGB Encoded AP1",
        "label": "sRGB Encoded AP1",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "sRGB Encoded P3-D65",
        "rna": "sRGB Encoded P3-D65",
        "label": "sRGB Encoded P3-D65",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "scene_linear",
        "rna": "scene_linear",
        "label": "Working Space",
-       "value": 66,
        "quoted": true
       }
      ],
@@ -14550,448 +14190,384 @@
       {
        "name": "none",
        "rna": "NONE",
-       "label": "None",
-       "value": 1024
+       "label": "None"
       },
       {
        "name": "blender:agxlog_rec2020_scene",
        "rna": "blender:agxlog_rec2020_scene",
        "label": "blender:agxlog_rec2020_scene",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "blender:filmiclog_rec709_scene",
        "rna": "blender:filmiclog_rec709_scene",
        "label": "blender:filmiclog_rec709_scene",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "blender:g1961_rec709_display",
        "rna": "blender:g1961_rec709_display",
        "label": "blender:g1961_rec709_display",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "blender:g24_rec2020_display",
        "rna": "blender:g24_rec2020_display",
        "label": "blender:g24_rec2020_display",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "blender:lin_ciexyze_scene",
        "rna": "blender:lin_ciexyze_scene",
        "label": "blender:lin_ciexyze_scene",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "blender:lin_egamut_scene",
        "rna": "blender:lin_egamut_scene",
        "label": "blender:lin_egamut_scene",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "data",
        "rna": "data",
        "label": "data",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "g18_rec709_scene",
        "rna": "g18_rec709_scene",
        "label": "g18_rec709_scene",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "g22_adobergb_scene",
        "rna": "g22_adobergb_scene",
        "label": "g22_adobergb_scene",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "g22_ap1_scene",
        "rna": "g22_ap1_scene",
        "label": "g22_ap1_scene",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "g22_rec709_scene",
        "rna": "g22_rec709_scene",
        "label": "g22_rec709_scene",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "g24_rec709_display",
        "rna": "g24_rec709_display",
        "label": "g24_rec709_display",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "g24_rec709_scene",
        "rna": "g24_rec709_scene",
        "label": "g24_rec709_scene",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "hlg_rec2020_display",
        "rna": "hlg_rec2020_display",
        "label": "hlg_rec2020_display",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "lin_adobergb_scene",
        "rna": "lin_adobergb_scene",
        "label": "lin_adobergb_scene",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "lin_ap0_scene",
        "rna": "lin_ap0_scene",
        "label": "lin_ap0_scene",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "lin_ap1_scene",
        "rna": "lin_ap1_scene",
        "label": "lin_ap1_scene",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "lin_ciexyzd65_scene",
        "rna": "lin_ciexyzd65_scene",
        "label": "lin_ciexyzd65_scene",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "lin_p3d65_scene",
        "rna": "lin_p3d65_scene",
        "label": "lin_p3d65_scene",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "lin_rec2020_scene",
        "rna": "lin_rec2020_scene",
        "label": "lin_rec2020_scene",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "lin_rec709_scene",
        "rna": "lin_rec709_scene",
        "label": "lin_rec709_scene",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "ocio:acescc_ap1_scene",
        "rna": "ocio:acescc_ap1_scene",
        "label": "ocio:acescc_ap1_scene",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ocio:acescct_ap1_scene",
        "rna": "ocio:acescct_ap1_scene",
        "label": "ocio:acescct_ap1_scene",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ocio:adx10_apd_scene",
        "rna": "ocio:adx10_apd_scene",
        "label": "ocio:adx10_apd_scene",
-       "value": 49,
        "quoted": true
       },
       {
        "name": "ocio:adx16_apd_scene",
        "rna": "ocio:adx16_apd_scene",
        "label": "ocio:adx16_apd_scene",
-       "value": 50,
        "quoted": true
       },
       {
        "name": "ocio:applelog_applewg_scene",
        "rna": "ocio:applelog_applewg_scene",
        "label": "ocio:applelog_applewg_scene",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "ocio:applelog_rec2020_scene",
        "rna": "ocio:applelog_rec2020_scene",
        "label": "ocio:applelog_rec2020_scene",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc3_awg3_scene",
        "rna": "ocio:arrilogc3_awg3_scene",
        "label": "ocio:arrilogc3_awg3_scene",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc4_awg4_scene",
        "rna": "ocio:arrilogc4_awg4_scene",
        "label": "ocio:arrilogc4_awg4_scene",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "ocio:bmdfilm5_wg5_scene",
        "rna": "ocio:bmdfilm5_wg5_scene",
        "label": "ocio:bmdfilm5_wg5_scene",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "ocio:canonlog2_cgamutd55_scene",
        "rna": "ocio:canonlog2_cgamutd55_scene",
        "label": "ocio:canonlog2_cgamutd55_scene",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "ocio:canonlog3_cgamutd55_scene",
        "rna": "ocio:canonlog3_cgamutd55_scene",
        "label": "ocio:canonlog3_cgamutd55_scene",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "ocio:davinci_dwg_scene",
        "rna": "ocio:davinci_dwg_scene",
        "label": "ocio:davinci_dwg_scene",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "ocio:djilog_dgamut_scene",
        "rna": "ocio:djilog_dgamut_scene",
        "label": "ocio:djilog_dgamut_scene",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg3_scene",
        "rna": "ocio:lin_awg3_scene",
        "label": "ocio:lin_awg3_scene",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg4_scene",
        "rna": "ocio:lin_awg4_scene",
        "label": "ocio:lin_awg4_scene",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "ocio:lin_bmdwg5_scene",
        "rna": "ocio:lin_bmdwg5_scene",
        "label": "ocio:lin_bmdwg5_scene",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "ocio:lin_cgamutd55_scene",
        "rna": "ocio:lin_cgamutd55_scene",
        "label": "ocio:lin_cgamutd55_scene",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "ocio:lin_dgamut_scene",
        "rna": "ocio:lin_dgamut_scene",
        "label": "ocio:lin_dgamut_scene",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "ocio:lin_dwg_scene",
        "rna": "ocio:lin_dwg_scene",
        "label": "ocio:lin_dwg_scene",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "ocio:lin_rwg_scene",
        "rna": "ocio:lin_rwg_scene",
        "label": "ocio:lin_rwg_scene",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3_scene",
        "rna": "ocio:lin_sgamut3_scene",
        "label": "ocio:lin_sgamut3_scene",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cine_scene",
        "rna": "ocio:lin_sgamut3cine_scene",
        "label": "ocio:lin_sgamut3cine_scene",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cinevenice_scene",
        "rna": "ocio:lin_sgamut3cinevenice_scene",
        "label": "ocio:lin_sgamut3cinevenice_scene",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3venice_scene",
        "rna": "ocio:lin_sgamut3venice_scene",
        "label": "ocio:lin_sgamut3venice_scene",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "ocio:lin_vgamut_scene",
        "rna": "ocio:lin_vgamut_scene",
        "label": "ocio:lin_vgamut_scene",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "ocio:linear_applewg_scene",
        "rna": "ocio:linear_applewg_scene",
        "label": "ocio:linear_applewg_scene",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "ocio:redlog3g10_rwg_scene",
        "rna": "ocio:redlog3g10_rwg_scene",
        "label": "ocio:redlog3g10_rwg_scene",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3_scene",
        "rna": "ocio:slog3_sgamut3_scene",
        "label": "ocio:slog3_sgamut3_scene",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cine_scene",
        "rna": "ocio:slog3_sgamut3cine_scene",
        "label": "ocio:slog3_sgamut3cine_scene",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cinevenice_scene",
        "rna": "ocio:slog3_sgamut3cinevenice_scene",
        "label": "ocio:slog3_sgamut3cinevenice_scene",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3venice_scene",
        "rna": "ocio:slog3_sgamut3venice_scene",
        "label": "ocio:slog3_sgamut3venice_scene",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "ocio:vlog_vgamut_scene",
        "rna": "ocio:vlog_vgamut_scene",
        "label": "ocio:vlog_vgamut_scene",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "pq_rec2020_display",
        "rna": "pq_rec2020_display",
        "label": "pq_rec2020_display",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "srgb_ap1_scene",
        "rna": "srgb_ap1_scene",
        "label": "srgb_ap1_scene",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_display",
        "rna": "srgb_p3d65_display",
        "label": "srgb_p3d65_display",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_scene",
        "rna": "srgb_p3d65_scene",
        "label": "srgb_p3d65_scene",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "srgb_rec709_display",
        "rna": "srgb_rec709_display",
        "label": "srgb_rec709_display",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "g22_rec709_display",
        "rna": "g22_rec709_display",
        "label": "g22_rec709_display",
-       "value": 120,
        "quoted": true
       },
       {
        "name": "lin_p3d65_display",
        "rna": "lin_p3d65_display",
        "label": "lin_p3d65_display",
-       "value": 81,
        "quoted": true
       },
       {
        "name": "lin_rec2020_display",
        "rna": "lin_rec2020_display",
        "label": "lin_rec2020_display",
-       "value": 82,
        "quoted": true
       },
       {
        "name": "lin_rec709_display",
        "rna": "lin_rec709_display",
        "label": "lin_rec709_display",
-       "value": 80,
        "quoted": true
       },
       {
        "name": "srgb_rec709_scene",
        "rna": "srgb_rec709_scene",
        "label": "srgb_rec709_scene",
-       "value": 67,
        "quoted": true
       }
      ],
@@ -15007,446 +14583,382 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 1024,
        "quoted": true
       },
       {
        "name": "ACES 2.0 sRGB",
        "rna": "ACES 2.0 sRGB",
        "label": "ACES 2.0 sRGB",
-       "value": 11,
        "quoted": true
       },
       {
        "name": "ACES2065-1",
        "rna": "ACES2065-1",
        "label": "ACES2065-1",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "ACEScc",
        "rna": "ACEScc",
        "label": "ACEScc",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ACEScct",
        "rna": "ACEScct",
        "label": "ACEScct",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ACEScg",
        "rna": "ACEScg",
        "label": "ACEScg",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "adx10",
        "rna": "ADX10",
-       "label": "ADX10",
-       "value": 49
+       "label": "ADX10"
       },
       {
        "name": "adx16",
        "rna": "ADX16",
-       "label": "ADX16",
-       "value": 50
+       "label": "ADX16"
       },
       {
        "name": "ARRI LogC3 (EI800)",
        "rna": "ARRI LogC3 (EI800)",
        "label": "ARRI LogC3 (EI800)",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ARRI LogC4",
        "rna": "ARRI LogC4",
        "label": "ARRI LogC4",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "AgX Base sRGB",
        "rna": "AgX Base sRGB",
        "label": "AgX Base sRGB",
-       "value": 9,
        "quoted": true
       },
       {
        "name": "AgX Log",
        "rna": "AgX Log",
        "label": "AgX Log",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "Apple Log",
        "rna": "Apple Log",
        "label": "Apple Log",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "Apple Log 2",
        "rna": "Apple Log 2",
        "label": "Apple Log 2",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "BMDFilm WideGamut Gen5",
        "rna": "BMDFilm WideGamut Gen5",
        "label": "BMDFilm WideGamut Gen5",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "CanonLog2 CinemaGamut D55",
        "rna": "CanonLog2 CinemaGamut D55",
        "label": "CanonLog2 CinemaGamut D55",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "CanonLog3 CinemaGamut D55",
        "rna": "CanonLog3 CinemaGamut D55",
        "label": "CanonLog3 CinemaGamut D55",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "D-Log D-Gamut",
        "rna": "D-Log D-Gamut",
        "label": "D-Log D-Gamut",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "DaVinci Intermediate WideGamut",
        "rna": "DaVinci Intermediate WideGamut",
        "label": "DaVinci Intermediate WideGamut",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "Display P3",
        "rna": "Display P3",
        "label": "Display P3",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "Filmic Log",
        "rna": "Filmic Log",
        "label": "Filmic Log",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "Filmic sRGB",
        "rna": "Filmic sRGB",
        "label": "Filmic sRGB",
-       "value": 8,
        "quoted": true
       },
       {
        "name": "Gamma 1.8 Encoded Rec.709",
        "rna": "Gamma 1.8 Encoded Rec.709",
        "label": "Gamma 1.8 Encoded Rec.709",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AP1",
        "rna": "Gamma 2.2 Encoded AP1",
        "label": "Gamma 2.2 Encoded AP1",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded AdobeRGB",
        "rna": "Gamma 2.2 Encoded AdobeRGB",
        "label": "Gamma 2.2 Encoded AdobeRGB",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "Gamma 2.2 Encoded Rec.709",
        "rna": "Gamma 2.2 Encoded Rec.709",
        "label": "Gamma 2.2 Encoded Rec.709",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "Gamma 2.4 Encoded Rec.709",
        "rna": "Gamma 2.4 Encoded Rec.709",
        "label": "Gamma 2.4 Encoded Rec.709",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "Khronos PBR Neutral sRGB",
        "rna": "Khronos PBR Neutral sRGB",
        "label": "Khronos PBR Neutral sRGB",
-       "value": 12,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 3",
        "rna": "Linear ARRI Wide Gamut 3",
        "label": "Linear ARRI Wide Gamut 3",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "Linear ARRI Wide Gamut 4",
        "rna": "Linear ARRI Wide Gamut 4",
        "label": "Linear ARRI Wide Gamut 4",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "Linear Adobe RGB",
        "rna": "Linear Adobe RGB",
        "label": "Linear Adobe RGB",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "Linear Apple Wide Gamut",
        "rna": "Linear Apple Wide Gamut",
        "label": "Linear Apple Wide Gamut",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "Linear BMD WideGamut Gen5",
        "rna": "Linear BMD WideGamut Gen5",
        "label": "Linear BMD WideGamut Gen5",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ D65",
        "rna": "Linear CIE-XYZ D65",
        "label": "Linear CIE-XYZ D65",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "Linear CIE-XYZ E",
        "rna": "Linear CIE-XYZ E",
        "label": "Linear CIE-XYZ E",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "Linear CinemaGamut D55",
        "rna": "Linear CinemaGamut D55",
        "label": "Linear CinemaGamut D55",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "Linear D-Gamut",
        "rna": "Linear D-Gamut",
        "label": "Linear D-Gamut",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "Linear DCI-P3 D65",
        "rna": "Linear DCI-P3 D65",
        "label": "Linear DCI-P3 D65",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "Linear DaVinci WideGamut",
        "rna": "Linear DaVinci WideGamut",
        "label": "Linear DaVinci WideGamut",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "Linear FilmLight E-Gamut",
        "rna": "Linear FilmLight E-Gamut",
        "label": "Linear FilmLight E-Gamut",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "Linear REDWideGamutRGB",
        "rna": "Linear REDWideGamutRGB",
        "label": "Linear REDWideGamutRGB",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "Linear Rec.2020",
        "rna": "Linear Rec.2020",
        "label": "Linear Rec.2020",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "Linear Rec.709",
        "rna": "Linear Rec.709",
        "label": "Linear Rec.709",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3",
        "rna": "Linear S-Gamut3",
        "label": "Linear S-Gamut3",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "Linear S-Gamut3.Cine",
        "rna": "Linear S-Gamut3.Cine",
        "label": "Linear S-Gamut3.Cine",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "Linear V-Gamut",
        "rna": "Linear V-Gamut",
        "label": "Linear V-Gamut",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3",
        "rna": "Linear Venice S-Gamut3",
        "label": "Linear Venice S-Gamut3",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "Linear Venice S-Gamut3.Cine",
        "rna": "Linear Venice S-Gamut3.Cine",
        "label": "Linear Venice S-Gamut3.Cine",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "Log3G10 REDWideGamutRGB",
        "rna": "Log3G10 REDWideGamutRGB",
        "label": "Log3G10 REDWideGamutRGB",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "Non-Color",
        "rna": "Non-Color",
        "label": "Non-Color",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "Rec.1886",
        "rna": "Rec.1886",
        "label": "Rec.1886",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "Rec.2020",
        "rna": "Rec.2020",
        "label": "Rec.2020",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "Rec.2100-HLG",
        "rna": "Rec.2100-HLG",
        "label": "Rec.2100-HLG",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "Rec.2100-PQ",
        "rna": "Rec.2100-PQ",
        "label": "Rec.2100-PQ",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "Rec.709-A",
        "rna": "Rec.709-A",
        "label": "Rec.709-A",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3",
        "rna": "S-Log3 S-Gamut3",
        "label": "S-Log3 S-Gamut3",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "S-Log3 S-Gamut3.Cine",
        "rna": "S-Log3 S-Gamut3.Cine",
        "label": "S-Log3 S-Gamut3.Cine",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3",
        "rna": "S-Log3 Venice S-Gamut3",
        "label": "S-Log3 Venice S-Gamut3",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "S-Log3 Venice S-Gamut3.Cine",
        "rna": "S-Log3 Venice S-Gamut3.Cine",
        "label": "S-Log3 Venice S-Gamut3.Cine",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "V-Log V-Gamut",
        "rna": "V-Log V-Gamut",
        "label": "V-Log V-Gamut",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "sRGB",
        "rna": "sRGB",
        "label": "sRGB",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "sRGB Encoded AP1",
        "rna": "sRGB Encoded AP1",
        "label": "sRGB Encoded AP1",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "sRGB Encoded P3-D65",
        "rna": "sRGB Encoded P3-D65",
        "label": "sRGB Encoded P3-D65",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "scene_linear",
        "rna": "scene_linear",
        "label": "Working Space",
-       "value": 66,
        "quoted": true
       }
      ],
@@ -15461,448 +14973,384 @@
       {
        "name": "none",
        "rna": "NONE",
-       "label": "None",
-       "value": 1024
+       "label": "None"
       },
       {
        "name": "blender:agxlog_rec2020_scene",
        "rna": "blender:agxlog_rec2020_scene",
        "label": "blender:agxlog_rec2020_scene",
-       "value": 60,
        "quoted": true
       },
       {
        "name": "blender:filmiclog_rec709_scene",
        "rna": "blender:filmiclog_rec709_scene",
        "label": "blender:filmiclog_rec709_scene",
-       "value": 52,
        "quoted": true
       },
       {
        "name": "blender:g1961_rec709_display",
        "rna": "blender:g1961_rec709_display",
        "label": "blender:g1961_rec709_display",
-       "value": 4,
        "quoted": true
       },
       {
        "name": "blender:g24_rec2020_display",
        "rna": "blender:g24_rec2020_display",
        "label": "blender:g24_rec2020_display",
-       "value": 5,
        "quoted": true
       },
       {
        "name": "blender:lin_ciexyze_scene",
        "rna": "blender:lin_ciexyze_scene",
        "label": "blender:lin_ciexyze_scene",
-       "value": 13,
        "quoted": true
       },
       {
        "name": "blender:lin_egamut_scene",
        "rna": "blender:lin_egamut_scene",
        "label": "blender:lin_egamut_scene",
-       "value": 20,
        "quoted": true
       },
       {
        "name": "data",
        "rna": "data",
        "label": "data",
-       "value": 51,
        "quoted": true
       },
       {
        "name": "g18_rec709_scene",
        "rna": "g18_rec709_scene",
        "label": "g18_rec709_scene",
-       "value": 53,
        "quoted": true
       },
       {
        "name": "g22_adobergb_scene",
        "rna": "g22_adobergb_scene",
        "label": "g22_adobergb_scene",
-       "value": 57,
        "quoted": true
       },
       {
        "name": "g22_ap1_scene",
        "rna": "g22_ap1_scene",
        "label": "g22_ap1_scene",
-       "value": 59,
        "quoted": true
       },
       {
        "name": "g22_rec709_scene",
        "rna": "g22_rec709_scene",
        "label": "g22_rec709_scene",
-       "value": 54,
        "quoted": true
       },
       {
        "name": "g24_rec709_display",
        "rna": "g24_rec709_display",
        "label": "g24_rec709_display",
-       "value": 3,
        "quoted": true
       },
       {
        "name": "g24_rec709_scene",
        "rna": "g24_rec709_scene",
        "label": "g24_rec709_scene",
-       "value": 55,
        "quoted": true
       },
       {
        "name": "hlg_rec2020_display",
        "rna": "hlg_rec2020_display",
        "label": "hlg_rec2020_display",
-       "value": 7,
        "quoted": true
       },
       {
        "name": "lin_adobergb_scene",
        "rna": "lin_adobergb_scene",
        "label": "lin_adobergb_scene",
-       "value": 17,
        "quoted": true
       },
       {
        "name": "lin_ap0_scene",
        "rna": "lin_ap0_scene",
        "label": "lin_ap0_scene",
-       "value": 18,
        "quoted": true
       },
       {
        "name": "lin_ap1_scene",
        "rna": "lin_ap1_scene",
        "label": "lin_ap1_scene",
-       "value": 19,
        "quoted": true
       },
       {
        "name": "lin_ciexyzd65_scene",
        "rna": "lin_ciexyzd65_scene",
        "label": "lin_ciexyzd65_scene",
-       "value": 0,
        "quoted": true
       },
       {
        "name": "lin_p3d65_scene",
        "rna": "lin_p3d65_scene",
        "label": "lin_p3d65_scene",
-       "value": 15,
        "quoted": true
       },
       {
        "name": "lin_rec2020_scene",
        "rna": "lin_rec2020_scene",
        "label": "lin_rec2020_scene",
-       "value": 16,
        "quoted": true
       },
       {
        "name": "lin_rec709_scene",
        "rna": "lin_rec709_scene",
        "label": "lin_rec709_scene",
-       "value": 14,
        "quoted": true
       },
       {
        "name": "ocio:acescc_ap1_scene",
        "rna": "ocio:acescc_ap1_scene",
        "label": "ocio:acescc_ap1_scene",
-       "value": 61,
        "quoted": true
       },
       {
        "name": "ocio:acescct_ap1_scene",
        "rna": "ocio:acescct_ap1_scene",
        "label": "ocio:acescct_ap1_scene",
-       "value": 62,
        "quoted": true
       },
       {
        "name": "ocio:adx10_apd_scene",
        "rna": "ocio:adx10_apd_scene",
        "label": "ocio:adx10_apd_scene",
-       "value": 49,
        "quoted": true
       },
       {
        "name": "ocio:adx16_apd_scene",
        "rna": "ocio:adx16_apd_scene",
        "label": "ocio:adx16_apd_scene",
-       "value": 50,
        "quoted": true
       },
       {
        "name": "ocio:applelog_applewg_scene",
        "rna": "ocio:applelog_applewg_scene",
        "label": "ocio:applelog_applewg_scene",
-       "value": 22,
        "quoted": true
       },
       {
        "name": "ocio:applelog_rec2020_scene",
        "rna": "ocio:applelog_rec2020_scene",
        "label": "ocio:applelog_rec2020_scene",
-       "value": 21,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc3_awg3_scene",
        "rna": "ocio:arrilogc3_awg3_scene",
        "label": "ocio:arrilogc3_awg3_scene",
-       "value": 24,
        "quoted": true
       },
       {
        "name": "ocio:arrilogc4_awg4_scene",
        "rna": "ocio:arrilogc4_awg4_scene",
        "label": "ocio:arrilogc4_awg4_scene",
-       "value": 26,
        "quoted": true
       },
       {
        "name": "ocio:bmdfilm5_wg5_scene",
        "rna": "ocio:bmdfilm5_wg5_scene",
        "label": "ocio:bmdfilm5_wg5_scene",
-       "value": 28,
        "quoted": true
       },
       {
        "name": "ocio:canonlog2_cgamutd55_scene",
        "rna": "ocio:canonlog2_cgamutd55_scene",
        "label": "ocio:canonlog2_cgamutd55_scene",
-       "value": 32,
        "quoted": true
       },
       {
        "name": "ocio:canonlog3_cgamutd55_scene",
        "rna": "ocio:canonlog3_cgamutd55_scene",
        "label": "ocio:canonlog3_cgamutd55_scene",
-       "value": 33,
        "quoted": true
       },
       {
        "name": "ocio:davinci_dwg_scene",
        "rna": "ocio:davinci_dwg_scene",
        "label": "ocio:davinci_dwg_scene",
-       "value": 30,
        "quoted": true
       },
       {
        "name": "ocio:djilog_dgamut_scene",
        "rna": "ocio:djilog_dgamut_scene",
        "label": "ocio:djilog_dgamut_scene",
-       "value": 35,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg3_scene",
        "rna": "ocio:lin_awg3_scene",
        "label": "ocio:lin_awg3_scene",
-       "value": 25,
        "quoted": true
       },
       {
        "name": "ocio:lin_awg4_scene",
        "rna": "ocio:lin_awg4_scene",
        "label": "ocio:lin_awg4_scene",
-       "value": 27,
        "quoted": true
       },
       {
        "name": "ocio:lin_bmdwg5_scene",
        "rna": "ocio:lin_bmdwg5_scene",
        "label": "ocio:lin_bmdwg5_scene",
-       "value": 29,
        "quoted": true
       },
       {
        "name": "ocio:lin_cgamutd55_scene",
        "rna": "ocio:lin_cgamutd55_scene",
        "label": "ocio:lin_cgamutd55_scene",
-       "value": 34,
        "quoted": true
       },
       {
        "name": "ocio:lin_dgamut_scene",
        "rna": "ocio:lin_dgamut_scene",
        "label": "ocio:lin_dgamut_scene",
-       "value": 36,
        "quoted": true
       },
       {
        "name": "ocio:lin_dwg_scene",
        "rna": "ocio:lin_dwg_scene",
        "label": "ocio:lin_dwg_scene",
-       "value": 31,
        "quoted": true
       },
       {
        "name": "ocio:lin_rwg_scene",
        "rna": "ocio:lin_rwg_scene",
        "label": "ocio:lin_rwg_scene",
-       "value": 40,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3_scene",
        "rna": "ocio:lin_sgamut3_scene",
        "label": "ocio:lin_sgamut3_scene",
-       "value": 45,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cine_scene",
        "rna": "ocio:lin_sgamut3cine_scene",
        "label": "ocio:lin_sgamut3cine_scene",
-       "value": 46,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3cinevenice_scene",
        "rna": "ocio:lin_sgamut3cinevenice_scene",
        "label": "ocio:lin_sgamut3cinevenice_scene",
-       "value": 48,
        "quoted": true
       },
       {
        "name": "ocio:lin_sgamut3venice_scene",
        "rna": "ocio:lin_sgamut3venice_scene",
        "label": "ocio:lin_sgamut3venice_scene",
-       "value": 47,
        "quoted": true
       },
       {
        "name": "ocio:lin_vgamut_scene",
        "rna": "ocio:lin_vgamut_scene",
        "label": "ocio:lin_vgamut_scene",
-       "value": 38,
        "quoted": true
       },
       {
        "name": "ocio:linear_applewg_scene",
        "rna": "ocio:linear_applewg_scene",
        "label": "ocio:linear_applewg_scene",
-       "value": 23,
        "quoted": true
       },
       {
        "name": "ocio:redlog3g10_rwg_scene",
        "rna": "ocio:redlog3g10_rwg_scene",
        "label": "ocio:redlog3g10_rwg_scene",
-       "value": 39,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3_scene",
        "rna": "ocio:slog3_sgamut3_scene",
        "label": "ocio:slog3_sgamut3_scene",
-       "value": 41,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cine_scene",
        "rna": "ocio:slog3_sgamut3cine_scene",
        "label": "ocio:slog3_sgamut3cine_scene",
-       "value": 42,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3cinevenice_scene",
        "rna": "ocio:slog3_sgamut3cinevenice_scene",
        "label": "ocio:slog3_sgamut3cinevenice_scene",
-       "value": 44,
        "quoted": true
       },
       {
        "name": "ocio:slog3_sgamut3venice_scene",
        "rna": "ocio:slog3_sgamut3venice_scene",
        "label": "ocio:slog3_sgamut3venice_scene",
-       "value": 43,
        "quoted": true
       },
       {
        "name": "ocio:vlog_vgamut_scene",
        "rna": "ocio:vlog_vgamut_scene",
        "label": "ocio:vlog_vgamut_scene",
-       "value": 37,
        "quoted": true
       },
       {
        "name": "pq_rec2020_display",
        "rna": "pq_rec2020_display",
        "label": "pq_rec2020_display",
-       "value": 6,
        "quoted": true
       },
       {
        "name": "srgb_ap1_scene",
        "rna": "srgb_ap1_scene",
        "label": "srgb_ap1_scene",
-       "value": 58,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_display",
        "rna": "srgb_p3d65_display",
        "label": "srgb_p3d65_display",
-       "value": 2,
        "quoted": true
       },
       {
        "name": "srgb_p3d65_scene",
        "rna": "srgb_p3d65_scene",
        "label": "srgb_p3d65_scene",
-       "value": 56,
        "quoted": true
       },
       {
        "name": "srgb_rec709_display",
        "rna": "srgb_rec709_display",
        "label": "srgb_rec709_display",
-       "value": 1,
        "quoted": true
       },
       {
        "name": "g22_rec709_display",
        "rna": "g22_rec709_display",
        "label": "g22_rec709_display",
-       "value": 120,
        "quoted": true
       },
       {
        "name": "lin_p3d65_display",
        "rna": "lin_p3d65_display",
        "label": "lin_p3d65_display",
-       "value": 81,
        "quoted": true
       },
       {
        "name": "lin_rec2020_display",
        "rna": "lin_rec2020_display",
        "label": "lin_rec2020_display",
-       "value": 82,
        "quoted": true
       },
       {
        "name": "lin_rec709_display",
        "rna": "lin_rec709_display",
        "label": "lin_rec709_display",
-       "value": 80,
        "quoted": true
       },
       {
        "name": "srgb_rec709_scene",
        "rna": "srgb_rec709_scene",
        "label": "srgb_rec709_scene",
-       "value": 67,
        "quoted": true
       }
      ],
