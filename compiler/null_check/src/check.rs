@@ -16,6 +16,7 @@ use crate::values::{
 };
 
 mod anim;
+mod level0;
 mod subs;
 mod trees;
 
@@ -34,6 +35,7 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
         disagreement: None,
         groups: HashMap::new(),
         actions: HashMap::new(),
+        refs: Vec::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -54,9 +56,20 @@ pub fn check(schema: &Schema, files: &[(FileId, &Parse)]) -> Vec<Diagnostic> {
     }
     for (file, parse) in files {
         for node in parse.document().nodes() {
-            cx.top(*file, node);
+            if node.name() != "array" {
+                cx.top(*file, node);
+            }
         }
     }
+    // Level 0 data files, each against the line that names it (section 9, task 1d-06b).
+    for (file, parse) in files {
+        for node in parse.document().nodes() {
+            if node.name() == "array" {
+                cx.data_file(*file, node);
+            }
+        }
+    }
+    cx.unmatched_refs();
     let mut out = cx.out;
     // Sub-object handles are unique within their owner, whatever their kinds (section 7).
     out.extend(crate::paths::Index::build(files).duplicates());
@@ -102,6 +115,8 @@ struct Checker<'s> {
     groups: HashMap<String, trees::Interface>,
     /// Every action's slots, by handle (task 1d-07a).
     actions: HashMap<String, anim::Slots>,
+    /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
+    refs: Vec<level0::ArrayRef>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -391,7 +406,15 @@ impl<'s> Checker<'s> {
             "scene" => vec!["object", "collection", "units", "fps", "fps-base"],
             "collection" => vec!["object", "collection"],
             "object" => vec!["data", "material", "modifier", "constraint", "bone"],
-            "mesh" => vec!["primitive", "vertices", "polygons"],
+            "mesh" => vec![
+                "primitive",
+                "vertices",
+                "edges",
+                "polygons",
+                "attribute",
+                "uv-map",
+                "vertex-group",
+            ],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
         };
@@ -432,6 +455,7 @@ impl<'s> Checker<'s> {
                 ("scene" | "collection", "object" | "collection")
                     | ("object", "material" | "modifier" | "constraint" | "bone")
                     | ("pose-bone", "constraint")
+                    | ("mesh", "attribute" | "uv-map" | "vertex-group")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -461,8 +485,10 @@ impl<'s> Checker<'s> {
                 ("object", "data") => self.data(file, a),
                 ("object", "material") => self.reference(file, a, "material"),
                 ("mesh", "primitive") => self.primitive(file, a),
+                ("mesh", "vertices") if a.props.iter().any(|(k, _)| k.text == "file") => {}
                 ("mesh", "vertices") => vertex_count = self.vertices(file, a),
-                ("mesh", "polygons") => {} // after the loop, against the vertex count
+                // After the loop, against the vertex count and the other arrays (task 1d-06b).
+                ("mesh", "polygons" | "edges" | "attribute" | "uv-map" | "vertex-group") => {}
                 ("object", "modifier") => self.family_member(file, a, "Modifier"),
                 ("object" | "pose-bone", "constraint") => self.family_member(file, a, "Constraint"),
                 ("object", "bone") => self.pose_bone(file, a),
@@ -493,8 +519,15 @@ impl<'s> Checker<'s> {
                 },
             }
         }
-        if let Some(a) = all.iter().find(|a| kind == "mesh" && a.name == "polygons") {
+        if let Some(a) = all.iter().find(|a| {
+            kind == "mesh" && a.name == "polygons" && !a.props.iter().any(|(k, _)| k.text == "file")
+        }) {
             self.polygons(file, a, vertex_count);
+        }
+        if kind == "mesh"
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.level0(file, ("mesh".to_string(), handle), &all);
         }
     }
 

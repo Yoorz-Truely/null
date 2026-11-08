@@ -356,7 +356,18 @@ fn every_example_in_the_spec_checks_clean_as_one_project() {
     // Task 1d-01a: section 4 says every example checks clean, so every ```null block of the
     // whole spec is one project here, its handles distinct across sections.
     let schema = Schema::from_json(PROJECT).unwrap();
-    let blocks: Vec<String> = examples(SPEC).iter().map(|b| format!("{b}\n")).collect();
+    // A Null file that is not a datablock file (the handle map `ids { … }`, `settings.noll`,
+    // `view.noll`) is parsed and formatted by the other tests, but not checked as a project's.
+    let blocks: Vec<String> = examples(SPEC)
+        .iter()
+        .filter(|b| {
+            let p = parse(b);
+            !p.document()
+                .nodes()
+                .any(|n| matches!(n.name().as_ref(), "ids" | "settings" | "view"))
+        })
+        .map(|b| format!("{b}\n"))
+        .collect();
     assert!(blocks.len() >= 14, "{} examples", blocks.len());
     let mut map = SourceMap::new();
     let parses: Vec<(FileId, Parse)> = blocks

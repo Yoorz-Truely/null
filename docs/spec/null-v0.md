@@ -54,7 +54,7 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 
 ## 4. A first look
 
-A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes. An example of a form the checker does not read yet is fenced `null (<task>)`, naming the task that builds it, and joins the test when that task lands.
+A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes. An example of a form the checker does not read yet, or one abbreviated with `…`, is fenced `null (<task>)`, naming the task that builds the form; it is still parsed and formatted, and joins the full check when it is complete and built.
 
 ```null
 // project.noll
@@ -465,7 +465,7 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 
 ### Level 0: attribute arrays
 
-Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Reading and checking these forms is task 1d-06b, so the examples here are fenced as `null (1d-06b)` and are checked once it lands. A mesh's level 0 data is its attribute arrays, one line each in its block, in the order below.
+Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Null's checker reads and checks these forms (task 1d-06b): each array's length against its domain (points, edges, faces, corners), each value by its type, and a data file against the line that names it, its `count=` and `bounds=` included. The examples below are abbreviated with `…`, so they stay fenced `null (1d-06b)`; complete ones are in `null_check`'s tests. A mesh's level 0 data is its attribute arrays, one line each in its block, in the order below.
 
 - **`vertices [[x y z] …]`**: each vertex's position (the `position` attribute, point domain), lengths as `location` is written (section 6).
 - **`edges [[a b] …]`**: each edge's two vertex indices, in Blender's order. It is written only when the mesh needs it: an edge no polygon has (a loose edge), or an edge attribute, whose values follow this order. Otherwise Blender makes the edges from the polygons, and the line is left out.
@@ -506,7 +506,7 @@ array mesh @rock vertices [
 ]
 ```
 
-- A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it, by Null's checker and Cosmósis's layout alike (1d-06b).
+- A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it. Null's checker matches a data file to its line by the `array` node's owner and array name, and reports a line whose file is missing and a data file no line names (1d-06b); that the path names that file is Cosmósis's to check, since it knows the files' paths.
 - Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
 - `sau convert --inline` writes every array inline whatever its size.
 
