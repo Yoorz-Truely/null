@@ -52,6 +52,12 @@ const CASES: &[(&str, &[&str])] = &[
             "object @o \"O\" { pass-index \"three\" }\n",
             "object @o \"O\" { location [0m 0m] }\n",
             "object @o \"O\" { hide-render maybe }\n",
+            // A driver's expression (task 1d-07f): a variable misspelt, a unit that is none, a
+            // unit in Python, a function with the wrong number of arguments.
+            "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"spn * 100W\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
+            "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"spin * 100Q\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
+            "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.context.scene.frame_current * 1W\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
+            "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"atan2(spin)\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
         ],
     ),
     (
@@ -90,6 +96,12 @@ const CASES: &[(&str, &[&str])] = &[
         &[
             "object @o \"O\" { mode edit }\n",
             "object @o \"O\" {\n  mode edit\n  pass-index 1\n}\n",
+        ],
+    ),
+    (
+        codes::PYTHON,
+        &[
+            "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.data.objects['D'].location.z * 100\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
         ],
     ),
     (

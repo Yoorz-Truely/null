@@ -656,12 +656,21 @@ impl Checker<'_> {
             .find(|q| q.name == "type")
             .map(|q| q.item_names().into_iter().map(str::to_string).collect())
             .unwrap_or_default();
+        // The variables the expression names: each `var <name>` line of the block.
+        let vars: Vec<String> = a
+            .node
+            .map(attrs)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|b| b.name == "var")
+            .filter_map(|b| b.args.first().map(|v| v.text().to_string()))
+            .collect();
         for (k, v) in &a.props {
             match k.text {
                 "driver" => {
-                    if v.as_string().is_none()
-                        && !types.iter().any(|t| Some(t.as_str()) == v.as_word())
-                    {
+                    if let Some(text) = v.as_string() {
+                        self.driver_expression(file, v, &text, &vars);
+                    } else if !types.iter().any(|t| Some(t.as_str()) == v.as_word()) {
                         let shown: Vec<&str> = types
                             .iter()
                             .map(String::as_str)
@@ -784,6 +793,46 @@ impl Checker<'_> {
                     continue;
                 }
                 self.driver_target(file, t, ty, &tprops);
+            }
+        }
+    }
+
+    /// A scripted driver's expression (task 1d-07f): in Blender's simple expressions, with
+    /// Null's units, it compiles; a mistake in it is an error at its place; Python is a note.
+    fn driver_expression(&mut self, file: FileId, v: &Value<'_>, text: &str, vars: &[String]) {
+        let vars: Vec<&str> = vars.iter().map(String::as_str).collect();
+        let scene = self.scene.unwrap_or_default();
+        let scene = null_value::Scene {
+            scale_length: self.scale,
+            ..scene
+        };
+        // A place in the expression, in the file: exact where the string is written as it reads
+        // (no escapes), else the whole string.
+        let span = v.span();
+        let exact = v.text().len() == text.len() + 2;
+        let place = |(s, e): (usize, usize)| {
+            if exact {
+                null_syntax::Span::new(span.start + 1 + s, span.start + 1 + e)
+            } else {
+                span
+            }
+        };
+        match crate::driver::compile(text, &vars, &scene) {
+            Ok(c) => {
+                if let Some(why) = c.python {
+                    self.out(file).note(
+                        codes::PYTHON,
+                        span,
+                        format!(
+                            "this driver is Python, not one of Blender's simple expressions ({why}): it is kept, and runs only where Blender may run Python"
+                        ),
+                    );
+                }
+            }
+            Err(e) => {
+                let at = place(e.at);
+                let fix = e.fix.map(|f| (format!("write `{f}`"), at, f));
+                self.out(file).error_fix(codes::TYPE, at, e.message, fix);
             }
         }
     }
