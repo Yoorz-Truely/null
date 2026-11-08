@@ -26,7 +26,7 @@ mesh @pier-deck \"PierDeck\" {
 
 material @weathered-oak \"Weathered Oak\" {
   nodes {
-    node @bsdf principled-bsdf { roughness 0.62 }
+    node @bsdf bsdf-principled { roughness 0.62 }
     node @out output-material { surface @bsdf.bsdf }
   }
 }
@@ -197,7 +197,7 @@ fn inside_its_block_a_path_starts_at_the_owners_own_sub_objects() {
     let text = "\
 material @oak \"Oak\" {
   nodes {
-    node @bsdf principled-bsdf { roughness 0.5 }
+    node @bsdf bsdf-principled { roughness 0.5 }
   }
 }
 

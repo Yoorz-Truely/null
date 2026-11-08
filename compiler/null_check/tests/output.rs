@@ -22,7 +22,7 @@ fn run(text: &str) -> (SourceMap, Vec<Diagnostic>) {
 const CONNECTED: &str = "\
 material @oak \"Weathered Oak\" {
   nodes {
-    node @bsdf principled-bsdf {
+    node @bsdf bsdf-principled {
       base-color [0.8 0.62 0.41 1]
       roughness 0.62
     }

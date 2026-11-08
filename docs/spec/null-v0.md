@@ -112,7 +112,7 @@ mesh @pier-deck "PierDeck" {
 material @weathered-oak "Weathered Oak" {
   nodes {
     node @tex image-texture { image @oak-diffuse interpolation=cubic }
-    node @bsdf principled-bsdf {
+    node @bsdf bsdf-principled {
       base-color @tex.color             // a link: the socket takes another node's output
       roughness 0.62
     }
@@ -172,7 +172,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is every item an enum's items at run time give that is not one the schema lists (an attribute's or a UV map's name), so it is never read as a misspelling of a listed one | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none. Another order, or an item twice, is an error whose fix is the schema's order: the order is part of the written form, so the same set is always the same text | `delimit [normal material]` (a decimate modifier), `delimit []` |
 | String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
-| Pointer | A handle (section 7); `none` for an empty pointer where the property allows one | `camera @shot-cam`, `parent none` |
+| Pointer | A handle (section 7); `none` for an empty pointer where the property allows one. A struct the owner holds that is not a datablock, and that no form of Null's flattens (an add-on's settings, such as a scene's Cycles settings, or a struct such as `render`), is a block of that struct's properties. A property a flat form already sets is an error in such a block, with a fix that moves it there: a scene's `fps` is never `render { fps 30 }`, and its unit settings are `units`, never `unit-settings { … }` (S70: one spelling per property) | `camera @shot-cam`, `parent none`, `cycles { samples 64 }` |
 | Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
 | Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
 | Multi-dimensional array | Nested lists, the first dimension outermost, as RNA's dimensions are listed | `[[1 0] [0 1] [0 0]]` for dimensions `[3 2]` |
@@ -251,22 +251,20 @@ Blender gives a modifier its `persistent_uid` from a hash of its name when it is
 
 ## 8. The objects
 
-Every one of Blender's datablock types (31 kinds of ID in this source tree) has a node kind, generated from RNA and refined by hand only where RNA is not enough:
+Every one of Blender's datablock types that holds project data has a kind, generated from RNA (Sau's tasks 1b-03b and 1b-03c), and so does every node, modifier, constraint, strip and other struct of a family. One rule names them all, with no exceptions beyond the slice's core (Sau's decision S67):
 
-| Area | Kinds |
-| --- | --- |
-| Structure | `project`, `scene`, `view-layer`, `collection`, `object`, `workspace`, `screen` |
-| Object data | `mesh`, `curve`, `curves` (hair), `surface`, `metaball`, `text`, `point-cloud`, `volume`, `grease-pencil`, `armature`, `lattice`, `camera`, `light`, `light-probe`, `speaker` |
-| Look | `material`, `world`, `node-group` (geometry, shader, compositor), `texture`, `image`, `movie-clip`, `palette`, `brush`, `line-style` |
-| Motion | `action` (with slots and layers), `nla` tracks on their owners, `driver` on any property, `shape-key`, `cache-file`, `mask` |
-| Media | `image`, `sound`, `font`, `movie-clip`, `volume` and `cache-file` sources, all pointing into `media/` |
-| Settings | `render` (Cycles, EEVEE, Workbench), `color-management`, `units`, `preferences`, `keymap`, `theme` |
+- **The rule.** A kind is the Blender type identifier with its family's affix removed, and the rest in kebab case, a capital starting each word and a digit staying with the word before it (`Tool3DCursor` is `tool3d-cursor`, `View3DShading` is `view3d-shading`, `CryptomatteV2` is `cryptomatte-v2`). The affix is the longest identifier of a struct it extends that it starts or ends with, `ID` never counting: `ShaderNodeBsdfPrincipled` is `bsdf-principled`, `BevelModifier` is `bevel`, `CopyLocationConstraint` is `copy-location`, `ColorStrip` is `color`, `BlendTexture` is `blend`. With no such affix, the whole identifier is the kind: `PointCloud` is `point-cloud`, `FreestyleLineStyle` is `freestyle-line-style`. The name can be computed both ways, so the schema maps each kind back to its identifier.
+- **Where two meet.** Kinds read in one place (the datablock types; a node tree; a family such as modifiers) are unique there. Where two would share a name, the one of that place's own family, or the one with no affix, keeps it, and the other keeps its affix's word: in a compositor tree `CompositorNodeSwitch` is `switch` and `GeometryNodeSwitch` is `geometry-switch`; among datablocks `Image` is `image` and `ImageTexture` is `image-texture`. A kind left starting with a digit keeps its affix's word too, since a name starts with a letter (S16).
+- **The core.** The slice's kinds keep their names: `project`, `scene`, `units`, `collection`, `object`, `mesh`, `mesh-vertex`, `mesh-polygon`, `material`, `camera`, `light`, `point-light`, `sun-light`, `spot-light`, `area-light`. The slice's `principled-bsdf` follows the rule and is `bsdf-principled`.
+- **The datablock types** by this rule, as Blender 5.3 has them: `action`, `annotation`, `armature`, `cache-file`, `camera`, `collection`, `curve`, `curves` (hair), `surface`, `text-curve`, `grease-pencil`, `image`, `key` (shape keys), `lattice`, `library`, `light` and `point-light`, `sun-light`, `spot-light`, `area-light`, `light-probe` and `plane`, `sphere`, `light-probe-volume`, `mask`, `material`, `mesh`, `meta-ball`, `movie-clip`, `node-tree` and `shader`, `geometry`, `compositor`, `texture-node-tree`, `object`, `paint-curve`, `palette`, `particle-settings`, `point-cloud`, `scene`, `sound`, `speaker`, `text`, `texture` and `blend`, `clouds`, `distorted-noise`, `image-texture`, `magic`, `marble`, `musgrave`, `noise`, `stucci`, `voronoi`, `wood`, `vector-font`, `volume`, `world`. The interface's types (screens, workspaces, the window manager, brushes) are not project data; they belong in `view.noll`, settings and packages.
+- **Add-ons' settings.** Cycles is bundled with Blender and on by default, and a project's render, object, light and world settings for it are its own Python-defined properties, so the project's schema carries them as a section of their own (Sau's task 1b-03g): the properties Cycles adds to Blender's structs (`Scene.cycles`, `Object.cycles`, `Light.cycles`, `World.cycles` and others) and every struct of its they reach, with Blender's version, since Cycles is bundled. They are read as Blender's own are, a scene's as `cycles { samples 64; device gpu }`. A schema made with Cycles off is the same but for that section. Other add-ons wait for packages.
+- **Nodes** are read in their tree: the schema lists, for each node, the trees that take it and its kind in each. Its sockets come from the node's declaration in the running app, not RNA, each with its type, unit, range and default. A socket a node shows only for some of its settings is marked `enabled: false` (at the node's defaults); the empty socket that adds an item when linked, as a menu switch's or a repeat zone's lists grow, is `virtual`; a socket that takes several links is `multi-input`; one with no value of its own is `hide-value`; a menu socket's items are its node's at run time. Where a node's sockets differ between trees, the schema gives each tree's.
 
 Each object kind's properties are the RNA properties of its struct, by the same names. The generated field reference, one table per struct, is an appendix produced from the schema at build time; it is never written by hand.
 
 ### Null's forms over RNA
 
-The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender, so a value far from every listed item (`instance-type zzzzzz`) passes the checker unseen and is refused, if at all, only when Sau applies it. A struct's kind is its RNA identifier in kebab case (`shader-node-bsdf-principled`), apart from the slice's own names, until shorter kinds are settled. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
+The schema Sau generates from RNA gives every name, type, unit, range and enum item: `schema/null-schema-project.json` for all project data (every struct the datablock types own, with every node, modifier, constraint and strip kind; Sau's task 1b-03b), and `schema/null-schema.json` for phase 1a's slice. An enum whose items Blender computes when it is used is marked `items-at-run-time`: the checker takes a listed item, refuses a value near one as a misspelling, and leaves any other to Blender, so a value far from every listed item (`instance-type zzzzzz`) passes the checker unseen and is refused, if at all, only when Sau applies it. A struct's kind follows S67's rule above (`bsdf-principled`), the slice's own names kept. A few things are written in a form of Null's own, either because RNA's shape is not how a file says it or because RNA leaves something out. These are the slice's (phase 1a), settled November 7, 2026 by S16, S17, S18, S24 and S35. The checker (`null_check`) holds them in `forms.rs`.
 
 | Form | Means | Why |
 | --- | --- | --- |
@@ -308,7 +306,7 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
 
 - A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, the kind being the node's RNA identifier in kebab-case.
 - A link is a socket value that names another node's output: `base-color @tex.color`. A socket with no line takes its default.
-- Group nodes reference a `node-group`; group interfaces list their inputs and outputs with types and defaults.
+- Group nodes reference a node tree (`shader`, `geometry`, `compositor` or `texture-node-tree`, by S67); group interfaces list their inputs and outputs with types and defaults.
 - Zones (repeat, simulation, for-each) are blocks containing their nodes.
 - **Layout is kept apart.** Node positions, frames, colours and widths live in the tree's trailing `layout` block, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout.
 
@@ -356,7 +354,7 @@ The canonical order (task 1c-01e, `null_print::canonical`):
   - a material's `nodes` and then `layout` at `node-tree`;
   - a project's `units` before its scenes;
   - a `units` block's settings in `UnitSettings`' order, short names standing for full ones.
-- **Some orders stay as written:** lines of one name keep theirs among themselves (members, material slots), and a node tree's `node` lines keep theirs. A node's settings come first, then its inputs as its declaration lists them.
+- **Some orders stay as written:** lines of one name keep theirs among themselves (members, material slots), and a node tree's `node` lines keep theirs. A node's own settings come first (not those every node has, such as the editor's `color` for it), then its inputs as its declaration lists them; a node is found in its tree, since one kind may name nodes of two trees.
 - **Attributes the schema does not know** come last, as written. So do lines commented out with `/-`.
 - **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them. A comment at a line's end stays on that line, and so does one after a block's `{` or after a `;`.
 - **Blank lines.** There are none between the lines of a block. Between datablocks, a file keeps at most one.

@@ -204,3 +204,134 @@ fn matrices_are_rows_of_lists_and_run_time_enums_take_unlisted_items() {
     assert_eq!(misspelt[0].fixes[0].edits[0].replacement, "faces");
     assert!(errors(&schema, &[&object("  instance-type made-at-run-time")]).is_empty());
 }
+
+#[test]
+fn a_material_takes_the_node_kinds_a_shader_tree_takes() {
+    // Node kinds by S67, read in their tree (task 1b-03c): a material's tree is a shader tree.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let material =
+        |node: &str| format!("material @m \"M\" {{\n  nodes {{\n    node @n {node}\n  }}\n}}\n");
+    for kind in ["bsdf-principled", "output-material", "math", "tex-noise"] {
+        let found = errors(&schema, &[&material(kind)]);
+        assert!(found.is_empty(), "{kind}: {found:#?}");
+    }
+    // A compositor's own node, and the geometry switch's compositor-tree name, are not a
+    // shader tree's; the slice's old spelling is gone.
+    for kind in ["r-layers", "geometry-switch", "principled-bsdf"] {
+        let found = errors(&schema, &[&material(kind)]);
+        assert_eq!(found.len(), 1, "{kind}: {found:#?}");
+        assert_eq!(found[0].code, codes::KIND, "{kind}");
+    }
+    let shader = schema.node_kinds(null_check::SHADER_TREE);
+    assert!(shader.len() > 100, "{}", shader.len());
+    let switch = schema.nodes.iter().find(|n| {
+        n.trees.as_ref().is_some_and(|t| {
+            t.get("CompositorNodeTree").map(String::as_str) == Some("geometry-switch")
+        })
+    });
+    assert!(switch.is_some());
+}
+
+#[test]
+fn cycles_settings_are_their_own_section_and_check_as_blocks() {
+    // Task 1b-03g: Cycles' settings, from its own section, written as blocks of the structs a
+    // scene, object, light or world holds (spec, section 6, "Pointer").
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let cycles = &schema.addons["cycles"];
+    assert_eq!(cycles.module, "cycles");
+    assert!(
+        cycles
+            .attached
+            .iter()
+            .any(|a| a.owner == "Scene" && a.property.name == "cycles")
+    );
+    let render = "\
+scene @main \"Main\" {
+  cycles {
+    samples 64
+    device gpu
+    use-denoising
+    time-limit 30s
+  }
+  frame-start 1
+}
+
+object @cube \"Cube\" {
+  cycles { use-motion-blur off }
+}
+
+light @lamp \"Lamp\" {
+  type point
+  cycles { max-bounces 8 }
+}
+
+world @sky \"Sky\" {
+  cycles { sampling-method automatic }
+}
+";
+    let found = errors(&schema, &[render]);
+    assert!(found.is_empty(), "{found:#?}");
+    // A misspelt Cycles setting is found, with its fix.
+    let misspelt = errors(
+        &schema,
+        &["scene @main \"Main\" {\n  cycles { sampels 64 }\n}\n"],
+    );
+    assert_eq!(misspelt.len(), 1, "{misspelt:#?}");
+    assert_eq!(misspelt[0].code, codes::UNKNOWN_PROPERTY);
+    assert_eq!(misspelt[0].fixes[0].edits[0].replacement, "samples");
+    // A value out of Cycles' range is refused.
+    let range = errors(
+        &schema,
+        &["scene @main \"Main\" {\n  cycles { samples 0 }\n}\n"],
+    );
+    assert_eq!(range.len(), 1, "{range:#?}");
+    assert_eq!(range[0].code, codes::RANGE);
+    // Without the section (the slice's schema), `cycles` is no property of a scene.
+    let slice = Schema::from_json(SLICE).unwrap();
+    let without = errors(
+        &slice,
+        &["scene @main \"Main\" {\n  cycles { samples 64 }\n}\n"],
+    );
+    assert_eq!(without.len(), 1, "{without:#?}");
+    assert_eq!(without[0].code, codes::UNKNOWN_PROPERTY);
+}
+
+#[test]
+fn a_property_with_a_flat_form_is_an_error_in_a_block() {
+    // S70: one spelling per property. A block is for a struct Null does not flatten; `fps` is a
+    // scene's own line, so `render { fps 30 }` is an error whose fix moves the line out.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let clean = errors(
+        &schema,
+        &["scene @s \"S\" {\n  fps 24\n  render { resolution-x 1920 }\n}\n"],
+    );
+    assert!(clean.is_empty(), "{clean:#?}");
+    let text = "scene @s \"S\" {\n  render { fps 30; resolution-x 1920 }\n}\n";
+    let found = errors(&schema, &[text]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::REPEATED);
+    let edits: Vec<_> = found[0].fixes[0]
+        .edits
+        .iter()
+        .map(|e| (e.span, e.replacement.as_str()))
+        .collect();
+    let fixed = null_syntax::apply_edits(text, &edits);
+    assert!(fixed.contains("  fps 30\n"), "{fixed}");
+    let after = errors(&schema, &[&fixed]);
+    assert!(after.is_empty(), "{fixed}: {after:#?}");
+    // The unit settings are written `units`, never as their block.
+    let units = errors(
+        &schema,
+        &["scene @s \"S\" {\n  unit-settings { system metric }\n}\n"],
+    );
+    assert_eq!(units.len(), 1, "{units:#?}");
+    assert!(units[0].message.contains("`units"), "{}", units[0].message);
+}
+
+#[test]
+fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "material @m \"M\" {\n  nodes {\n    node @b principled-bsdf\n  }\n}\n";
+    let found = errors(&schema, &[text]);
+    assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
+}

@@ -30,7 +30,7 @@ Document@0..402
               Word@61..66 "@bsdf"
             Whitespace@66..67 " "
             Arg@67..82
-              Word@67..82 "principled-bsdf"
+              Word@67..82 "bsdf-principled"
             Whitespace@82..83 " "
             Block@83..146
               LBrace@83..84 "{"
@@ -147,7 +147,7 @@ Document@0..402
               Word@292..297 "@bsdf"
             Whitespace@297..298 " "
             Arg@298..313
-              Word@298..313 "principled-bsdf"
+              Word@298..313 "bsdf-principled"
             Whitespace@313..314 " "
             Prop@314..332
               Word@314..324 "base-color"
