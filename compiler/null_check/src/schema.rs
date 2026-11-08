@@ -125,6 +125,9 @@ pub struct Item {
 pub struct NodeDef {
     /// Null's kind, such as `principled-bsdf`.
     pub kind: String,
+    /// Its RNA identifier, such as `ShaderNodeBsdfPrincipled`, where the schema gives it.
+    #[serde(default)]
+    pub rna: Option<String>,
     /// Its inputs.
     pub inputs: Vec<Property>,
     /// Its outputs.

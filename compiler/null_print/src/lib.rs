@@ -12,6 +12,8 @@
 //!   transform's translation in a length unit (spec, section 6).
 //! - [`print_value`] and [`read_value`] print and read a value of any RNA type, as the schema's
 //!   property says, exactly (spec, section 6, "Types"; task 1c-02b).
+//! - [`canonical`] puts a file's attributes in the schema's order, then lays it out
+//!   (spec, section 15; task 1c-01e).
 //! - [`format`] is the formatter's layout pass (spec, section 15): two-space
 //!   indentation by depth, single spaces between entries, no space inside list
 //!   brackets, no trailing whitespace, at most one blank line, one line feed at the
@@ -36,12 +38,14 @@
 //! );
 //! ```
 
+mod canonical;
 mod format;
 mod matrix;
 mod project;
 mod typed;
 mod write;
 
+pub use canonical::canonical;
 pub use format::format;
 pub use matrix::print_matrix;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};

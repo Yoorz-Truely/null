@@ -346,6 +346,23 @@ The layout is fixed (settled November 7, 2026, task 1a-07):
 
 Formatting keeps every comment and every other token as written.
 
+The canonical order (task 1c-01e, `null_print::canonical`):
+
+- **Attributes in the schema's order.** Within a block, and among a line's `key=value`s, attributes follow RNA's definition order: the base struct's properties first, then each struct's own (`ID`'s, then `Object`'s: `data`, … `location`, `rotation-euler`, … `scale`). A light's follow its type's struct.
+- **Null's forms stand where the RNA property they write stands:**
+  - a scene's `units` at `unit-settings`, `fps` and `fps-base` at `render`, and its `object` and `collection` members at `collection`;
+  - an object's `material` slots at `material-slots`;
+  - a mesh's `primitive` before `vertices`;
+  - a material's `nodes` and then `layout` at `node-tree`;
+  - a project's `units` before its scenes;
+  - a `units` block's settings in `UnitSettings`' order, short names standing for full ones.
+- **Some orders stay as written:** lines of one name keep theirs among themselves (members, material slots), and a node tree's `node` lines keep theirs. A node's settings come first, then its inputs as its declaration lists them.
+- **Attributes the schema does not know** come last, as written. So do lines commented out with `/-`.
+- **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them, and a comment at a line's end stays on that line.
+- **Blank lines.** There are none between the lines of a block. Between datablocks, a file keeps at most one.
+- **Files that do not parse** keep their order, and only get the layout.
+
+
 ## 16. Live reload
 
 Changes are live in both directions, all the time, the way every query in a Convex app updates the moment its data or code changes (Sau's roadmap, design decision 9). Each change, from any source, is one checked, atomic transaction with a revision number, and every view (viewport, editors, code views, the language server's clients and the gateway's subscribers) follows the same revision.
