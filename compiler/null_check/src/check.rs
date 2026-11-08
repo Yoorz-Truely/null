@@ -516,6 +516,7 @@ impl<'s> Checker<'s> {
                 rna,
                 all.iter().find(|a| a.name == "nodes").and_then(|a| a.node),
                 interface,
+                self.handle_of(node).map(|(h, _)| h),
             )
         });
         for a in &all {

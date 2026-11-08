@@ -113,7 +113,7 @@ fuzz_target!(|data: &[u8]| {
     settles("sau fmt", &text, |t| {
         null_print::without_defaults(&null_print::canonical(t, schema), schema)
     });
-    settles("expand", &text, |t| {
-        null_print::expand(&[t], schema).remove(0)
+    settles("full_form", &text, |t| {
+        null_print::full_form(&[t], schema).remove(0)
     });
 });

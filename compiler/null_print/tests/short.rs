@@ -6,7 +6,7 @@
 
 use null_check::paths::Index;
 use null_check::{Schema, check};
-use null_print::{Address, Attr, Line, New, Values, expand, write_through};
+use null_print::{Address, Attr, Line, New, Values, full_form, write_through};
 use null_syntax::{FileId, Parse, SourceMap, apply_edits, parse};
 use null_value::Dimension;
 
@@ -68,11 +68,11 @@ fn form(
     short_after: &str,
 ) {
     assert_clean(short);
-    let expanded = expand(short, schema());
+    let expanded = full_form(short, schema());
     assert_eq!(strs(&expanded), full, "the full form");
     assert_clean(full);
     assert_eq!(
-        expand(full, schema()),
+        full_form(full, schema()),
         expanded,
         "the full form expands to itself"
     );
@@ -82,7 +82,7 @@ fn form(
     assert_clean(&strs(&short_w));
     let full_w = written(full, file, &at, new);
     assert_eq!(
-        expand(&strs(&short_w), schema()),
+        full_form(&strs(&short_w), schema()),
         full_w,
         "a write through the short form means the write through the full form"
     );
@@ -306,8 +306,27 @@ const CLAY: &str = r#"material @clay "Clay" {
   nodes {
     node @noise tex-noise "Noise" { scale 4 }
     node @box frame "Surface" { label "Surface" }
+    node @box2 frame "Other"
     node @bsdf bsdf-principled "Skin" {
+      roughness @noise.fac
       parent @box
+    }
+  }
+}
+"#;
+
+const CLAY_FULL: &str = r#"material @clay "Clay" {
+  nodes {
+    node @noise tex-noise "Noise" {
+      scale 4
+    }
+    node @box frame "Surface" {
+      label "Surface"
+    }
+    node @box2 frame "Other"
+    node @bsdf bsdf-principled "Skin" {
+      roughness @clay/@noise.fac
+      parent @clay/@box
     }
   }
 }
@@ -315,24 +334,6 @@ const CLAY: &str = r#"material @clay "Clay" {
 
 #[test]
 fn a_paths_owner_left_out_in_its_own_block() {
-    let files = [CLAY];
-    assert_clean(&files);
-    // The text names the frame the short way, and the index reads both ways the same.
-    let full = expand(&files, schema()).join("");
-    assert!(
-        full.contains("parent @box\n") && !full.contains("@clay/"),
-        "{full}"
-    );
-    let parses: Vec<Parse> = files.iter().map(|t| parse(t)).collect();
-    let ids: Vec<(FileId, &Parse)> = parses.iter().map(|p| (FileId(0), p)).collect();
-    let index = Index::build(&ids);
-    assert_eq!(
-        index
-            .resolve(schema(), "@box", Some(("material", "@clay")))
-            .unwrap(),
-        index.resolve(schema(), "@clay/@box", None).unwrap()
-    );
-    // Write-back writes a path of the owner's the short way.
     let lines = [
         Line {
             name: "nodes",
@@ -344,13 +345,32 @@ fn a_paths_owner_left_out_in_its_own_block() {
         },
     ];
     let address = at("material", "@clay", &lines, Attr::Named("parent"));
-    assert!(
-        write_through(&files, 0, &address, New::Path("@clay/@box"))
-            .unwrap()
-            .is_empty()
+    form(
+        &[CLAY],
+        &[CLAY_FULL],
+        0,
+        address,
+        New::Path("@clay/@box2"),
+        &CLAY.replace("parent @box\n", "parent @box2\n"),
     );
-    let moved = written(&files, 0, &address, New::Path("@clay/@noise"));
-    assert_eq!(moved[0], CLAY.replace("parent @box", "parent @noise"));
+    // The index of paths reads both ways the same.
+    let parses: Vec<Parse> = [CLAY].iter().map(|t| parse(t)).collect();
+    let ids: Vec<(FileId, &Parse)> = parses.iter().map(|p| (FileId(0), p)).collect();
+    let index = Index::build(&ids);
+    assert_eq!(
+        index
+            .resolve(schema(), "@box", Some(("material", "@clay")))
+            .unwrap(),
+        index.resolve(schema(), "@clay/@box", None).unwrap()
+    );
+    // The same frame again writes nothing, in either form.
+    for text in [CLAY, CLAY_FULL] {
+        assert!(
+            write_through(&[text], 0, &address, New::Path("@clay/@box"))
+                .unwrap()
+                .is_empty()
+        );
+    }
 }
 
 /// The text from the heading starting `from` to the next heading of its level or above.
@@ -371,6 +391,7 @@ fn section(from: &str) -> &'static str {
 fn the_specs_examples_expanded_check_clean_and_expand_to_themselves() {
     let blocks: Vec<String> = [
         section("### Short forms"),
+        section("### Components, parameters and patterns"),
         section("### Modifiers, constraints and pose bones"),
         section("## 10. Node trees"),
         section("## 11. Animation and drivers"),
@@ -378,12 +399,28 @@ fn the_specs_examples_expanded_check_clean_and_expand_to_themselves() {
     .iter()
     .flat_map(|s| s.split("```null\n").skip(1))
     .map(|b| format!("{}\n", b.split("\n```").next().unwrap()))
+    // The materials section 8's pier names, defined elsewhere in a project.
+    .chain(std::iter::once(
+        "material @weathered-oak \"Weathered Oak\"\n".to_string(),
+    ))
     .collect();
     let texts = strs(&blocks);
     assert_clean(&texts);
-    let full = expand(&texts, schema());
+    let full = full_form(&texts, schema());
     assert_clean(&strs(&full));
-    assert_eq!(expand(&strs(&full), schema()), full);
+    assert_eq!(full_form(&strs(&full), schema()), full);
+    // Then the components' copies, as Sau loads them (S77): they check clean.
+    let mut map = SourceMap::new();
+    let parses: Vec<(FileId, Parse)> = full
+        .iter()
+        .enumerate()
+        .map(|(i, t)| (map.add(format!("example-{i}.noll"), t.clone()), parse(t)))
+        .collect();
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    let (copies, problems) = null_check::expand(schema(), &files);
+    assert!(problems.is_empty(), "{}", map.render_all(&problems));
+    let found = null_check::check_expanded(schema(), &copies);
+    assert!(found.is_empty(), "{}", map.render_all(&found));
     // Each short form is in an example, and none is left once expanded.
     let all = full.join("\n");
     for gone in [
@@ -411,12 +448,85 @@ fn a_quoted_node_name_stays_quoted() {
         // A lone `\` word, kept one by the vertical tab after it.
         "\\\u{b}",
     ] {
-        let full = expand(&[text], schema());
+        let full = full_form(&[text], schema());
         assert!(
             parse(&full[0]).errors().is_empty(),
             "{text:?} gave {:?}",
             full[0]
         );
-        assert_eq!(expand(&strs(&full), schema()), full);
+        assert_eq!(full_form(&strs(&full), schema()), full);
     }
+}
+
+#[test]
+fn short_forms_inside_a_component_then_its_copies() {
+    // A component's block takes the short forms as a file does (task 1d-03j), and Sau's load
+    // writes them in full before it expands the component (S77).
+    let materials = "material @oak \"Oak\"\n";
+    let plank = r#"component @plank "Plank" {
+  param state solid { one-of [solid liquid] }
+  object "Plank" hide-render=off {
+    data mesh @plank-mesh
+    modifier @round bevel width=4mm
+    if "state == solid" { hide-viewport }
+  }
+  mesh @plank-mesh "Plank Mesh" { primitive cube size=1m }
+  material @grain "Grain" {
+    nodes {
+      node @noise tex-noise { scale 4 }
+      node @bsdf bsdf-principled { roughness @noise.fac }
+    }
+  }
+}
+"#;
+    let pier = "collection @pier \"Pier\" {\n  use @plank @p count=2 {}\n}\n";
+    let texts = [materials, plank, pier];
+    assert_clean(&texts);
+    let full = full_form(&texts, schema());
+    let f = &full[1];
+    for written in [
+        "object @plank \"Plank\" {",
+        "hide-render off",
+        "modifier @round bevel \"round\" {",
+        "width 4mm",
+        "hide-viewport on",
+        "roughness @grain/@noise.fac",
+        "node @noise tex-noise \"noise\"",
+    ] {
+        assert!(f.contains(written), "no `{written}` in\n{f}");
+    }
+    // A `{ countdown }`-like line that is no property of its owner keeps no `on`.
+    assert!(
+        f.contains("param state solid {\n    one-of [solid liquid]\n  }"),
+        "{f}"
+    );
+    assert_clean(&strs(&full));
+    // Then the copies: their project checks clean.
+    let mut map = SourceMap::new();
+    let parses: Vec<(FileId, Parse)> = full
+        .iter()
+        .enumerate()
+        .map(|(i, t)| (map.add(format!("file-{i}.noll"), t.clone()), parse(t)))
+        .collect();
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    let (copies, problems) = null_check::expand(schema(), &files);
+    assert!(problems.is_empty(), "{}", map.render_all(&problems));
+    let found = null_check::check_expanded(schema(), &copies);
+    assert!(found.is_empty(), "{}", map.render_all(&found));
+    let pier_text = &copies[2].text;
+    assert!(pier_text.contains("@p.2/@grain/@noise.fac"), "{pier_text}");
+}
+
+#[test]
+fn a_bare_boolean_is_its_owners() {
+    // `use-cyclic` is an action's boolean, not an object's: in an object it is no short form,
+    // and the checker says so; `hide-render` is the object's.
+    let text = "object @o \"O\" {\n  hide-render\n  use-cyclic\n}\n";
+    let full = full_form(&[text], schema()).remove(0);
+    assert!(full.contains("  hide-render on\n"), "{full}");
+    assert!(full.contains("  use-cyclic\n"), "{full}");
+    // A struct block's boolean, by the struct its pointer names.
+    let scene = "scene @s \"S\" {\n  cycles { use-denoising }\n}\n";
+    let full = full_form(&[scene], schema()).remove(0);
+    assert!(full.contains("use-denoising on"), "{full}");
 }
