@@ -739,7 +739,7 @@ Files in `checks/` state what must be true of the scene and of renders: a polygo
 
 ## 15. Canonical form
 
-The formatter prints one form (the layout and the order below are built; leaving out defaults, which the canonical order does not do yet, is task 1d-02b's): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
+The formatter prints one form (built by tasks 1a-07, 1c-01e and 1d-02b): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
 
 The layout is fixed (settled November 7, 2026, task 1a-07):
 
@@ -767,6 +767,8 @@ The canonical order (task 1c-01e, `null_print::canonical`):
 - **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them. A comment at a line's end stays on that line, and so does one after a block's `{` or after a `;`.
 - **Blank lines.** There are none between the lines of a block. Between datablocks, a file keeps at most one.
 - **Files that do not parse** keep their order, and only get the layout.
+- **Every construct has its order** (task 1d-02b): a modifier's or a constraint's settings in its kind's struct's order, and a pose bone's constraints the same; a sub-object line where RNA's collection of it stands (`modifier` at `modifiers`); a node in any tree by that tree's node of its kind; a zone's items, then its input lines, then `output`, then its nodes; a group's interface lines as written, then `nodes`, then `layout`; an f-curve's settings in `FCurve`'s order, its keys as written, its modifiers by their kind; an NLA strip in `NlaStrip`'s; a component's parameters first, then its datablocks, each in its own kind's order. What is meaning by its order stays as written: a tree's nodes, a group's interface, an action's keys, a component's datablocks and placements.
+- **Defaults left out** (`null_print::without_defaults`, task 1d-02b). A line of its own whose value is its property's default (the schema's `new`, else RNA's `default`) goes, in a datablock, a struct block, a modifier or a constraint. A line keeps its value when it has a comment on it or just above it, shares a line with others, has a `key=value`, or is of a unit read through the scene (lengths, areas, volumes, masses, velocities, accelerations, powers, frames in seconds), which this pass does not read. Settings a project pins are kept once pinning exists. `sau fmt` leaves defaults out once Cosmósis calls it, with its corpus formatted again in the same change.
 
 
 ## 16. Live reload

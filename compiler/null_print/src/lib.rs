@@ -39,6 +39,7 @@
 //! ```
 
 mod canonical;
+mod defaults;
 mod format;
 mod matrix;
 mod project;
@@ -46,6 +47,7 @@ mod typed;
 mod write;
 
 pub use canonical::canonical;
+pub use defaults::without_defaults;
 pub use format::format;
 pub use matrix::print_matrix;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};
