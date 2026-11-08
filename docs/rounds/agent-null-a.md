@@ -1225,6 +1225,17 @@ Null `c3d2f8b`. Section 6 gains a "Types" table: booleans, integers, floats, enu
 - **1d-01a** needs 1a-17, which needs 1a-16, so it is not ready.
 - **0-13** (the check record and documents changed mid-check) is ready and builds on my 0-10 work. It spans Sau, Null and Cosmósis, so it would need a worktree.
 
+- **1b-03c and 1b-03g** (as agent/schema2; report `docs/rounds/agent-schema2.md` on Sau's `agent/schema2`). Done, with Sau, Null and Cosmósis committed:
+  - node sockets and S67's kinds (581 nodes, `bsdf-principled`, the corpus renamed on Cosmósis's branch);
+  - Cycles' settings as their own section, read as blocks.
+
+  `just verify` is running, and both go to review when it passes.
+- **1c-02b**, in review (`ab67f72`): `null_print::read_value` and `print_value` for every RNA type. The property tests run over the project schema's own properties, and the checker reads flag sets and free-text items. Sau's schema does not yet give a string's field length (`max-length`); the writer should add it.
+- **Reviews.**
+  - C-06 approved.
+  - 1a-13 approved, second round (its modal and edit-mode guard).
+  - 0-14 approved, second round.
+
 Whatever the lead routes next.
 
 ### 1a-06b, reviewed by agent/sau-b (November 7, 2026): approved
