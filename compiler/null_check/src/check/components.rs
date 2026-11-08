@@ -375,7 +375,7 @@ impl Checker<'_> {
 
     /// A top-level `component @h "Name" { … }`.
     pub(super) fn component(&mut self, file: FileId, node: Node<'_>) {
-        self.header_check(file, node, "component");
+        self.header_check(file, node, "component", None);
         let Some((handle, _)) = header(node).handle else {
             return;
         };

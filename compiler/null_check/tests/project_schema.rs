@@ -336,6 +336,90 @@ fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
     assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
 }
 
+/// The project schema with `ID.name`'s field length: Blender's, `MAX_ID_NAME - 2` (256 bytes,
+/// the closing NUL included), as Sau's build writes it (task 1b-03h). A schema made before that
+/// task has none, so the test adds it; once the schema carries it, it must be that.
+fn schema_with_name_length() -> Schema {
+    let mut json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let id = json["structs"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|s| s["rna"] == "ID")
+        .unwrap();
+    let name = id["properties"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|p| p["rna"] == "name")
+        .unwrap();
+    match name.get("max-length") {
+        Some(given) => assert_eq!(given, 256, "ID.name's field is MAX_ID_NAME - 2"),
+        None => name["max-length"] = 256.into(),
+    }
+    Schema::from_json(&json.to_string()).unwrap()
+}
+
+fn range_errors(schema: &Schema, text: &str) -> Vec<Diagnostic> {
+    errors(schema, &[text])
+        .into_iter()
+        .filter(|d| d.code == codes::RANGE)
+        .collect()
+}
+
+#[test]
+fn a_name_one_byte_too_long_for_blenders_field_is_an_error() {
+    // Spec, section 6: a string longer than Blender's field for it is an error, never cut; the
+    // field counts bytes, its closing NUL included (task 1b-03h).
+    let schema = schema_with_name_length();
+    let fits = "a".repeat(255);
+    assert_eq!(
+        range_errors(&schema, &format!("object @o \"{fits}\"\n")),
+        vec![]
+    );
+    let too_long = "a".repeat(256);
+    let found = range_errors(&schema, &format!("object @o \"{too_long}\"\n"));
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert!(
+        found[0]
+            .message
+            .contains("`name` holds at most 255 bytes, not 256"),
+        "{}",
+        found[0].message
+    );
+    // Bytes, not characters: 127 two-byte letters and one more byte fit; 128 do not.
+    let wide = "é".repeat(127);
+    assert_eq!(
+        range_errors(&schema, &format!("object @o \"{wide}a\"\n")),
+        vec![]
+    );
+    let wider = "é".repeat(128);
+    assert_eq!(
+        range_errors(&schema, &format!("object @o \"{wider}\"\n")).len(),
+        1
+    );
+    // A collection defined in a scene is held to it too.
+    let scene = format!("scene @s \"S\" {{\n  collection @c \"{too_long}\" {{\n  }}\n}}\n");
+    assert_eq!(range_errors(&schema, &scene).len(), 1);
+}
+
+#[test]
+fn a_string_with_no_field_length_takes_any_length() {
+    // An unlimited string (no `max-length`) is not held to a length.
+    let mut json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    for s in json["structs"].as_array_mut().unwrap() {
+        for p in s["properties"].as_array_mut().unwrap() {
+            p.as_object_mut().unwrap().remove("max-length");
+        }
+    }
+    let schema = Schema::from_json(&json.to_string()).unwrap();
+    let long = "a".repeat(5000);
+    assert_eq!(
+        range_errors(&schema, &format!("object @o \"{long}\"\n")),
+        vec![]
+    );
+}
+
 #[test]
 fn an_enums_free_text_item_is_a_string_and_its_fix_is_quoted() {
     // Section 6 (S16): an item whose name is free text, not an identifier (an image node's

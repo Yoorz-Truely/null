@@ -1,0 +1,5 @@
+{
+  "format": 1,
+  "generator": "sau/tools/coverage-audit.py write (Sau's task 1d-05b); a placeholder until a build's `just schema-sync` writes the table",
+  "structs": {}
+}

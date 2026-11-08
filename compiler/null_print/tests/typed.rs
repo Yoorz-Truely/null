@@ -351,3 +351,16 @@ fn integer_frames_stay_bare() {
     assert!(read_value("1s", p, &Scene::default()).is_err());
     round_trip(&Typed::Int(250), p, &plain()).unwrap();
 }
+
+#[test]
+fn a_dynamic_array_prints_as_a_list_and_reads_back() {
+    // Found by Sau's round-trip harness (task 1c-02d): a dynamic array printed as a scalar.
+    let p = properties("float32", true)
+        .into_iter()
+        .find(|p| p.is_dynamic())
+        .expect("a dynamic float array in the schema");
+    let value = Typed::List(vec![Typed::F32(0.5), Typed::F32(-0.0), Typed::F32(3.0)]);
+    let text = print_value(&value, p, &plain()).unwrap();
+    assert_eq!(text, "[0.5 -0 3]");
+    assert_eq!(read_value(&text, p, &Scene::default()).unwrap(), value);
+}
