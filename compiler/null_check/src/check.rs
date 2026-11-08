@@ -11,8 +11,8 @@ use crate::forms;
 use crate::schema::{Property, SHADER_TREE, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
-    Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    check_string, dimension, list,
+    Out, check_bool, check_display_name, check_enum, check_float, check_float_array,
+    check_float_matrix, check_int, check_string, dimension, list,
 };
 
 /// Checks every file of a project together, since handles are visible project-wide
@@ -291,8 +291,8 @@ impl<'s> Checker<'s> {
                 .cloned()
         });
         let mut out = self.out(file);
-        if let (Some(v), Some(p)) = (&h.name_value, &name_property) {
-            check_string(v, "name", p, &mut out);
+        if let Some(v) = &h.name_value {
+            check_display_name(v, name_property.as_ref(), &mut out);
         }
         match &h.handle {
             Some((handle, span)) => {
