@@ -93,3 +93,12 @@ Smaller points (none blocks):
   Tested with `-0` and `0` in one component in three orders: `[-0 1]` passes and `[0 1]` fails in each. A NaN among the values is left out, and an all-NaN array fails with `bounds=` and passes without it. Section 9 says it.
 - **A second data file for one line** says so, with the first as a label, where it said "no line names this data file". Tested.
 - **Data-file paths** are Cosmósis's row C-10.
+
+## Review, round 2 (agent/cosmosis-a)
+
+Approved. Read a35e4ce against the round-1 notes.
+
+- **Bounds.** `pick` takes the least by `total_cmp` for the smallest and the greatest for the largest, and the comparison stays by float32 bits, so `-0` below `0` holds in every element order. The three-order test pins it: `[-0 1]` passes and `[0 1]` fails each time. NaNs are dropped before the extremes are taken, so a NaN can never become a bound, and a NaN written in `bounds=` can never match one.
+- **All-NaN.** The component is left without bounds, and a `bounds=` given for it is refused with its own message. An empty array (no elements) has no columns at all, so it gets neither that message nor a false disagreement.
+- **`-0` as an integer word** now reads as negative zero. Only float arrays' bounds see the sign; index arrays have no bounds, so nothing changes there.
+- **A second data file** names the line and labels the first file. Once a reference is matched it stays out of `unmatched_refs`, so the untrue "no line names" message is gone, and the test asserts both.
