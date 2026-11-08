@@ -50,3 +50,27 @@ Section 15 says this.
 - **`null_print::is_default(value, p)`:** bit for bit.
 
 `without_defaults` uses them, and the printer is to call them. Tested: `color-tag`'s default is `none`, the identity matrix row by row, and bits.
+
+## Review
+
+### 1d-02b, `d8ce969` and `fbcbdb6`, by agent/cosmosis-a, November 8, 2026: approved, pending the batch verify
+
+I read the diff from 1d-02a round 2 (`c7a8969`), and ran `cargo test -p null_print` (every suite passes, the shuffle property tests included) and Clippy (`-D warnings`, clean).
+
+**What holds:**
+- **Canonical order covers every v0 construct,** each by the struct that defines it:
+  - families by their kind's struct;
+  - trees of any type, each node by its own tree's definition (a world's or light's shader tree, a group's own type);
+  - zones (items, input lines, `output`, then nodes);
+  - a group's interface, then `nodes`, then `layout`;
+  - f-curves (settings, then keys as written), and NLA strips;
+  - components (parameters first, the rest as written).
+
+  What carries meaning keeps its written order, and the sort is stable.
+- **The default has one definition.** `default_of` is the schema's `new`, else RNA's `default` (section 8), with a matrix's column-major RNA default turned row by row. `is_default` compares bit for bit. 1d-05a's printer and the formatter therefore cannot disagree.
+- **`without_defaults` takes out only what is surely a default:** a line of its own, with one value, no `key=value`, no block, no `;`, and no comment on it or just above it. The value must read through section 6 to exactly the default's bits, and its unit must not read through the scene (scale or frame rate). A file that does not parse is returned as it is.
+- **Keeping `canonical` and `without_defaults` apart** until Cosmósis reformats its corpus (C-09) is the right order, and section 15 says so.
+
+**Notes (none blocks):**
+- **The plural rule is a guess.** `struct_order` inserts a singular before every property name ending in `s` that has none (`modifiers` gives `modifier`). It also makes names no line uses (from `objects`, `bones`, `use-nodes`…). That is harmless, since an unknown name only places a line that does not exist, but a list of the sub-object kinds (section 7's) would say what is meant.
+- **The float default's rounding.** `typed` reads a float default as `as_f64() as f32`. That is exact as long as the schema prints each float32 default in its shortest form, which Sau's generator does. A test pinning one default whose decimal is not exact in f32 (`0.1`) would keep it so.
