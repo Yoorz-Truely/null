@@ -6,6 +6,8 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 rust-version.workspace = true
+# One test binary for the files in tests/ (Sau task 0-26, S69): tests/main.rs.
+autotests = false
 
 [dependencies]
 null_syntax.workspace = true
@@ -19,3 +21,7 @@ proptest = { version = "1", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "main"
+path = "tests/main.rs"

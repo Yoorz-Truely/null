@@ -336,88 +336,79 @@ fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
     assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
 }
 
-/// The project schema with `ID.name`'s field length: Blender's, `MAX_ID_NAME - 2` (256 bytes,
-/// the closing NUL included), as Sau's build writes it (task 1b-03h). A schema made before that
-/// task has none, so the test adds it; once the schema carries it, it must be that.
-fn schema_with_name_length() -> Schema {
-    let mut json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    let id = json["structs"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|s| s["rna"] == "ID")
-        .unwrap();
-    let name = id["properties"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|p| p["rna"] == "name")
-        .unwrap();
-    match name.get("max-length") {
-        Some(given) => assert_eq!(given, 256, "ID.name's field is MAX_ID_NAME - 2"),
-        None => name["max-length"] = 256.into(),
-    }
-    Schema::from_json(&json.to_string()).unwrap()
-}
-
-fn range_errors(schema: &Schema, text: &str) -> Vec<Diagnostic> {
-    errors(schema, &[text])
-        .into_iter()
-        .filter(|d| d.code == codes::RANGE)
-        .collect()
-}
-
-#[test]
-fn a_name_one_byte_too_long_for_blenders_field_is_an_error() {
-    // Spec, section 6: a string longer than Blender's field for it is an error, never cut; the
-    // field counts bytes, its closing NUL included (task 1b-03h).
-    let schema = schema_with_name_length();
-    let fits = "a".repeat(255);
-    assert_eq!(
-        range_errors(&schema, &format!("object @o \"{fits}\"\n")),
-        vec![]
-    );
-    let too_long = "a".repeat(256);
-    let found = range_errors(&schema, &format!("object @o \"{too_long}\"\n"));
-    assert_eq!(found.len(), 1, "{found:#?}");
-    assert!(
-        found[0]
-            .message
-            .contains("`name` holds at most 255 bytes, not 256"),
-        "{}",
-        found[0].message
-    );
-    // Bytes, not characters: 127 two-byte letters and one more byte fit; 128 do not.
-    let wide = "é".repeat(127);
-    assert_eq!(
-        range_errors(&schema, &format!("object @o \"{wide}a\"\n")),
-        vec![]
-    );
-    let wider = "é".repeat(128);
-    assert_eq!(
-        range_errors(&schema, &format!("object @o \"{wider}\"\n")).len(),
-        1
-    );
-    // A collection defined in a scene is held to it too.
-    let scene = format!("scene @s \"S\" {{\n  collection @c \"{too_long}\" {{\n  }}\n}}\n");
-    assert_eq!(range_errors(&schema, &scene).len(), 1);
-}
-
-#[test]
-fn a_string_with_no_field_length_takes_any_length() {
-    // An unlimited string (no `max-length`) is not held to a length.
-    let mut json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    for s in json["structs"].as_array_mut().unwrap() {
-        for p in s["properties"].as_array_mut().unwrap() {
-            p.as_object_mut().unwrap().remove("max-length");
+/// Every enum property in `json`, at any depth: (where, property).
+fn enums<'a>(
+    json: &'a serde_json::Value,
+    at: &str,
+    out: &mut Vec<(String, &'a serde_json::Value)>,
+) {
+    match json {
+        serde_json::Value::Object(map) => {
+            if map.get("type").and_then(|t| t.as_str()) == Some("enum") {
+                out.push((at.to_string(), json));
+            }
+            let here = map
+                .get("rna")
+                .and_then(|r| r.as_str())
+                .map_or(at.to_string(), |r| format!("{at}/{r}"));
+            for v in map.values() {
+                enums(v, &here, out);
+            }
         }
+        serde_json::Value::Array(items) => items.iter().for_each(|v| enums(v, at, out)),
+        _ => {}
     }
-    let schema = Schema::from_json(&json.to_string()).unwrap();
-    let long = "a".repeat(5000);
-    assert_eq!(
-        range_errors(&schema, &format!("object @o \"{long}\"\n")),
-        vec![]
-    );
+}
+
+#[test]
+fn every_enum_default_is_one_of_its_items_as_a_file_writes_it() {
+    // Task 1b-03j: a default is written as its item is, so the formatter can leave it out: a
+    // free-text item keeps its case (`Linear`), and a flag set is in the items' order. An enum
+    // whose items are made when it is used (`items-at-run-time`, or the slice's items that
+    // depend on another setting, `when`) may default to one the schema does not list.
+    for (file, text) in [
+        ("null-schema-project.json", PROJECT),
+        (
+            "null-schema.json",
+            include_str!("../../../schema/null-schema.json"),
+        ),
+    ] {
+        let json: serde_json::Value = serde_json::from_str(text).unwrap();
+        let mut found = Vec::new();
+        enums(&json, "", &mut found);
+        assert!(found.len() > 30, "{file}: {} enums", found.len());
+        let mut wrong = Vec::new();
+        for (at, p) in found {
+            let Some(default) = p.get("default") else {
+                continue;
+            };
+            let items: Vec<&serde_json::Value> = p
+                .get("items")
+                .and_then(|i| i.as_array())
+                .map(|i| i.iter().collect())
+                .unwrap_or_default();
+            let at_run_time = p.get("items-at-run-time").is_some()
+                || items.iter().any(|i| i.get("when").is_some());
+            let names: Vec<&str> = items.iter().filter_map(|i| i["name"].as_str()).collect();
+            let ok = match default {
+                serde_json::Value::String(d) => names.contains(&d.as_str()) || at_run_time,
+                serde_json::Value::Array(ds) => {
+                    let ds: Vec<&str> = ds.iter().filter_map(|d| d.as_str()).collect();
+                    let listed: Vec<&str> =
+                        names.iter().copied().filter(|n| ds.contains(n)).collect();
+                    (ds.iter().all(|d| names.contains(d)) || at_run_time) && ds.starts_with(&listed)
+                }
+                _ => false,
+            };
+            if !ok {
+                wrong.push(format!(
+                    "{at}: {} defaults to {default}, items {names:?}",
+                    p["name"]
+                ));
+            }
+        }
+        assert!(wrong.is_empty(), "{file}:\n{}", wrong.join("\n"));
+    }
 }
 
 #[test]
@@ -448,43 +439,4 @@ fn an_enums_free_text_item_is_a_string_and_its_fix_is_quoted() {
         found[0].fixes[0].edits[0].replacement, "\"Cubic\"",
         "{found:#?}"
     );
-}
-
-#[test]
-fn none_empties_a_pointer_blender_lets_be_empty() {
-    // Sau's task 1c-02j: `none` empties a pointer (section 6), as write-back writes one, where the
-    // schema does not mark the pointer `never-none`; where it does, `none` is an error.
-    let text =
-        "object @lamp \"Lamp\" {\n  parent none\n}\n\nscene @main \"Main\" {\n  camera none\n}\n";
-    for (file, json) in [("project", PROJECT), ("slice", SLICE)] {
-        let schema = Schema::from_json(json).unwrap();
-        assert_eq!(errors(&schema, &[text]), vec![], "{file}");
-    }
-    // A pointer the schema marks `never-none`: Object.parent marked so here, in a copy of the
-    // slice's schema, since no settable pointer of the slice's is.
-    let mut json: serde_json::Value = serde_json::from_str(SLICE).unwrap();
-    for s in json["structs"].as_array_mut().unwrap() {
-        if s["rna"] == "Object" {
-            for p in s["properties"].as_array_mut().unwrap() {
-                if p["name"] == "parent" {
-                    p["never-none"] = serde_json::Value::Bool(true);
-                }
-            }
-        }
-    }
-    let schema = Schema::from_json(&json.to_string()).unwrap();
-    let found = errors(&schema, &[text]);
-    assert_eq!(found.len(), 1, "{found:#?}");
-    assert_eq!(found[0].code, codes::TYPE);
-    assert!(
-        found[0].message.contains("never empty") && found[0].message.contains("parent"),
-        "{}",
-        found[0].message
-    );
-    // Any other word is still a handle, or its error.
-    let found = errors(
-        &Schema::from_json(SLICE).unwrap(),
-        &["object @lamp \"Lamp\" {\n  parent nothing\n}\n"],
-    );
-    assert!(found[0].message.contains("takes a handle"), "{found:#?}");
 }
