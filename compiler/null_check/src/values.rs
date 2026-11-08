@@ -417,6 +417,68 @@ pub(crate) fn check_float_matrix(
     }
 }
 
+/// Checks a flag set: a list of the enum's items, each once, in the schema's item order, `[]`
+/// for none (spec, section 6, "Types"; task 1c-02b). Another order is an error whose fix is the
+/// schema's.
+fn check_flags(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let items = p.item_names();
+    let Value::List(_) = value else {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!("`{name}` is a set of its items: write a list, `[]` for none"),
+        );
+        return;
+    };
+    let mut written = Vec::new();
+    for item in value.items() {
+        let Some(word) = item.as_word() else {
+            out.error(
+                codes::TYPE,
+                item.span(),
+                format!("`{name}`'s items are words"),
+            );
+            return;
+        };
+        if !items.contains(&word) && !p.items_at_run_time {
+            let fix = closest(word, items.iter().copied());
+            out.error_fix(
+                codes::ENUM,
+                item.span(),
+                format!(
+                    "`{word}` is not a value of `{name}`: it takes {}",
+                    list(&items)
+                ),
+                fix.map(|f| (format!("write `{f}`"), item.span(), f.to_string())),
+            );
+            return;
+        }
+        if written.contains(&word) {
+            out.error(
+                codes::TYPE,
+                item.span(),
+                format!("`{word}` is given twice in `{name}`"),
+            );
+            return;
+        }
+        written.push(word);
+    }
+    let ordered: Vec<&str> = items
+        .iter()
+        .copied()
+        .filter(|i| written.contains(i))
+        .collect();
+    if !p.items_at_run_time && ordered != written {
+        let fixed = format!("[{}]", ordered.join(" "));
+        out.error_fix(
+            codes::TYPE,
+            value.span(),
+            format!("`{name}`'s items are written in the schema's order: {fixed}"),
+            Some((format!("write `{fixed}`"), value.span(), fixed.clone())),
+        );
+    }
+}
+
 /// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve, exactly rounded once into
 /// float32 from the fixed table in `null_value` (spec, section 6; Sau's decision S62).
 pub fn srgb(word: &str) -> Option<[f32; 3]> {
@@ -425,9 +487,16 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
 
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    if p.flags {
+        return check_flags(value, name, p, out);
+    }
     let items = p.item_names();
-    if p.items_at_run_time && value.as_string().is_some() {
-        return; // a free-text item, such as a colour space's name
+    if let Some(text) = value.as_string() {
+        // A free-text item (a colour space's name) is written as a string (S16).
+        let quoted = p.items.iter().flatten().any(|i| i.quoted && i.name == text);
+        if quoted || p.items_at_run_time {
+            return;
+        }
     }
     let Some(word) = value.as_word() else {
         out.error(
