@@ -1,0 +1,206 @@
+//! The checker on the schema of all project data (task 1b-03e): `schema/null-schema-project.json`,
+//! which Sau's build makes (task 1b-03b), loads fast, checks the slice's project as the slice's
+//! schema does, and suggests the right name for a misspelt property of any datablock type.
+
+use std::path::Path;
+use std::time::Instant;
+
+use null_check::{Schema, check, codes};
+use null_syntax::{Diagnostic, FileId, parse};
+
+const PROJECT: &str = include_str!("../../../schema/null-schema-project.json");
+const SLICE: &str = include_str!("../../../schema/null-schema.json");
+
+fn errors(schema: &Schema, texts: &[&str]) -> Vec<Diagnostic> {
+    let parses: Vec<_> = texts.iter().map(|t| parse(t)).collect();
+    let files: Vec<_> = parses
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (FileId(i as u32), p))
+        .collect();
+    check(schema, &files)
+}
+
+#[test]
+fn the_project_schema_loads_in_under_50_ms() {
+    // The best of five, as a language server loads it once at start. The budget holds for an
+    // optimised build (`just verify` runs the tests with `--release`); a debug build only reports.
+    let mut best = f64::INFINITY;
+    let mut schema = None;
+    for _ in 0..5 {
+        let t = Instant::now();
+        schema = Some(Schema::from_json(PROJECT).unwrap());
+        best = best.min(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let schema = schema.unwrap();
+    eprintln!(
+        "the project schema: {} structs, {} datablock kinds, loaded in {best:.1} ms",
+        schema.structs.len(),
+        schema.datablock_kinds().count()
+    );
+    assert!(schema.structs.len() > 1000);
+    if !cfg!(debug_assertions) {
+        assert!(best < 50.0, "loaded in {best:.1} ms");
+    }
+}
+
+fn slice_project() -> Vec<String> {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/slice");
+    let mut texts: Vec<_> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .collect();
+    texts.sort();
+    texts
+        .iter()
+        .map(|p| std::fs::read_to_string(p).unwrap())
+        .collect()
+}
+
+#[test]
+fn the_slice_project_checks_clean_on_the_project_schema() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let texts = slice_project();
+    let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
+    assert_eq!(refs.len(), 3);
+    let found = errors(&schema, &refs);
+    assert!(found.is_empty(), "{found:#?}");
+}
+
+#[test]
+fn the_slice_schemas_errors_are_the_project_schemas() {
+    // Within the slice's structs the two schemas are the same, so every mistake gives the same
+    // error and fix; only a misspelt datablock kind may find more kinds to suggest.
+    let text = "\
+object @cube \"Cube\" {
+  locaton [0m 0m 1m]
+  rotation-mode XYZ
+  scale [1 1]
+}
+
+camera @cam \"Cam\" {
+  lens 35deg
+  clip-start -1m
+}
+
+material @m \"M\" {
+  roughnes 0.5
+}
+";
+    let slice = errors(&Schema::from_json(SLICE).unwrap(), &[text]);
+    let project = errors(&Schema::from_json(PROJECT).unwrap(), &[text]);
+    assert_eq!(slice.len(), 6, "{slice:#?}");
+    assert_eq!(format!("{slice:?}"), format!("{project:?}"));
+}
+
+#[test]
+fn a_misspelt_property_of_any_datablock_type_gets_a_suggestion() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let kinds: Vec<_> = schema.datablock_kinds().collect();
+    assert!(kinds.len() >= 55, "{}", kinds.len());
+    let mut tried = 0;
+    let mut missed = Vec::new();
+    for s in &kinds {
+        let props = schema.properties_of(&s.rna);
+        // A writable property of its own with a name long enough to misspell by one letter.
+        let Some(p) = s
+            .properties
+            .iter()
+            .find(|p| !p.readonly && p.name.len() >= 6 && !p.name.contains("--"))
+        else {
+            continue;
+        };
+        let mut wrong = p.name.clone();
+        wrong.remove(2);
+        if props.iter().any(|q| q.name == wrong) {
+            continue;
+        }
+        tried += 1;
+        let text = format!("{} @x \"X\" {{\n  {wrong} 1\n}}\n", s.kind);
+        let found = errors(&schema, &[&text]);
+        let fix = found
+            .iter()
+            .find(|d| d.code == codes::UNKNOWN_PROPERTY)
+            .and_then(|d| d.fixes.first())
+            .map(|f| f.edits[0].replacement.clone());
+        match fix {
+            Some(name) if props.iter().any(|q| q.name == name) => {}
+            _ => missed.push(format!("{}: `{wrong}` for `{}`: {found:?}", s.kind, p.name)),
+        }
+    }
+    assert!(tried >= 50, "{tried}");
+    assert!(missed.is_empty(), "{}", missed.join("\n"));
+}
+
+#[test]
+fn every_name_is_kebab_case_and_every_unit_is_one_null_reads() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let mut bad = Vec::new();
+    let mut units = std::collections::BTreeSet::new();
+    for s in &schema.structs {
+        if !null_syntax::names::is_kebab_case(&s.kind) {
+            bad.push(format!("kind {}", s.kind));
+        }
+        for p in &s.properties {
+            if !null_syntax::names::is_kebab_case(&p.name) {
+                bad.push(format!("{}.{}", s.rna, p.name));
+            }
+            units.extend(p.unit.clone());
+        }
+    }
+    assert!(bad.is_empty(), "{bad:?}");
+    // Each unit RNA uses here is one of section 6's: a value with a unit is read in it.
+    for unit in &units {
+        let p = format!("{{\"name\": \"x\", \"type\": \"float32\", \"unit\": \"{unit}\"}}");
+        let p: null_check::Property = serde_json::from_str(&p).unwrap();
+        assert!(null_check::unit_dimension(&p).is_some(), "{unit}");
+    }
+    assert!(units.len() >= 10, "{units:?}");
+}
+
+#[test]
+fn matrices_are_rows_of_lists_and_run_time_enums_take_unlisted_items() {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let object = |body: &str| format!("object @x \"X\" {{\n{body}\n}}\n");
+    let identity = "  matrix-world [[1 0 0 0] [0 1 0 0] [0 0 1 0] [0 0 0 1]]";
+    assert!(errors(&schema, &[&object(identity)]).is_empty());
+    for wrong in [
+        "  matrix-world [1 0 0 0]",
+        "  matrix-world [[1 0 0 0] [0 1 0 0] [0 0 1 0]]",
+        "  matrix-world [[1 0 0] [0 1 0] [0 0 1] [0 0 0]]",
+    ] {
+        let found = errors(&schema, &[&object(wrong)]);
+        // One error, or one for each row that is the wrong length.
+        assert!(!found.is_empty(), "{wrong}");
+        assert!(
+            found.iter().all(|d| d.code == codes::TYPE),
+            "{wrong}: {found:#?}"
+        );
+    }
+    // Section 6's own example: a 4×4 transform's translation column takes lengths, read through
+    // the scene's unit scale; every other item is bare (the 1b-03e review, the lead's call).
+    let spec = "  matrix-basis [[1 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1]]";
+    assert!(errors(&schema, &[&object(spec)]).is_empty());
+    let outside = errors(
+        &schema,
+        &[&object(
+            "  matrix-basis [[1m 0 0 2m] [0 1 0 0m] [0 0 1 0m] [0 0 0 1m]]",
+        )],
+    );
+    assert_eq!(outside.len(), 2, "{outside:#?}");
+    assert!(outside.iter().all(|d| d.code == codes::UNIT));
+    let angle = errors(
+        &schema,
+        &[&object(
+            "  matrix-basis [[1 0 0 90deg] [0 1 0 0] [0 0 1 0] [0 0 0 1]]",
+        )],
+    );
+    assert_eq!(angle.len(), 1, "{angle:#?}");
+    // `instance-type`'s items come from a function: a listed one is taken, a misspelt one is
+    // refused with its fix, and one far from every listed item is left to Blender.
+    assert!(errors(&schema, &[&object("  instance-type faces")]).is_empty());
+    let misspelt = errors(&schema, &[&object("  instance-type facess")]);
+    assert_eq!(misspelt.len(), 1, "{misspelt:#?}");
+    assert_eq!(misspelt[0].fixes[0].edits[0].replacement, "faces");
+    assert!(errors(&schema, &[&object("  instance-type made-at-run-time")]).is_empty());
+}

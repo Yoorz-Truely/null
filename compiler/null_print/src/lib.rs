@@ -8,6 +8,8 @@
 //! - [`write_transform`] is the same across a project's files, for an object's transform,
 //!   with plain data in and out (paths, texts, byte ranges), for Sau to call through its
 //!   Rust core (task 1a-14a).
+//! - [`print_matrix`] writes a matrix row by row from RNA's column-by-column array, a 4×4
+//!   transform's translation in a length unit (spec, section 6).
 //! - [`format`] is the formatter's layout pass (spec, section 15): two-space
 //!   indentation by depth, single spaces between entries, no space inside list
 //!   brackets, no trailing whitespace, at most one blank line, one line feed at the
@@ -33,9 +35,11 @@
 //! ```
 
 mod format;
+mod matrix;
 mod project;
 mod write;
 
 pub use format::format;
+pub use matrix::print_matrix;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};
 pub use write::{Edit, Values, WriteError, write, write_in};

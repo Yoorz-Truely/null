@@ -70,6 +70,13 @@ pub(crate) fn dimension(p: &Property, power: bool) -> Dimension {
     }
 }
 
+/// The dimension a property's RNA unit reads in (spec, section 6, "Units"), or `None` where
+/// it has no unit or one Null does not read.
+pub fn unit_dimension(p: &Property) -> Option<Dimension> {
+    let d = dimension(p, false);
+    (d != Dimension::None).then_some(d)
+}
+
 /// A value of `dimension`, in words, with an example.
 fn describe(dimension: Dimension) -> &'static str {
     match dimension {
@@ -348,6 +355,68 @@ pub(crate) fn check_float_array(
     }
 }
 
+/// Checks a fixed two-dimensional array of floats (a matrix, a bounding box's corners), written
+/// row by row as a list of `rows` lists of `columns` (spec, section 6).
+pub(crate) fn check_float_matrix(
+    value: &Value<'_>,
+    rows: usize,
+    columns: usize,
+    name: &str,
+    dimension: Dimension,
+    p: &Property,
+    out: &mut Out<'_>,
+) {
+    let shape = format!(
+        "`{name}` takes {rows} rows of {columns} {}, as a list of lists",
+        plural(dimension)
+    );
+    let Value::List(_) = value else {
+        out.error(codes::TYPE, value.span(), shape);
+        return;
+    };
+    let items = value.items();
+    if items.len() != rows {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!("{shape}; this list has {}", items.len()),
+        );
+        return;
+    }
+    if let Some(row) = items.iter().find(|r| !matches!(r, Value::List(_))) {
+        out.error(
+            codes::TYPE,
+            row.span(),
+            format!("{shape}; `{}` is not a row", row.text()),
+        );
+        return;
+    }
+    // A 4×4 transform (subtype `matrix`) holds lengths in its translation column, the first
+    // three rows' last items, read as `location` is, through the scene's unit scale; its other
+    // items are bare (spec, section 6, "Units in arrays and matrices"; the lead's call on the
+    // 1b-03e review).
+    let transform = p.subtype.as_deref() == Some("matrix") && rows == 4 && columns == 4;
+    for (i, row) in items.iter().enumerate() {
+        let cells = row.items();
+        if cells.len() != columns {
+            out.error(
+                codes::TYPE,
+                row.span(),
+                format!("{shape}; this row has {}", cells.len()),
+            );
+            continue;
+        }
+        for (j, cell) in cells.iter().enumerate() {
+            let dimension = match (transform, i < 3 && j == 3) {
+                (true, true) => Dimension::Length,
+                (true, false) => Dimension::None,
+                (false, _) => dimension,
+            };
+            check_float(cell, name, dimension, p, out);
+        }
+    }
+}
+
 /// `#rrggbb` as scene-linear floats: the IEC 61966-2-1 sRGB curve, exactly rounded once into
 /// float32 from the fixed table in `null_value` (spec, section 6; Sau's decision S62).
 pub fn srgb(word: &str) -> Option<[f32; 3]> {
@@ -357,6 +426,9 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
     let items = p.item_names();
+    if p.items_at_run_time && value.as_string().is_some() {
+        return; // a free-text item, such as a colour space's name
+    }
     let Some(word) = value.as_word() else {
         out.error(
             codes::TYPE,
@@ -370,6 +442,15 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
         return;
     };
     if items.contains(&word) {
+        return;
+    }
+    // Items computed when the enum is used (an image's layers, the colour spaces) are not all in
+    // the schema, so a value it does not list is refused only when it is near one it does, as a
+    // misspelling (task 1b-03e).
+    if p.items_at_run_time
+        && closest(word, items.iter().copied()).is_none()
+        && !items.contains(&word.to_ascii_lowercase().replace('_', "-").as_str())
+    {
         return;
     }
     let lowered = word.to_ascii_lowercase().replace('_', "-");

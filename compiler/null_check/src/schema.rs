@@ -1,7 +1,12 @@
-//! The schema Sau generates from RNA (`schema/null-schema.json`): structs, properties, nodes.
+//! The schema Sau generates from RNA: the slice's (`schema/null-schema.json`) or that of all
+//! project data (`schema/null-schema-project.json`): structs, properties, nodes.
 //!
 //! Read as data, never edited by hand: Sau's `sau/tools/null-schema.py`, run in the
-//! built Sau, writes it (task 1a-05). Names are already Null's (kebab-case, S16).
+//! built Sau, writes it (tasks 1a-05 and 1b-03b). Names are already Null's (kebab-case, S16).
+//! Structs are found by RNA identifier and by kind through indexes made once at load, since the
+//! project's schema has about 1,350 of them (task 1b-03e).
+
+use std::collections::HashMap;
 
 use serde::Deserialize;
 use serde_json::Value as Json;
@@ -11,12 +16,31 @@ use serde_json::Value as Json;
 pub struct Schema {
     /// The file's own format number.
     pub format: u32,
+    /// The datablock types, where the file lists them (the project's schema): RNA identifiers
+    /// with their kinds. The slice's schema has none; there a datablock extends `ID` directly.
+    #[serde(default)]
+    pub datablocks: Option<Vec<Datablock>>,
     /// RNA structs: datablocks (`base` `ID`) and the structs inside them.
     pub structs: Vec<Struct>,
     /// Shader nodes, with their input and output sockets.
     pub nodes: Vec<NodeDef>,
     /// Mesh primitives: the add operators and their settings.
     pub primitives: Vec<Primitive>,
+    /// Index into `structs` by RNA identifier, made by [`Schema::from_json`].
+    #[serde(skip)]
+    by_rna: HashMap<String, usize>,
+    /// Index into `structs` by kind, made by [`Schema::from_json`].
+    #[serde(skip)]
+    by_kind: HashMap<String, usize>,
+}
+
+/// One datablock type of the project's schema.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Datablock {
+    /// Null's kind, such as `object`.
+    pub kind: String,
+    /// RNA's struct identifier, such as `Object`.
+    pub rna: String,
 }
 
 /// One RNA struct.
@@ -65,6 +89,10 @@ pub struct Property {
     /// Whether RNA lets it be set.
     #[serde(default)]
     pub readonly: bool,
+    /// Whether the enum's items are computed when it is used, so `items` are only those RNA
+    /// lists ahead (task 1b-03b): another value is not refused.
+    #[serde(default, rename = "items-at-run-time")]
+    pub items_at_run_time: bool,
 }
 
 /// A property's ranges.
@@ -104,17 +132,22 @@ pub struct Primitive {
 impl Schema {
     /// Reads a schema file's text.
     pub fn from_json(text: &str) -> Result<Schema, serde_json::Error> {
-        serde_json::from_str(text)
+        let mut schema: Schema = serde_json::from_str(text)?;
+        for (i, s) in schema.structs.iter().enumerate() {
+            schema.by_rna.entry(s.rna.clone()).or_insert(i);
+            schema.by_kind.entry(s.kind.clone()).or_insert(i);
+        }
+        Ok(schema)
     }
 
     /// The struct with RNA identifier `rna`.
     pub fn struct_by_rna(&self, rna: &str) -> Option<&Struct> {
-        self.structs.iter().find(|s| s.rna == rna)
+        self.by_rna.get(rna).map(|&i| &self.structs[i])
     }
 
     /// The struct of Null kind `kind`.
     pub fn struct_by_kind(&self, kind: &str) -> Option<&Struct> {
-        self.structs.iter().find(|s| s.kind == kind)
+        self.by_kind.get(kind).map(|&i| &self.structs[i])
     }
 
     /// `rna`'s properties and those of every struct it extends, its own first.
@@ -128,11 +161,21 @@ impl Schema {
         out
     }
 
-    /// The datablock kinds: structs that extend `ID` directly.
-    pub fn datablock_kinds(&self) -> impl Iterator<Item = &Struct> {
-        self.structs
-            .iter()
-            .filter(|s| s.base.as_deref() == Some("ID"))
+    /// The datablock kinds: the file's list of datablock types where it has one (leaving out
+    /// `ID` itself), else the structs that extend `ID` directly.
+    pub fn datablock_kinds(&self) -> Box<dyn Iterator<Item = &Struct> + '_> {
+        match &self.datablocks {
+            Some(list) => Box::new(
+                list.iter()
+                    .filter(|d| d.rna != "ID")
+                    .filter_map(|d| self.struct_by_rna(&d.rna)),
+            ),
+            None => Box::new(
+                self.structs
+                    .iter()
+                    .filter(|s| s.base.as_deref() == Some("ID")),
+            ),
+        }
     }
 }
 
@@ -150,6 +193,7 @@ impl Property {
             items: None,
             target: None,
             readonly: false,
+            items_at_run_time: false,
         }
     }
 
@@ -163,11 +207,22 @@ impl Property {
         }
     }
 
-    /// The fixed length of the array, if it is one.
+    /// The fixed length of the array, if it is one: its first dimension, the number of rows of
+    /// a matrix.
     pub fn fixed_len(&self) -> Option<usize> {
+        self.dimensions().first().copied()
+    }
+
+    /// A fixed array's dimensions: `[3]` for a vector, `[4, 4]` for a matrix, `[8, 3]` for a
+    /// bounding box's corners; empty for a single value or a dynamic array.
+    pub fn dimensions(&self) -> Vec<usize> {
         match &self.array {
-            Some(Json::Array(a)) => a.first().and_then(Json::as_u64).map(|n| n as usize),
-            _ => None,
+            Some(Json::Array(a)) => a
+                .iter()
+                .filter_map(Json::as_u64)
+                .map(|n| n as usize)
+                .collect(),
+            _ => Vec::new(),
         }
     }
 
