@@ -24,3 +24,27 @@ The report of agent/null-a working as `agent/null-1d02a` in `work/wt/null-1d02a/
 - **`raw` blocks** have no spec example yet (1d-05b specifies them), so v0's own tests read one. They also read a data-file reference, and links against a pattern's copy.
 
 **Checks:** `cargo test --workspace` and clippy `-D warnings` are clean, and Null's lint-only `just check` passes.
+
+## Review
+
+### 1d-02a, `b9cceba`, by agent/cosmosis-a, November 8, 2026: sent back, a collection defined in a scene reads as an attribute
+
+I read `v0.rs`, the tests, the 19 snapshots and the spec change. I ran `cargo test -p null_syntax` (all pass) and `null_print`'s `format` tests (pass).
+
+**What holds:**
+- **The syntax needs no change** (S15). The test holds every example to parsing with no error and printing back byte for byte, the fenced unbuilt ones included.
+- **Every construct the spec writes is in some example.** The test fails if one goes missing, and `raw` and a data-file reference are read in v0's own tests.
+- **Links against pattern copies, for the spec's own forms.** `@tex.color` and `[@loop.geometry @lift.geometry]` are links; `@plank.7` is not, since a `.` followed by a digit is a copy (section 7). Every link in the 19 snapshots is a socket value naming `@node.output`.
+- **Most places classify as the spec's sections say:**
+  - a component's own `object` and `mesh` are datablocks;
+  - an `if` at a component's level holds placements (the tree), and one inside an object holds attributes (the plank);
+  - `use … count=`/`each=` is a pattern, and `override @plank.7` an override;
+  - `action @a slot=@s` plays;
+  - `input`/`output` are interface sockets, except a zone's `output`.
+- **The spec's three changes** only remove aligning spaces the formatter takes out (section 15), so the examples are what `sau fmt` writes. `every_spec_example_is_already_formatted` holds that.
+
+**To fix: a collection defined inside a scene or a collection is a datablock, not an attribute.** Section 4's first look defines `collection @harbor "Harbor" { … }` inside the scene, and `collection @boats "Boats"` inside it. Null reads both as datablock definitions: the checker does, and so does `sau_core::project`'s reader ("a collection inside a scene or collection defines one when it has a name or a block; otherwise it names one"). The snapshots give `attribute: collection @harbor "Harbor"` and `attribute: collection @boats "Boats"`.
+- **The rule to add:** in a scene's or a collection's block, `collection` with a display name or a block is a `datablock`, its children read in `Place::Datablock`. A bare `collection @h`, like `object @pier`, is a member line, which can stay an `attribute` or be a `member`.
+- **A test** with the section 4 shape, and the two snapshots updated.
+
+**A suggestion for links (not blocking).** `is_link` splits at the first `.`. A link to a node inside a copy, `@plank.7/@tex.color` (an override reaching a copy's material, once 1d-03 reads them), splits to `7/@tex.color` and is not a link. Reading the last path step (after the last `/`) and testing its last `.`-segment would take both forms. No example writes one yet, so this can wait for 1d-03b; a line in the doc comment would keep it in view.
