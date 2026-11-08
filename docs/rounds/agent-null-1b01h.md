@@ -91,3 +91,14 @@ The Sau worker's review found two ways the rename could finish half done, and th
   - the corpus test still renames all 72 handles.
 
 Cosmósis's `just check` passes.
+
+## 1b-01h, round 3: the map first
+
+The Sau worker's review: live reload has no settle window, so a running Sau can load after the last file is renamed but before the map is. Apply then makes a new datablock for `@new` and removes `@old`'s as stale, and the map cannot undo that.
+- **The fix.** `sau rename` now replaces the map first, then the files in their paths' order. Everything is still staged, and every check still made, before the first replacement.
+  - **The map at `@new`, the files at `@old`:** nothing changes. The old handle still defines the datablock in the session, and the map's `@new` entry names nothing yet.
+  - **Some files renamed and not others:** the project fails the check, since references and the definition disagree, so nothing is applied.
+  - **Every file renamed:** the map already holds the ID under `@new`, and 1b-01f round 3's apply adopts the datablock.
+- **Test** (`every_state_a_running_sau_can_load_between_the_renames_is_safe`): for a corpus handle named in two or more files, it builds each state in the order the command makes them, the map first and then each file. Every state in between fails `sau check`, and the last passes.
+  - What the test cannot do is apply each state, because apply is sau_core's, in Sau. The apply-level case, map at `@new` with files at `@old` keeping the datablock, is the one 1b-01f round 3's test sets up from the other side. A sau_core test that applies each of these states belongs beside it, on the Sau worker's branch, if the lead wants it there.
+- If a file's replacement fails partway, the error names the map and the files already renamed.
