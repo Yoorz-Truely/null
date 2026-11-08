@@ -190,7 +190,10 @@ impl<'s> Checker<'s> {
                     codes::HANDLE,
                     file,
                     span,
-                    format!("`{handle}` is defined twice as a {kind}; a handle is unique within its kind"),
+                    format!(
+                        "`{handle}` is defined twice as {}; a handle is unique within its kind",
+                        article(&kind)
+                    ),
                 )
                 .with_label(f0, s0, "first defined here");
                 self.out.push(d);

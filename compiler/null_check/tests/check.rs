@@ -317,3 +317,28 @@ fn only_primitives_whose_operator_takes_scale_accept_it() {
     assert!(found.iter().all(|d| d.code == codes::UNIT), "{found:?}");
     assert_eq!(found.len(), 3);
 }
+
+#[test]
+fn a_handle_defined_twice_says_which_kind_with_its_article() {
+    // "as an object", not "as a object" (found reviewing Cosmósis's 1d-04b).
+    let (_, found) = run(&[
+        ("a.noll", "object @a \"A\"\n"),
+        (
+            "b.noll",
+            "object @a \"A2\"\nmesh @m \"M\"\nmesh @m \"M2\"\n",
+        ),
+    ]);
+    let messages: Vec<_> = found.iter().map(|d| d.message.as_str()).collect();
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("defined twice as an object")),
+        "{messages:?}"
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("defined twice as a mesh")),
+        "{messages:?}"
+    );
+}
