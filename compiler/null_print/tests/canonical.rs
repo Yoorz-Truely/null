@@ -427,3 +427,14 @@ proptest! {
         prop_assert_eq!(canonical(&once, project_schema()), once);
     }
 }
+
+#[test]
+fn an_empty_pointer_round_trips() {
+    // Sau's task 1c-02j: `parent none`, as write-back writes it, checks clean and comes back from
+    // the formatter and the canonical order unchanged.
+    let text = "object @lamp \"Lamp\" {\n  parent none\n  location [0m -8m 2.5m]\n}\n";
+    let parsed = parse(text);
+    assert_eq!(check(schema(), &[(FileId(0), &parsed)]), vec![]);
+    assert_eq!(null_print::format(text), text);
+    assert_eq!(canonical(text, schema()), text);
+}
