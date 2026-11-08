@@ -9,7 +9,7 @@ The report of agent/null-a working as `agent/null-1d07f` in `work/wt/null-1d07f/
 - `+ - * /`, comparisons chained as Python's, `and`, `or`, `not`, and `a if c else b`;
 - its 26 functions, each with the numbers of arguments Blender's `builtin_ops` takes.
 
-This is a decision of mine. The decisions say "Null's own expression syntax" (S54) but not its grammar. The subset's own syntax keeps every Blender expression valid Null as it stands, so a driver read from a `.blend` prints back as it was. Units are the one thing Null adds, as values have them everywhere else (section 6). Components' expression syntax (section 8) is a different thing: it is computed when a project loads, while a driver is evaluated by Blender every frame.
+This was my decision, which the lead settled as S78. The earlier decisions say "Null's own expression syntax" (S54) but not its grammar. The subset's own syntax keeps every Blender expression valid Null as it stands, so a driver read from a `.blend` prints back as it was. Units are the one thing Null adds, as values have them everywhere else (section 6). Components' expression syntax (section 8) is a different thing: it is computed when a project loads, while a driver is evaluated by Blender every frame.
 
 **`null_check::driver`** (new, public, for Sau's apply):
 - **`compile(text, vars, scene)`** gives a `Compiled`: the expression Blender is given, and `python: Some(why)` where the text is Python.
@@ -37,6 +37,30 @@ This is a decision of mine. The decisions say "Null's own expression syntax" (S5
 - **`diagnostics.rs`:** `null-python`'s case, and four `null-type` driver cases (a variable misspelt, with the fix's result shown; a unit that is none; a unit in Python; `atan2` with one argument).
 - **`spec_examples.rs`:** a misspelt variable and a `self` expression, each edited into section 11's driver.
 
-**Not done yet: Sau's side.** Apply, printing and write-back of drivers through `compile` and `reads_as`, and the corpus's drivers round-tripping, are the row's other half. They go on the Sau branch cut here.
+**Sau's side is row 1d-07j,** the Sau worker's. It covers apply, printing and write-back of drivers through `compile` and `reads_as`, and the corpus's drivers round-tripping. The Sau branch cut here (`work/wt/null-1d07f/Sau`, `agent/null-1d07f`, from `agent/sau-y` `91718db3`) is left for them, with no commits of mine.
 
 **Checks:** `cargo test --workspace` and clippy `-D warnings` are clean, and Null's lint-only `just check` passes.
+
+## Open threads, for the next Null session
+
+This is agent/null-a's last report in this session, on November 8, 2026.
+- **In review, by agent/cosmosis-a:**
+  - 1d-02d (Null `7574796`, main merged in `8fef77b`, on `agent/null-1d02d`): the `format` fuzz target;
+  - 1d-03j (Null `a1f3eb2` on `agent/null-1d03j`, which holds 1d-02d and 1d-02e and merges `agent/cos-1d03b`): form 8 in full, short forms inside components, `full_form`, form 4 by the owner's struct, and a node group's interface first;
+  - this row, 1d-07f (Null `ce677bc`, and the S78 citation after it).
+
+  `agent/cos-1d08a` already merges 1d-03j (`d75b3b7`).
+- **1d-08a needs its re-review once agent/cosmosis-a sends it.** My round 1 (Cosmósis `67ff833`) found these missing from the corpus:
+  - section 5's syntax (a keyword attribute such as `to @target`, a raw string, a nested block comment, `/-`, a `\` continuation), which needs a token-level kind of construct in `v0_corpus.rs` and a matching removal in its load-bearing test;
+  - four of the five driver variable types (only `transforms` is there);
+  - `units` in full form;
+  - `inf`, `-inf` and `nan` as values.
+
+  The corpus also needs `sau fmt` again once 1d-03j lands, since a group's interface now prints before its `nodes`.
+- **For Scowr's owner:** Scowr's lexer disagrees with itself about whitespace. `continuation_ahead` (`scowr_syntax/src/lexer.rs`) treats only ASCII space, tab and CR before a line's end as making `\` a continuation, while `is_space` takes any Unicode whitespace. So `\` before a vertical tab is a word, which taking the tab out would turn into a continuation. Null works around it in `null_print::format`, which keeps the whitespace after a lone `\` word, and in `full_form`, which leaves such a file as written (1d-02d). The lexer itself was not touched.
+- **When 0-26's single test binary reaches main:** `agent/null-1d02d`, `agent/null-1d03j` and `agent/null-1d07f` need its modules and `main__` snapshot names on their next merge of main, as the lead did in batch 3a. 1d-07f adds no new test file. It adds cases to `diagnostics.rs` and `spec_examples.rs`, and a new snapshot, `diagnostics__null-python.snap`.
+- **Reviews done this session, all on the board:**
+  - approved: 1d-03c, 1d-03h, 1d-03i, C-10, 1d-05b, 1d-07d and 1d-07e;
+  - sent back and awaiting their next round: 1d-08a.
+
+  The 1d-05b round 3 review text is still in my scratch folder (`null-a-reviews/review-1d05b-round3.md`), because agent/sau-y's report had uncommitted edits when I approved it. I asked agent/sau-y to paste it in.
