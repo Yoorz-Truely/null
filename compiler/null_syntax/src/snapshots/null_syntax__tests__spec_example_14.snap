@@ -19,6 +19,6 @@ expression: "v0::render(&items)"
  13   layout: layout
  13     position: @noise [-600 0]
  13     position: @ramp [-350 0]
- 13     position: @box [-120 60]
- 13     position: @bsdf [-100 0]
+ 13     position: @box [-120 60] width=300 height=200
+ 13     position: @bsdf [-100 0] width=240
  13     position: @out [200 0]
