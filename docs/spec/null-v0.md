@@ -54,7 +54,7 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 
 ## 4. A first look
 
-A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes.
+A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes. An example of a form the checker does not read yet is fenced `null (<task>)`, naming the task that builds it, and joins the test when that task lands.
 
 ```null
 // project.noll
@@ -377,6 +377,57 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 - **Binary only as a cache, or by choice.** Sau keeps a binary copy of large arrays in `.sau/` as a cache. The cache is rebuilt when the text changes and is never the source (1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
 - **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is. Lifting is phase 4b of Sau's roadmap; v0 writes levels 0 and 1.
+
+### Level 0: attribute arrays
+
+Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Reading and checking these forms is task 1d-06b, so the examples here are fenced as `null (1d-06b)` and are checked once it lands. A mesh's level 0 data is its attribute arrays, one line each in its block, in the order below.
+
+- **`vertices [[x y z] …]`**: each vertex's position (the `position` attribute, point domain), lengths as `location` is written (section 6).
+- **`edges [[a b] …]`**: each edge's two vertex indices, in Blender's order. It is written only when the mesh needs it: an edge no polygon has (a loose edge), or an edge attribute, whose values follow this order. Otherwise Blender makes the edges from the polygons, and the line is left out.
+- **`polygons [[a b c …] …]`**: each polygon's vertex indices, three or more, in its corners' order. A mesh's corners are these lists read in order, so a corner attribute has one value for each index written here.
+- **`attribute @h <domain> <type> "Name" [values]`**: any other attribute, a sub-object of the mesh (section 7).
+  - Its domain is `point`, `edge`, `face` or `corner`, and its type one of `Attribute`'s `data-type` items (`float`, `int`, `boolean`, `float-vector`, `float2`, `float4`, `float-color`, `byte-color`, `quaternion`, `float4x4`, `int8`, `int16-2d`, `int32-2d`, `string`).
+  - There is one value per element of the domain, each written as its type's single value is (section 6): a number; `on` or `off`; a list such as `[x y z]` or `[r g b a]`; a `byte-color`'s four integers 0 to 255 as Blender stores them; a `float4x4` row by row; a `quaternion` as `[w x y z]`.
+  - The quoted name is Blender's and may be left out when the handle is its kebab-case form. A built-in name that is not kebab-case keeps its quotes (`attribute @crease-edge edge float "crease_edge" […]`).
+  - Blender's internal attributes (`.edge_verts`, `.corner_vert` and the others whose names start with `.`) are never written: `edges` and `polygons` are they.
+- **`uv-map @h "Name" [[u v] …]`**: a UV map, one `[u v]` per corner, with its settings in a block (`active-render`).
+- **`vertex-group @h "Name" { weights [[index weight] …] }`**: a vertex group, a sub-object of the mesh as Blender 5.3 keeps it (section 7), with its weights: only the vertices in the group, by index, in increasing order.
+- **Colours, creases, bevel weights, sharp edges and faces, seams and custom normals** are attributes like any other, by Blender's names: `crease_vert`, `crease_edge`, `bevel_weight_vert`, `bevel_weight_edge`, `sharp_edge`, `sharp_face`, `custom_normal`, and a colour attribute of type `float-color` or `byte-color` on `point` or `corner`.
+
+**Inline up to 2,000 elements.** An array of up to 2,000 elements (vertices, edges, polygons, corners, weights, or an attribute's values) is written inline, as above. A list may span lines, and the formatter puts one element on each line once it does not fit on one.
+
+**Larger arrays in a Null text file of their own.** A larger one is written in a file beside the one that holds the mesh, named after the mesh and the array (`rock.vertices.noll`), one element per line:
+
+- The mesh's line names the file, and gives its summary as values, which the checker holds the file to: `count=`, the number of elements, and `bounds=`, the smallest and largest value of each component. A summary that disagrees with the file is an error (1d-06b). It is written as values, not a comment, because a checked value belongs in the syntax tree, and a comment that changed what loads would be the only one in Null.
+- The file holds one node: `array`, the owner's kind and handle, the array's name or handle, and the list:
+
+```null (1d-06b)
+// meshes/rock.noll
+mesh @rock "Rock" {
+  vertices file="rock.vertices.noll" count=12480 bounds=[[-1.2m -0.9m 0m] [1.3m 1m 2.1m]]
+  polygons file="rock.polygons.noll" count=12476
+  attribute @crease-edge edge float "crease_edge" file="rock.crease-edge.noll" count=24954 bounds=[0 1]
+  uv-map @uv-map "UVMap" file="rock.uv-map.noll" count=49904 bounds=[[0 0] [1 1]] { active-render }
+  vertex-group @base "Base" { weights [[0 1] [1 1] [2 0.5]] }
+}
+```
+
+```null (1d-06b)
+// meshes/rock.vertices.noll
+array mesh @rock vertices [
+  [-1.2m 0.4m 0m]
+  [-1.1m 0.5m 0.02m]
+  …
+]
+```
+
+- A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it, by Null's checker and Cosmósis's layout alike (1d-06b).
+- Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
+- `sau convert --inline` writes every array inline whatever its size.
+
+**Binary only as a cache, or by choice.** Sau keeps a binary copy of each large array in `.sau/` as a cache, rebuilt when its text changes, never the source (1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
+
+Shape keys, curves, point clouds and Grease Pencil drawings take the same forms for their own arrays (1d-06f).
 
 ## 10. Node trees
 

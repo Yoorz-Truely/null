@@ -371,4 +371,11 @@ fn every_example_in_the_spec_checks_clean_as_one_project() {
     let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
     let found = check(&schema, &files);
     assert!(found.is_empty(), "{}", map.render_all(&found));
+    // An example of a form not built yet is fenced `null (<task>)`, and names the task.
+    for fence in SPEC.split("```null (").skip(1) {
+        let task = fence.split(')').next().unwrap_or_default();
+        let is_task =
+            task.len() >= 5 && task.starts_with(|c: char| c.is_ascii_digit()) && task.contains('-');
+        assert!(is_task, "a fence `null ({task})` names no task");
+    }
 }
