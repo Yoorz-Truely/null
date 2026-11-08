@@ -335,3 +335,33 @@ fn the_old_principled_bsdf_gets_the_new_name_as_its_fix() {
     let found = errors(&schema, &[text]);
     assert_eq!(found[0].fixes[0].edits[0].replacement, "bsdf-principled");
 }
+
+#[test]
+fn an_enums_free_text_item_is_a_string_and_its_fix_is_quoted() {
+    // Section 6 (S16): an item whose name is free text, not an identifier (an image node's
+    // `Cubic`), is written as a string. Bare, in any case, it is an error whose fix is the
+    // quoted item (task 1d-01a, found by checking section 4's example).
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let material = |value: &str| {
+        format!(
+            "material @m \"M\" {{\n  nodes {{\n    node @tex tex-image {{ interpolation {value} }}\n  }}\n}}\n"
+        )
+    };
+    assert_eq!(errors(&schema, &[&material("\"Cubic\"")]), vec![]);
+    for bare in ["cubic", "Cubic"] {
+        let found = errors(&schema, &[&material(bare)]);
+        assert_eq!(found.len(), 1, "{bare}: {found:#?}");
+        assert!(
+            found[0].message.contains("free text"),
+            "{}",
+            found[0].message
+        );
+        assert_eq!(found[0].fixes[0].edits[0].replacement, "\"Cubic\"");
+    }
+    // A misspelling near a free-text item gets the quoted item too.
+    let found = errors(&schema, &[&material("cubik")]);
+    assert_eq!(
+        found[0].fixes[0].edits[0].replacement, "\"Cubic\"",
+        "{found:#?}"
+    );
+}

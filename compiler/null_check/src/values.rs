@@ -528,6 +528,24 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
         );
         return;
     };
+    // A free-text item is a string (S16): written bare, or in another case, it is an error whose
+    // fix is the quoted item (`interpolation "Cubic"`; found by 1d-01a's spec examples).
+    let quoted_item = p
+        .items
+        .iter()
+        .flatten()
+        .filter(|i| i.quoted)
+        .find(|i| i.name.eq_ignore_ascii_case(word));
+    if let Some(item) = quoted_item {
+        let fix = null_syntax::escape(&item.name);
+        out.error_fix(
+            codes::TYPE,
+            value.span(),
+            format!("`{name}`'s value {fix} is free text, not an identifier, so it is written as a string"),
+            Some((format!("write {fix}"), value.span(), fix.clone())),
+        );
+        return;
+    }
     if items.contains(&word) {
         return;
     }
@@ -564,7 +582,16 @@ pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut 
         code,
         value.span(),
         message,
-        suggestion.map(|s| (format!("write `{s}`"), value.span(), s.to_string())),
+        suggestion.map(|s| {
+            // A free-text item's fix is the quoted string.
+            let quoted = p.items.iter().flatten().any(|i| i.quoted && i.name == s);
+            let text = if quoted {
+                null_syntax::escape(s)
+            } else {
+                s.to_string()
+            };
+            (format!("write `{text}`"), value.span(), text)
+        }),
     );
 }
 

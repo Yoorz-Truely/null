@@ -1,6 +1,6 @@
 # Null: Sau's project language
 
-Draft v0, November 6, 2026. Phase 1a's slice (Sau's roadmap) was built on it by November 8, 2026; what the slice changed in this draft, and why, is section 22. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
+Draft v0, November 6, 2026. Phase 1a's slice (Sau's roadmap) was built on it by November 8, 2026; what the slice changed in this draft, and why, is section 22. On November 8, 2026 the draft was made complete for v0 (task 1d-01a): every section was read against the implementation and says what is built, or which task or phase builds it; every example checks clean; section 20 has nothing open. Freezing it, after which changes go through RFCs, is task 1d-01c. The name Null and the `.noll` extension were chosen by the user on November 6, 2026 (section 2). It lived in Sau as `docs/NULL.md` until it moved to this repository on November 6, 2026, as Scowr's spec moved out of Crescend. Where it fits in the product: Sau's `docs/ROADMAP.md`.
 
 Null is the source code of a Sau project. A project is a folder of Null files, media and data files, laid out by Cosmósis (`Cosmosis/docs/spec/cosmosis-v0.md`). Sau reads the folder, shows it, renders it and edits it. People and AI change a project by editing its files directly, and every change appears live. Sau's own edits are written back into the same files.
 
@@ -54,11 +54,12 @@ Settled November 6, 2026 (Sau's decision register, S8). **Null is to Blender wha
 
 ## 4. A first look
 
+A project of seven files. Every example in this spec checks clean against the schema of all project data (`null_check`'s `spec_examples` test), so what is written here is what the checker takes.
+
 ```null
 // project.noll
 project "Harbor at Dusk" {
   units metric scale=1 length=m rotation=deg
-  color-management view=agx look=none
   scene @main
 }
 ```
@@ -71,19 +72,22 @@ scene @main "Main" {
   fps 24
   camera @shot-cam
   world @dusk
-
-  render cycles {
-    samples 512
-    resolution [1920 1080]
-    denoise on
+  render {
+    engine cycles
+    resolution-x 1920
+    resolution-y 1080
   }
+  cycles { samples 512; use-denoising }
 
   collection @harbor "Harbor" {
     object @pier
-    object @lamp
-    collection @boats
+    object @harbor-lamp
+    object @shot-cam
+    collection @boats "Boats"
   }
 }
+
+world @dusk "Dusk" { color [0.02 0.03 0.06] }
 ```
 
 ```null
@@ -96,7 +100,7 @@ object @pier "Pier" {
 
   modifier @array array {
     count 12
-    relative-offset [1 0 0]
+    relative-offset-displace [1 0 0]
   }
   modifier @bevel bevel { width 4mm; segments 3 }
   material @weathered-oak
@@ -108,10 +112,38 @@ mesh @pier-deck "PierDeck" {
 ```
 
 ```null
+// objects/shot-cam.noll
+object @shot-cam "ShotCam" {
+  location [9m -12m 3m]
+  rotation-euler [80deg 0deg 37deg]
+  data camera @shot-cam-lens
+}
+
+camera @shot-cam-lens "ShotCam" { lens 50mm }
+```
+
+```null
+// objects/harbor-lamp.noll
+object @harbor-lamp "Lamp" {
+  location [0.5m -8m 2.5m]
+  data light @harbor-lamp-light
+}
+
+light @harbor-lamp-light "Lamp" {
+  type point
+  energy 800W
+  action @lamp-flicker slot=@lamp
+}
+```
+
+```null
 // materials/weathered-oak.noll
 material @weathered-oak "Weathered Oak" {
   nodes {
-    node @tex tex-image { image @oak-diffuse interpolation=cubic }
+    node @tex tex-image {
+      image @oak-diffuse
+      interpolation "Cubic"
+    }
     node @bsdf bsdf-principled {
       base-color @tex.color             // a link: the socket takes another node's output
       roughness 0.62
@@ -121,7 +153,10 @@ material @weathered-oak "Weathered Oak" {
   layout { @tex [-420 0]; @bsdf [-160 0]; @out [120 0] }
 }
 
-image @oak-diffuse "oak_diffuse.png" { source media/3f9a…c1.png colorspace=srgb }
+image @oak-diffuse "oak_diffuse.png" {
+  filepath "//media/oak_diffuse.png"
+  colorspace-settings { name "sRGB" }
+}
 ```
 
 ```null
@@ -333,14 +368,15 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 
 | Level | What it is | Written as | Edited by |
 | --- | --- | --- | --- |
-| 0. Data | Exact attribute arrays: positions, edges, faces, corners, UVs, normals, weights, creases, colours, any named attribute | Inline lists for small meshes; a content-addressed data file in `data/` for large ones, referenced from the text | The viewport's edit mode, sculpting, and tools; rarely by hand |
+| 0. Data | Exact attribute arrays: positions, edges, faces, corners, UVs, normals, weights, creases, colours, any named attribute | Inline lists up to 2,000 elements; a larger array in a Null text file of its own, one element per line, referenced from the text (S23) | The viewport's edit mode, sculpting, and tools; rarely by hand |
 | 1. Procedure | Primitives with parameters, modifier stacks, geometry-node graphs, curves and their profiles | Ordinary Null nodes | Hand, AI and Blender's editors alike |
-| 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and a residual data file | As level 1; the residual keeps the result exact |
+| 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and its residual, written as level 0 data | As level 1; the residual keeps the result exact |
 
-- **The threshold** between inline and data files is a Cosmósis setting (proposed default: 2,000 elements). `sau convert --inline` writes everything as text whatever its size.
-- **Data files** are a documented, versioned binary layout of named attribute arrays, named by the SHA-256 of their contents, so the same data is stored once and Git sees a changed hash rather than a binary diff of an unchanged mesh. Their text summary (counts, bounds, attribute names) is printed in the Null file as comments and checked on load.
+- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. `sau convert --inline` writes everything inline whatever its size. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
+- **The summary.** Beside the reference, the Null file gives the array's count, bounds and attribute names as a comment. It is checked on load, and a summary that disagrees with the data is an error (1d-06b).
+- **Binary only as a cache, or by choice.** Sau keeps a binary copy of large arrays in `.sau/` as a cache. The cache is rebuilt when the text changes and is never the source (1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
-- **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is.
+- **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is. Lifting is phase 4b of Sau's roadmap; v0 writes levels 0 and 1.
 
 ## 10. Node trees
 
@@ -555,11 +591,11 @@ light @dial-lamp "Dial Lamp" {
 
 ## 12. Media and caches
 
-Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
+Task 1d-05f builds this section; the slice references no media. Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
 
 ## 13. Generators (optional)
 
-A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.
+Phase 5 of Sau's roadmap; not part of v0's implementation. A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.
 
 ## 14. Checks
 
@@ -567,7 +603,7 @@ Files in `checks/` state what must be true of the scene and of renders: a polygo
 
 ## 15. Canonical form
 
-The formatter prints one form: canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
+The formatter prints one form (the layout and the order below are built; leaving out defaults, which the canonical order does not do yet, is task 1d-02b's): canonical order of attributes (the RNA definition order), one object per file section, small records on one line, defaults omitted except pinned settings, numbers printed by the rule of section 6, and handles written as kebab-case of the display name when new. `sau fmt` is idempotent, and Sau's own write-back always produces canonical text for the lines it touches, without reformatting lines it does not.
 
 The layout is fixed (settled November 7, 2026, task 1a-07):
 
@@ -635,7 +671,7 @@ Every message names the file, line and column, says what was expected, and where
 
 ## 19. Converting `.blend` files
 
-`sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
+Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists the data RNA does not reach. `sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:
 
 - everything RNA reaches is written as named Null properties;
 - data RNA does not reach (found by the census of roadmap phase 0) is written in a `raw` block per datablock, using SDNA's own struct and field names, until a named form replaces it; the coverage audit counts these and they may only shrink;
@@ -645,9 +681,13 @@ Correctness is checked by a field-by-field comparison of the original and the ro
 
 ## 20. Open questions
 
-1. The inline threshold for level 0 data (section 9).
-2. Whether object data used by one object is written inside that object's file (a component, as in React) or always in its own folder. Proposed: inside, when used once; in its folder when shared (Cosmósis, section 3).
-3. The check vocabulary (section 14), settled in phase 8.
+None is open for v0 (task 1d-01a, November 8, 2026). The draft's three were settled or given to a later phase:
+
+1. **The inline threshold** for level 0 data is 2,000 elements (Sau's decision S23; section 9).
+2. **Object data used by one object** is written in that object's file, and in a file of its own when it is shared (S36: "data used once lives in the file that uses it"; Cosmósis, section 2). The layout is free, so this is the default `sau convert` writes, not a rule the checker enforces.
+3. **The check vocabulary** (section 14) is phase 8's.
+
+Questions raised after v0 is frozen (task 1d-01c) go through RFCs, as Scowr's do.
 
 ## 21. What building Null takes
 

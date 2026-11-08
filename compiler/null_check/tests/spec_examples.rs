@@ -350,3 +350,25 @@ fn each_form_catches_its_mistakes() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n\n"));
 }
+
+#[test]
+fn every_example_in_the_spec_checks_clean_as_one_project() {
+    // Task 1d-01a: section 4 says every example checks clean, so every ```null block of the
+    // whole spec is one project here, its handles distinct across sections.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let blocks: Vec<String> = examples(SPEC).iter().map(|b| format!("{b}\n")).collect();
+    assert!(blocks.len() >= 14, "{} examples", blocks.len());
+    let mut map = SourceMap::new();
+    let parses: Vec<(FileId, Parse)> = blocks
+        .iter()
+        .enumerate()
+        .map(|(i, b)| (map.add(format!("example-{}.noll", i + 1), b), parse(b)))
+        .collect();
+    for (id, p) in &parses {
+        let syntax = null_syntax::diagnostics(p, *id);
+        assert!(syntax.is_empty(), "{}", map.render_all(&syntax));
+    }
+    let files: Vec<_> = parses.iter().map(|(i, p)| (*i, p)).collect();
+    let found = check(&schema, &files);
+    assert!(found.is_empty(), "{}", map.render_all(&found));
+}
