@@ -619,6 +619,52 @@ pub(crate) fn check_string(value: &Value<'_>, name: &str, p: &Property, out: &mu
     }
 }
 
+/// A datablock's display name (S72, task 1c-02i): a string, held to Blender's field `p` (the
+/// struct's `name`) as any string is. Blender strips every byte of a name that is not UTF-8
+/// (`BKE_id_new_name_validate`), so a byte list that is not UTF-8 is an error here, unlike in a
+/// string property; its fix is the name Blender would make of it ([`crate::names::utf8_reading`]).
+/// A byte list that is UTF-8, or holds what is not a byte, gets [`check_string`]'s errors.
+pub(crate) fn check_display_name(value: &Value<'_>, p: Option<&Property>, out: &mut Out<'_>) {
+    let bytes: Option<Vec<u8>> = match value {
+        Value::List(_) => value
+            .items()
+            .iter()
+            .map(|i| {
+                i.as_word()
+                    .and_then(|w| read_int(w).ok())
+                    .and_then(|n| u8::try_from(n).ok())
+                    .filter(|b| *b != 0)
+            })
+            .collect(),
+        _ => None,
+    };
+    let Some(bytes) = bytes.filter(|b| std::str::from_utf8(b).is_err()) else {
+        if let Some(p) = p {
+            check_string(value, "name", p, out);
+        }
+        return;
+    };
+    let span = value.span();
+    let reading = crate::names::utf8_reading(&bytes);
+    if reading.is_empty() {
+        out.error(
+            codes::TYPE,
+            span,
+            "a display name is UTF-8 text (Sau's S72), and none of these bytes is: Blender would drop them all; write the name as a string".to_string(),
+        );
+        return;
+    }
+    let fix = null_syntax::escape(&reading);
+    out.error_fix(
+        codes::TYPE,
+        span,
+        format!(
+            "a display name is UTF-8 text (Sau's S72): Blender drops the bytes that are not, so this name would be {fix}; byte lists are for string properties such as file paths"
+        ),
+        Some((format!("write {fix}"), span, fix.clone())),
+    );
+}
+
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
     if p.flags {
