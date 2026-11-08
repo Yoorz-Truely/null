@@ -47,7 +47,7 @@ mod typed;
 mod write;
 
 pub use canonical::canonical;
-pub use defaults::without_defaults;
+pub use defaults::{default_of, is_default, without_defaults};
 pub use format::format;
 pub use matrix::print_matrix;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};

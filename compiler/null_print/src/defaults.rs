@@ -155,9 +155,8 @@ fn default_line(node: Node<'_>, p: &Property, text: &str) -> Option<(usize, usiz
     if prev_line.trim_start().starts_with("//") || prev_line.trim_end().ends_with("*/") {
         return None;
     }
-    let default = default_of(p)?;
     let written = read_value(value.text(), p, &Scene::default()).ok()?;
-    same(&written, &default).then_some((line_start, span.end))
+    is_default(&written, p).then_some((line_start, span.end))
 }
 
 /// Whether a value of `p` reads through the scene's unit scale or frame rate.
@@ -170,10 +169,42 @@ fn scene_dependent(p: &Property) -> bool {
     )
 }
 
-/// `p`'s default as a typed value: the schema's `new`, else its `default`.
-fn default_of(p: &Property) -> Option<Typed> {
+/// `p`'s default as a typed value, the one notion of a default Null and Sau share (spec,
+/// section 8; tasks 1d-02b and 1d-05a): the schema's `new`, the value in a new datablock, where it
+/// has one, else RNA's `default`. A matrix's default, flat in RNA's column-by-column order, is
+/// given row by row, as Null writes a matrix (section 6).
+pub fn default_of(p: &Property) -> Option<Typed> {
     let json = p.new.as_ref().or(p.default.as_ref())?;
+    let dims = p.dimensions();
+    if dims.len() == 2
+        && let Json::Array(flat) = json
+    {
+        let (rows, cols) = (dims[0], dims[1]);
+        if flat.len() != rows * cols {
+            return None;
+        }
+        let single = Property {
+            array: None,
+            ..p.clone()
+        };
+        return Some(Typed::List(
+            (0..rows)
+                .map(|r| {
+                    (0..cols)
+                        .map(|c| typed(&flat[c * rows + r], &single))
+                        .collect::<Option<Vec<_>>>()
+                        .map(Typed::List)
+                })
+                .collect::<Option<_>>()?,
+        ));
+    }
     typed(json, p)
+}
+
+/// Whether `value`, as Null reads or Blender holds it, is `p`'s default ([`default_of`]), bit
+/// for bit (`-0` is not `0`).
+pub fn is_default(value: &Typed, p: &Property) -> bool {
+    default_of(p).is_some_and(|d| same(value, &d))
 }
 
 fn typed(json: &Json, p: &Property) -> Option<Typed> {

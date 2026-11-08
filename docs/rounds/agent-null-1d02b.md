@@ -44,3 +44,9 @@ Section 15 says this.
 - The slice's existing canonical tests, and its shuffle property test, pass unchanged.
 
 **Checks:** `cargo test --workspace` and clippy `-D warnings` are clean, and Null's lint-only `just check` passes. `null_print` gains `serde_json`, already in the workspace through `null_check`.
+
+**One notion of a default, for 1d-05a.** I reviewed Sau's printer (1d-05a) right after this. It compares against the schema's `default` alone, while section 8 says the default is a new datablock's value, the schema's `new` where it has one. For 29 properties the two differ: a collection's `color-tag` (`none`, not `color-01`), a material's `blend-method` and `use-nodes`, a light's `use-nodes` and `temperature-color`, a camera's `angle`, and others. So that the printer and the formatter cannot disagree, Null owns the definition:
+- **`null_print::default_of(p)`:** `new`, else `default`, with a matrix's flat column-by-column default given row by row (the printer's own rule, moved here);
+- **`null_print::is_default(value, p)`:** bit for bit.
+
+`without_defaults` uses them, and the printer is to call them. Tested: `color-tag`'s default is `none`, the identity matrix row by row, and bits.

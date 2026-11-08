@@ -2,7 +2,7 @@
 //! default goes, and nothing else does.
 
 use null_check::Schema;
-use null_print::{canonical, without_defaults};
+use null_print::{Typed, canonical, default_of, is_default, without_defaults};
 
 const PROJECT: &str = include_str!("../../../schema/null-schema-project.json");
 
@@ -61,4 +61,43 @@ fn every_spec_example_keeps_its_words_but_its_defaults() {
         let twice = canonical(&without_defaults(&once, schema()), schema());
         assert_eq!(twice, once, "{text}");
     }
+}
+
+#[test]
+fn the_default_is_a_new_datablocks_and_a_matrix_is_row_by_row() {
+    let schema = schema();
+    let prop = |owner: &str, name: &str| {
+        schema
+            .properties_of(owner)
+            .into_iter()
+            .find(|p| p.name == name)
+            .unwrap()
+            .clone()
+    };
+    // `new` before RNA's `default`: a new collection's colour tag is `none`, not `color-01`.
+    let tag = prop("Collection", "color-tag");
+    assert!(is_default(&Typed::Enum("none".into()), &tag));
+    assert!(!is_default(&Typed::Enum("color-01".into()), &tag));
+    // A 4x4 matrix's default is the identity, row by row; a moved one is not.
+    let m = prop("Object", "matrix-parent-inverse");
+    let row = |xs: [f32; 4]| Typed::List(xs.iter().map(|x| Typed::F32(*x)).collect());
+    let identity = Typed::List(vec![
+        row([1.0, 0.0, 0.0, 0.0]),
+        row([0.0, 1.0, 0.0, 0.0]),
+        row([0.0, 0.0, 1.0, 0.0]),
+        row([0.0, 0.0, 0.0, 1.0]),
+    ]);
+    assert_eq!(default_of(&m), Some(identity.clone()));
+    let mut moved = identity;
+    if let Typed::List(rows) = &mut moved
+        && let Typed::List(first) = &mut rows[0]
+    {
+        first[3] = Typed::F32(2.0);
+    }
+    assert!(!is_default(&moved, &m));
+    // Bits: `-0` is not `0`.
+    let roughness = prop("Material", "roughness");
+    let d = default_of(&roughness).unwrap();
+    assert!(is_default(&d, &roughness));
+    assert!(!is_default(&Typed::F32(-0.0), &roughness) || d == Typed::F32(-0.0));
 }
