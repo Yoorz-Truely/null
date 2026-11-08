@@ -1,0 +1,8 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+trees.noll:3:7 error[null-type]: `@loop` places `@loop`, which places `@loop` again: recursion counts down, so `@loop` needs a whole-number parameter marked `{ countdown }`
+trees.noll:10:21 error[null-type]: `@grow` is placed again inside itself, so it counts down: give `depth` a smaller value than `depth`, such as `"depth - 1"`
+  fix: write `depth "depth - 1"`
+trees.noll:12:7 error[null-type]: `@grow` is placed again inside itself only under a condition that ends it: put this `use` in `if "depth > 0" { … }`

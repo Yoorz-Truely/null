@@ -6,14 +6,22 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 rust-version.workspace = true
+# One test binary for the files in tests/ (Sau task 0-26, S69): tests/main.rs.
+autotests = false
 
 [dependencies]
 null_syntax.workspace = true
 null_value.workspace = true
 null_check.workspace = true
+# The schema's defaults are JSON values (task 1d-02b). MIT OR Apache-2.0.
+serde_json = "1"
 
 [dev-dependencies]
 proptest = { version = "1", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "main"
+path = "tests/main.rs"

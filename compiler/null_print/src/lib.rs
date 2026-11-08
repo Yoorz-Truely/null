@@ -39,15 +39,19 @@
 //! ```
 
 mod canonical;
+mod defaults;
 mod format;
 mod matrix;
 mod project;
+mod short;
 mod typed;
 mod write;
 
 pub use canonical::canonical;
+pub use defaults::{default_of, is_default, without_defaults};
 pub use format::format;
 pub use matrix::print_matrix;
 pub use project::{FileEdit, ProjectFile, Transform, WriteBackError, write_transform};
+pub use short::{Address, Attr, Line, New, expand, write_through};
 pub use typed::{Printing, Typed, TypedError, print_value, read_value};
 pub use write::{Edit, Values, WriteError, write, write_in};

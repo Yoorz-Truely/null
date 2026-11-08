@@ -132,6 +132,7 @@ dependencies = [
  "null_syntax",
  "null_value",
  "proptest",
+ "serde_json",
 ]
 
 [[package]]

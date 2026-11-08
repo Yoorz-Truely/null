@@ -1,0 +1,24 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  2 datablock: scene @main "Main"
+  3   attribute: frame-start 1
+  4   attribute: frame-end 240
+  5   attribute: fps 24
+  6   attribute: camera @shot-cam
+  7   attribute: world @dusk
+  8   attribute: render
+  9     attribute: engine cycles
+ 10     attribute: resolution-x 1920
+ 11     attribute: resolution-y 1080
+ 13   attribute: cycles
+ 13     attribute: samples 512
+ 13     attribute: use-denoising
+ 15   datablock: collection @harbor "Harbor"
+ 16     attribute: object @pier
+ 17     attribute: object @harbor-lamp
+ 18     attribute: object @shot-cam
+ 19     datablock: collection @boats "Boats"
+ 23 datablock: world @dusk "Dusk"
+ 23   attribute: color [0.02 0.03 0.06]

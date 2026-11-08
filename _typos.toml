@@ -8,7 +8,17 @@ strat = "strat"
 locaton = "locaton"
 metalic = "metalic"
 sampels = "sampels"
+# A misspelt bevel width and zone link, as a report names the errors they give (task 1d-07a).
+wdth = "wdth"
+geomtry = "geomtry"
+# A misspelt parameter, type and line in a component, to check their fixes (task 1d-03b).
+lenght = "lenght"
+materail = "materail"
 
 # The schema Sau generates holds Blender's own names and labels (`preserve_formant`), not ours.
 [files]
-extend-exclude = ["schema/null-schema-project.json"]
+# The spec's examples written wrong on purpose, one mistake each, to show their errors (task 1d-07a).
+extend-exclude = [
+  "schema/null-schema-project.json",
+  "compiler/null_check/tests/spec_examples.rs",
+]

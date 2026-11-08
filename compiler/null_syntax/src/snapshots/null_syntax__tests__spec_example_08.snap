@@ -1,0 +1,25 @@
+---
+source: compiler/null_syntax/src/tests.rs
+expression: "v0::render(&items)"
+---
+  1 datablock: object @lid "Lid"
+  2   attribute: data mesh @lid-mesh
+  3   sub-object: modifier @bevel bevel "Bevel"
+  3     attribute: width 4mm
+  3     attribute: segments 3
+  4   sub-object: modifier @stacked nodes "Stacked"
+  5     attribute: node-group @stack-up
+  6     attribute: count 3
+  8   sub-object: constraint @aim damped-track "Aim"
+  9     attribute: target @dial
+ 10     attribute: track-axis track-negative-z
+ 14 datablock: mesh @lid-mesh "Lid"
+ 14   attribute: primitive cube size=1m
+ 16 datablock: object @rig "Rig"
+ 17   attribute: data armature @rig-bones
+ 18   sub-object: bone @spine "Spine"
+ 19     attribute: rotation-mode xyz
+ 20     sub-object: constraint @reach kinematic "IK"
+ 21       attribute: target @lid
+ 22       attribute: chain-count 2
+ 27 datablock: armature @rig-bones "Rig"

@@ -1,0 +1,15 @@
+---
+source: compiler/null_check/tests/components.rs
+expression: p
+---
+components.noll:1:1 error[null-kind]: `@empty` places nothing: a component's first `object` is its root, which a placement puts in the scene
+components.noll:7:9 error[null-repeated]: the parameter `size` is given twice
+  components.noll:6:9: first given here
+components.noll:8:16 error[null-type]: `lenght` is neither a default nor a type; did you mean `length`?
+components.noll:9:15 error[null-type]: `molten` is not one of the parameter's words: `solid`, `liquid`
+components.noll:10:3 error[null-type]: `depth` counts down, so it is a whole number, not a number
+components.noll:11:16 error[null-type]: `oak` is neither a default (a number, `on`, `off`, or a word with `one-of`) nor a type (`length`, `area`, `volume`, `mass`, `angle`, `time`, `number`, `whole-number`, `on-off`, or a kind of datablock)
+components.noll:12:14 error[null-type]: `fancy` is neither a default (a number, `on`, `off`, or a word with `one-of`) nor a type (`length`, `area`, `volume`, `mass`, `angle`, `time`, `number`, `whole-number`, `on-off`, or a kind of datablock)
+components.noll:13:23 error[null-handle]: no material is called `@nowhere`
+components.noll:15:3 error[null-kind]: a component's block holds parameters, datablocks, placements (`use`), conditions and overrides; `materail` is none of them
+  fix: write `material`
