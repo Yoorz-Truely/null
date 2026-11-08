@@ -479,9 +479,9 @@ Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Reading and ch
 
 **Inline up to 2,000 elements.** An array of up to 2,000 elements (vertices, edges, polygons, corners, weights, or an attribute's values) is written inline, as above. A list may span lines, and the formatter puts one element on each line once it does not fit on one.
 
-**Larger arrays in a Null text file of their own.** A larger one is written in a file beside the one that holds the mesh, named after the mesh and the array (`rock.vertices.noll`), one element per line:
+**Larger arrays in a Null text file of their own.** A larger one is written in a file beside the one that holds the mesh, named after the mesh and the array (`rock.vertices.noll`), one element per line. It is not named by its content's hash, so an edit is a readable diff of the lines it changed (S23, S74 (2)):
 
-- The mesh's line names the file, and gives its summary as values, which the checker holds the file to: `count=`, the number of elements, and `bounds=`, the smallest and largest value of each component. A summary that disagrees with the file is an error (1d-06b). It is written as values, not a comment, because a checked value belongs in the syntax tree, and a comment that changed what loads would be the only one in Null.
+- The mesh's line names the file, and gives its summary as values, which the checker holds the file to: `count=`, the number of elements, and `bounds=`, the smallest and largest value of each component. A summary that disagrees with the file is an error (1d-06b). It is written as values, not a comment, because a checked value belongs in the syntax tree, and a comment that changed what loads would be the only one in Null (Sau's decision S74 (1)).
 - The file holds one node: `array`, the owner's kind and handle, the array's name or handle, and the list:
 
 ```null (1d-06b)
