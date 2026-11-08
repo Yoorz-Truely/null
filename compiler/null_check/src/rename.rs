@@ -196,6 +196,7 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
                 defined: &defined,
                 edits: &mut edits,
                 count: 0,
+                shadowed: node.name() == "component" && component_defines(node, old),
             };
             walker.node(node, Context::Datablock, true, false);
             references += walker.count;
@@ -205,6 +206,21 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
         edits,
         kind,
         references,
+    })
+}
+
+/// Whether component `node` defines a datablock whose handle is `old`, at any depth of its block
+/// (an `if`'s too), not counting what it places with `use`.
+fn component_defines(node: Node<'_>, old: &str) -> bool {
+    node.children().any(|c| {
+        if c.name() == "use" {
+            return false;
+        }
+        let handle = c
+            .args()
+            .next()
+            .and_then(|v| v.as_word().map(str::to_string));
+        (defines(c) && handle.as_deref() == Some(old)) || component_defines(c, old)
     })
 }
 
@@ -249,6 +265,9 @@ struct Walker<'w> {
     defined: &'w HashSet<(FileId, usize)>,
     edits: &'w mut Vec<TextEdit>,
     count: usize,
+    /// Inside a component that defines a datablock of the old handle: there the handle is that
+    /// datablock's, except as the component `use` places.
+    shadowed: bool,
 }
 
 impl Walker<'_> {
@@ -290,11 +309,17 @@ impl Walker<'_> {
             if cx == Context::Tree && name == "parent" {
                 continue; // A frame node.
             }
+            if self.shadowed && !(name == "use" && i == 0) {
+                continue; // The component's own datablock of that handle.
+            }
             self.value(v, cx);
         }
         for (key, v) in &props {
             if key == "slot" && name == "action" {
                 continue; // The action's slot, its sub-object.
+            }
+            if self.shadowed {
+                continue;
             }
             self.value(v, cx);
         }

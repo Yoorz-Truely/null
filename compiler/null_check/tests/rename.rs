@@ -306,3 +306,32 @@ collection @woods \"Woods\" {
     assert_eq!(refs, 1);
     assert!(out[0].contains("target @cover"), "{}", out[0]);
 }
+
+#[test]
+fn inside_a_component_its_own_datablock_shadows_it() {
+    // 1d-08a's `@branch`: the component defines `object @branch`, and its recursive `use`'s
+    // `parent @branch` is that object. Renaming the component changes its definition and each
+    // `use @branch` only.
+    let branch = "\
+component @branch \"Branch\" {
+  param depth 4 { countdown }
+  object @branch \"Branch\"
+  if \"depth > 0\" {
+    use @branch @left {
+      depth \"depth - 1\"
+      parent @branch
+    }
+  }
+}
+";
+    let woods = "collection @woods \"Woods\" {\n  use @branch @tree { depth 3 }\n}\n";
+    let (out, _, refs) = renamed(&[branch, woods], "@branch", "@bough").unwrap();
+    assert_eq!(refs, 2);
+    assert_eq!(
+        out[0],
+        branch
+            .replace("component @branch", "component @bough")
+            .replace("use @branch @left", "use @bough @left")
+    );
+    assert_eq!(out[1], woods.replace("use @branch", "use @bough"));
+}
