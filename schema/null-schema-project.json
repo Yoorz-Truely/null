@@ -3819,12 +3819,12 @@
      "type": "enum",
      "flags": true,
      "default": [
+      "emit",
+      "direct",
+      "indirect",
       "color",
       "diffuse",
-      "direct",
-      "emit",
       "glossy",
-      "indirect",
       "transmission"
      ],
      "items": [
@@ -16111,7 +16111,7 @@
      "name": "layer-name",
      "rna": "layer_name",
      "type": "enum",
-     "default": "cryptoobject",
+     "default": "CryptoObject",
      "items": [
       {
        "name": "CryptoObject",
@@ -40602,7 +40602,7 @@
      "name": "interpolation",
      "rna": "interpolation",
      "type": "enum",
-     "default": "linear",
+     "default": "Linear",
      "items": [
       {
        "name": "Linear",
@@ -73192,11 +73192,11 @@
      "type": "enum",
      "flags": true,
      "default": [
-      "attributes",
-      "color",
+      "vert",
       "poly",
       "uv",
-      "vert"
+      "color",
+      "attributes"
      ],
      "items": [
       {
@@ -77642,7 +77642,7 @@
      "name": "default-motion-model",
      "rna": "default_motion_model",
      "type": "enum",
-     "default": "loc",
+     "default": "Loc",
      "items": [
       {
        "name": "Perspective",
@@ -78127,7 +78127,7 @@
      "name": "motion-model",
      "rna": "motion_model",
      "type": "enum",
-     "default": "loc",
+     "default": "Loc",
      "items": [
       {
        "name": "Perspective",
@@ -123056,7 +123056,7 @@
      "name": "component",
      "rna": "component",
      "type": "enum",
-     "default": "reflection",
+     "default": "Reflection",
      "items": [
       {
        "name": "Reflection",
@@ -125288,7 +125288,7 @@
      "name": "interpolation",
      "rna": "interpolation",
      "type": "enum",
-     "default": "linear",
+     "default": "Linear",
      "items": [
       {
        "name": "Linear",
@@ -125553,7 +125553,7 @@
      "name": "interpolation",
      "rna": "interpolation",
      "type": "enum",
-     "default": "linear",
+     "default": "Linear",
      "items": [
       {
        "name": "Linear",
@@ -137118,7 +137118,7 @@
      "flags": true,
      "default": [
       "key",
-      "strip"
+      "Strip"
      ],
      "items": [
       {
