@@ -81,22 +81,12 @@ fn every_integer_property_at_its_bounds_and_zero() {
         ] {
             round_trip(&Typed::Int(n), p, &plain()).unwrap();
         }
-        // Past either bound is refused.
-        assert!(
-            print_value(&Typed::Int(hi.saturating_add(1)), p, &plain()).is_err() || hi == i64::MAX
-        );
-        if lo > i64::from(i32::MIN) || hi < i64::from(i32::MAX) {
-            let past = if hi < i64::from(i32::MAX) {
-                hi + 1
-            } else {
-                lo - 1
-            };
-            assert!(
-                read_value(&past.to_string(), p, &Scene::default()).is_err(),
-                "{}: {past}",
-                p.name
-            );
+        // Past either bound, as a `.blend` can hold it, is written and read back as it is
+        // (the lead's call on 1c-02b); the checker gives a note. Past 32 bits is refused.
+        if hi < i64::from(i32::MAX) {
+            round_trip(&Typed::Int(hi + 1), p, &plain()).unwrap();
         }
+        assert!(read_value(&(i64::from(i32::MAX) + 1).to_string(), p, &Scene::default()).is_err());
     }
 }
 
@@ -240,6 +230,70 @@ fn every_flag_set_of_every_flag_enum() {
         }
     }
     assert!(sets > 100, "{sets}");
+}
+
+#[test]
+fn infinities_and_values_past_the_range_round_trip() {
+    // Infinity is treated as NaN is: a value Blender can hold, written `inf` and `-inf` and read
+    // back exactly, whatever the property's range (the lead's call on 1c-02b).
+    let location = schema()
+        .properties_of("Object")
+        .into_iter()
+        .find(|p| p.name == "location")
+        .unwrap();
+    let v = Typed::List(vec![
+        Typed::F32(f32::INFINITY),
+        Typed::F32(f32::NEG_INFINITY),
+        Typed::F32(f32::NAN),
+    ]);
+    let how = Printing {
+        length: Some(Unit::M),
+        ..Printing::default()
+    };
+    assert_eq!(print_value(&v, location, &how).unwrap(), "[inf -inf nan]");
+    round_trip(&v, location, &how).unwrap();
+    let roughness = schema()
+        .properties_of("Material")
+        .into_iter()
+        .find(|p| p.name == "roughness")
+        .unwrap();
+    round_trip(&Typed::F32(1.5), roughness, &plain()).unwrap();
+    round_trip(&Typed::F32(f32::INFINITY), roughness, &plain()).unwrap();
+}
+
+#[test]
+fn a_run_time_item_that_is_not_one_word_is_a_string() {
+    // From the 1c-02b review: the items of run-time enums come from data (attribute and UV map
+    // names), which may hold spaces and capitals, or be empty.
+    let p = properties("enum", false)
+        .into_iter()
+        .find(|p| p.items_at_run_time && !p.flags)
+        .unwrap();
+    for name in ["Some Item", "", "UVMap", "a\"b", "some-item"] {
+        let v = Typed::Enum(name.to_string());
+        round_trip(&v, p, &plain()).unwrap();
+        let text = print_value(&v, p, &plain()).unwrap();
+        // Always a string, so never read as a misspelling of a listed item (the 1c-02b review).
+        assert!(text.starts_with('"'), "{name}: {text}");
+    }
+}
+
+#[test]
+fn integers_past_32_bits_are_refused_both_ways() {
+    // Blender cannot store them, unlike a value past the range (the 1c-02b review).
+    let p = schema()
+        .properties_of("Scene")
+        .into_iter()
+        .find(|p| p.name == "frame-start")
+        .unwrap();
+    for n in [1i64 << 31, i64::MIN, -(1i64 << 31) - 1] {
+        assert!(print_value(&Typed::Int(n), p, &plain()).is_err(), "{n}");
+        assert!(
+            read_value(&n.to_string(), p, &Scene::default()).is_err(),
+            "{n}"
+        );
+    }
+    round_trip(&Typed::Int(i64::from(i32::MAX)), p, &plain()).unwrap();
 }
 
 #[test]
