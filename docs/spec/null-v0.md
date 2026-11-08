@@ -250,6 +250,25 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 
 Blender gives a modifier its `persistent_uid` from a hash of its name when it is created, and a node its `identifier` at random, so neither is a handle: the handle is still made from the name, and the map ties the two together. A node socket is the one sub-object never renamed by a person outside node groups, so its handle is its name.
 
+### The handle map
+
+The project's map of handles to persistent IDs is `.sau/ids.noll`: Null text that Sau writes, kept in Git with the project (Sau's decisions S61 (2) and S66; task 1b-01f). Opened from its text, a project gives every datablock the same ID every time, on every machine.
+
+```null
+// Sau's map of handles to persistent IDs (decisions S61 (2) and S66). Sau writes this file;
+// keep it in Git with the project.
+ids {
+  mesh @cube-mesh "1f0c39a2d64e5b7780c1aa0e95f3d2b4"
+  object @cube "4b43ea435eaf647774ed7d63bbb80432"
+}
+```
+
+- **One `ids` block** holds one entry per handle: the datablock's kind (section 8), its handle, and its ID as a string of 32 hexadecimal digits, the 16 bytes Blender keeps in order. Sau writes them in lower case; upper case reads the same. All zeros means no ID and is not an entry.
+- **Sorted** by kind and then handle, so a change shows as the lines it adds or removes. Sau rewrites the whole file, atomically, after an apply that changed it, and never through a link. A comment written by hand is not kept.
+- **What applying does with it.** A handle the map holds takes that ID: the datablock with it in the file, or a new one given it. A handle it does not hold gets a new random ID, which the next write records. With the map gone, a project still opens, with new IDs and a new map.
+- **What is left out.** An entry of another form, a handle given twice and an ID given twice are reported and left out, the first of two kept; the handle then gets a new ID.
+- **Sub-objects later.** Sub-objects Blender identifies only by name keep their handles here too, keyed by their owner's ID (S61 (3), the table above; task 1b-02b). Their form is reserved as a block on the owner's entry, `object @rig "…" { bone @spine "Spine.002" }`, which a reader of the map today ignores.
+
 ## 8. The objects
 
 Every one of Blender's datablock types that holds project data has a kind, generated from RNA (Sau's tasks 1b-03b and 1b-03c), and so does every node, modifier, constraint, strip and other struct of a family. One rule names them all, with no exceptions beyond the slice's core (Sau's decision S67):
