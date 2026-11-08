@@ -427,3 +427,15 @@ proptest! {
         prop_assert_eq!(canonical(&once, project_schema()), once);
     }
 }
+
+#[test]
+fn a_line_of_other_whitespace_is_a_blank_line() {
+    // Found by the `format` fuzz target (task 1d-02d): a line holding a vertical tab was no
+    // blank line to the canonical pass, then one once the layout took the tab, so a second
+    // pass gave other text.
+    for text in ["i{\n\u{b}\nm}", "i {\n\u{c}\u{a0}\n  m\n}\n"] {
+        let once = canonical(text, schema());
+        assert_eq!(canonical(&once, schema()), once, "{text:?}");
+        assert!(!once.contains("\n\n"), "{text:?} gave {once:?}");
+    }
+}

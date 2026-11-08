@@ -99,7 +99,8 @@ impl Project {
 }
 
 /// Every file of a project with its short forms written in full, laid out by the formatter.
-/// A file that does not parse cleanly is given back as it is.
+/// A file that does not parse cleanly is given back as it is, and so is one holding a lone `\`
+/// word, which only the whitespace written after it keeps a word.
 pub fn expand(texts: &[&str], schema: &Schema) -> Vec<String> {
     let parses: Vec<Parse> = texts.iter().map(|t| parse(t)).collect();
     let project = Project::of(&parses);
@@ -111,7 +112,18 @@ pub fn expand(texts: &[&str], schema: &Schema) -> Vec<String> {
         .iter()
         .zip(&parses)
         .map(|(text, p)| {
-            if !p.errors().is_empty() {
+            // A lone `\` word is kept a word only by the unusual whitespace after it (a `\` before
+            // a line's end is a continuation), which a file written afresh does not keep.
+            let lone_backslash = null_syntax::lex(text)
+                .0
+                .iter()
+                .scan(0, |at, t| {
+                    let s = &text[*at..*at + t.len as usize];
+                    *at += t.len as usize;
+                    Some(t.kind == null_syntax::TokenKind::Word && s == "\\")
+                })
+                .any(|b| b);
+            if !p.errors().is_empty() || lone_backslash {
                 return (*text).to_string();
             }
             let mut out = String::new();
@@ -215,7 +227,11 @@ impl Expander<'_, '_> {
             words.push("on".into());
         }
         let pad = "  ".repeat(depth);
-        let head = std::iter::once(name.clone())
+        // The name as written: a quoted one stays quoted (`"("` is no word).
+        let written = n
+            .name_token()
+            .map_or_else(|| name.clone(), |t| t.text.to_string());
+        let head = std::iter::once(written)
             .chain(words)
             .collect::<Vec<_>>()
             .join(" ");
@@ -291,7 +307,10 @@ impl Expander<'_, '_> {
         }
         for c in n.children() {
             let words: Vec<&str> = c.args().map(|v| v.text()).collect();
-            settings.push((c.name().into_owned(), words.join(" ")));
+            let written = c
+                .name_token()
+                .map_or_else(|| c.name().into_owned(), |t| t.text.to_string());
+            settings.push((written, words.join(" ")));
         }
         for (key, value) in settings {
             let full = full_unit_setting(&key);

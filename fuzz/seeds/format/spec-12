@@ -1,0 +1,8 @@
+// meshes/rock.noll
+mesh @rock "Rock" {
+  vertices file="rock.vertices.noll" count=12480 bounds=[[-1.2m -0.9m 0m] [1.3m 1m 2.1m]]
+  polygons file="rock.polygons.noll" count=12476
+  attribute @crease-edge edge float "crease_edge" file="rock.crease-edge.noll" count=24954 bounds=[0 1]
+  uv-map @uv-map "UVMap" file="rock.uv-map.noll" count=49904 bounds=[[0 0] [1 1]] { active-render }
+  vertex-group @base "Base" { weights [[0 1] [1 1] [2 0.5]] }
+}

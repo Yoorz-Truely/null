@@ -145,3 +145,36 @@ fn every_spec_example_is_already_formatted() {
     }
     assert!(n >= 19, "{n} examples");
 }
+
+#[test]
+fn whitespace_after_a_lone_backslash_word_is_kept() {
+    // Found by the `format` fuzz target (task 1d-02d): only spaces, tabs and CRs before a line's
+    // end make a `\` a continuation, so a vertical tab after one keeps it a word, and taking the
+    // tab out, or making it a space, made a continuation of it.
+    for text in [
+        "\\\u{b}",
+        "a \\\u{b}\nb\n",
+        "a \\\u{b}// c\n",
+        "a \\\u{b}x\n",
+    ] {
+        let once = format(text);
+        let kinds = |t: &str| -> Vec<null_syntax::TokenKind> {
+            null_syntax::lex(t)
+                .0
+                .iter()
+                .map(|k| k.kind)
+                .filter(|k| {
+                    !matches!(
+                        k,
+                        null_syntax::TokenKind::Whitespace | null_syntax::TokenKind::Newline
+                    )
+                })
+                .collect()
+        };
+        assert_eq!(kinds(&once), kinds(text), "{text:?} gave {once:?}");
+        assert_eq!(format(&once), once, "{text:?}");
+    }
+    // A continuation and a word ending in `\` are as they were.
+    assert_eq!(format("a \\\n  b\n"), "a \\\n  b\n");
+    assert_eq!(format("a\\  \n"), "a\\\n");
+}

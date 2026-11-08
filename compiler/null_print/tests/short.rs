@@ -401,3 +401,22 @@ fn the_specs_examples_expanded_check_clean_and_expand_to_themselves() {
         assert!(!all.contains(gone), "`{gone}` is left in\n{all}");
     }
 }
+
+#[test]
+fn a_quoted_node_name_stays_quoted() {
+    // Found by the `format` fuzz target (task 1d-02d): the name was written unescaped, `(`.
+    for text in [
+        "\"(\"\n",
+        "object @o \"O\" {\n  \"a b\" 1\n}\n",
+        // A lone `\` word, kept one by the vertical tab after it.
+        "\\\u{b}",
+    ] {
+        let full = expand(&[text], schema());
+        assert!(
+            parse(&full[0]).errors().is_empty(),
+            "{text:?} gave {:?}",
+            full[0]
+        );
+        assert_eq!(expand(&strs(&full), schema()), full);
+    }
+}
