@@ -99,7 +99,7 @@ material @paint \"Paint\" {
   roughness 0.5
   name-full \"Paint\"
   nodes {
-    node @bsdf principled-bsdf { base-colour [1 1 1 1]; normal @bsdf.out }
+    node @bsdf bsdf-principled { base-colour [1 1 1 1]; normal @bsdf.out }
     node @mix mix-shader
   }
 }
