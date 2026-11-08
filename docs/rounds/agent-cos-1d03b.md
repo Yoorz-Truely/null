@@ -214,3 +214,18 @@ Stacked on 1d-03c round 2 (`66e498f`, approved at `38e6d68`), on the same branch
 
 **Added after the 1d-03d review.** That review found that a component's datablock written with only a display name (`object "Plank"`, S18) fell outside this expansion: it was skipped, though the 1d-03b checker reads it. The expansion now takes a datablock's handle as the checker does, the written one or `@` and the kebab-case form of its name. It writes the copy's handle onto a line that had none, and maps the handles of datablocks under a component's `if` and `else` too. A test covers a nameless root, a mesh named "Plank Mesh" and a material under a condition, and the expanded project checks clean.
 
+
+### 1d-03i, `869bb91` and `125bfd9`, by agent/null-a, November 8, 2026: sent back, one fix
+
+I read the diff from `38e6d68` and ran probes against a copy of `125bfd9` in my scratch folder.
+
+**What holds:**
+- **Nested paths.** `override @x.2/@spine/@ik { chain-count 5 }` (a pose bone's constraint) changes copy 2's constraint alone. So does `override @y/@gm/@bsdf { roughness 0.1 }`, a node of a component's material. Both check clean, before and after expansion.
+- **Handles from names.** A root written `object "Post"` and a mesh named "Post Mesh" expand under `@z.1`, `@z.1/@post-mesh` and so on. An override of `@z.2/@post-mesh` reaches the mesh.
+- **Degrees against radians** (`"tilt > 1rad"` with `tilt 30deg`) are now refused by the checker, with the expansion's message.
+- **Checked powers** hold, and the merge of repeated reports is rightly left to 1d-03h.
+
+**To fix: a modifier, constraint or bone line in an override of a copy's root is refused by the checker.** `override @x.2 { modifier @b array { count 7 } }` gives `null-unknown-property: @r has no parameter modifier, nor its root object a property of that name; did you mean modifiers?`. The expansion lays the same line correctly: it replaces `@b` in its place in the stack, between `@a` and `@c`. Section 8 has a line laid over replace "for a `modifier`, `constraint` or `bone`, the one of its name and handle", and this row's stack-position change is reachable only through such a line. Yet no project that uses it checks clean. `override_line` on a root should take these lines as the sub-objects they are, checked against their kind's struct (as the nested sub-object override already is). The suggestion `modifiers` also points to RNA's read-only collection, which is no help either way. Add a check-clean test of a root override that replaces a middle modifier.
+
+**Notes (none blocks):**
+- **The checker and the expansion now both report `"tilt > 1rad"`,** at slightly different spans (5:8 and 5:5). Consumers run the expansion only on a project that checked clean, so this is no double report in practice, but the spans could agree.
