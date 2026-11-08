@@ -204,3 +204,30 @@ fn matrices_are_rows_of_lists_and_run_time_enums_take_unlisted_items() {
     assert_eq!(misspelt[0].fixes[0].edits[0].replacement, "faces");
     assert!(errors(&schema, &[&object("  instance-type made-at-run-time")]).is_empty());
 }
+
+#[test]
+fn a_material_takes_the_node_kinds_a_shader_tree_takes() {
+    // Node kinds by S67, read in their tree (task 1b-03c): a material's tree is a shader tree.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let material =
+        |node: &str| format!("material @m \"M\" {{\n  nodes {{\n    node @n {node}\n  }}\n}}\n");
+    for kind in ["bsdf-principled", "output-material", "math", "tex-noise"] {
+        let found = errors(&schema, &[&material(kind)]);
+        assert!(found.is_empty(), "{kind}: {found:#?}");
+    }
+    // A compositor's own node, and the geometry switch's compositor-tree name, are not a
+    // shader tree's; the slice's old spelling is gone.
+    for kind in ["r-layers", "geometry-switch", "principled-bsdf"] {
+        let found = errors(&schema, &[&material(kind)]);
+        assert_eq!(found.len(), 1, "{kind}: {found:#?}");
+        assert_eq!(found[0].code, codes::KIND, "{kind}");
+    }
+    let shader = schema.node_kinds(null_check::SHADER_TREE);
+    assert!(shader.len() > 100, "{}", shader.len());
+    let switch = schema.nodes.iter().find(|n| {
+        n.trees.as_ref().is_some_and(|t| {
+            t.get("CompositorNodeTree").map(String::as_str) == Some("geometry-switch")
+        })
+    });
+    assert!(switch.is_some());
+}

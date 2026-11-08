@@ -109,16 +109,36 @@ pub struct Item {
     pub name: String,
 }
 
-/// A shader node kind.
+/// A node kind.
 #[derive(Clone, Debug, Deserialize)]
 pub struct NodeDef {
-    /// Null's kind, such as `principled-bsdf`.
+    /// Null's kind, such as `bsdf-principled` (Sau's decision S67: Blender's identifier with its
+    /// type prefix removed, in kebab case).
     pub kind: String,
+    /// The node trees that take it, by RNA identifier (`ShaderNodeTree`), each with the kind it
+    /// has there; where two kinds of one tree would share a name, the tree's own family keeps it
+    /// (`geometry-switch` in a compositor tree). Absent in the slice's schema, whose nodes are all
+    /// shader nodes under `kind`.
+    #[serde(default)]
+    pub trees: Option<std::collections::BTreeMap<String, String>>,
     /// Its inputs.
     pub inputs: Vec<Property>,
     /// Its outputs.
     pub outputs: Vec<Property>,
 }
+
+impl NodeDef {
+    /// Its kind in `tree` (an RNA identifier such as `ShaderNodeTree`), if that tree takes it.
+    pub fn kind_in(&self, tree: &str) -> Option<&str> {
+        match &self.trees {
+            Some(trees) => trees.get(tree).map(String::as_str),
+            None => (tree == SHADER_TREE).then_some(self.kind.as_str()),
+        }
+    }
+}
+
+/// A material's node tree, the slice's one kind of tree.
+pub const SHADER_TREE: &str = "ShaderNodeTree";
 
 /// A mesh primitive.
 #[derive(Clone, Debug, Deserialize)]
@@ -159,6 +179,16 @@ impl Schema {
             at = s.base.as_deref().and_then(|b| self.struct_by_rna(b));
         }
         out
+    }
+
+    /// The node of kind `kind` in a tree of type `tree` (`ShaderNodeTree`).
+    pub fn node(&self, tree: &str, kind: &str) -> Option<&NodeDef> {
+        self.nodes.iter().find(|n| n.kind_in(tree) == Some(kind))
+    }
+
+    /// Every node kind a tree of type `tree` takes.
+    pub fn node_kinds(&self, tree: &str) -> Vec<&str> {
+        self.nodes.iter().filter_map(|n| n.kind_in(tree)).collect()
     }
 
     /// The datablock kinds: the file's list of datablock types where it has one (leaving out

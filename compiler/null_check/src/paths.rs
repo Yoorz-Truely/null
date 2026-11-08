@@ -17,7 +17,7 @@ use null_syntax::names::to_kebab_case;
 use null_syntax::{Diagnostic, FileId, Parse, Span, closest};
 
 use crate::codes;
-use crate::schema::Schema;
+use crate::schema::{SHADER_TREE, Schema};
 
 /// The kinds of sub-object line the checker indexes, besides `node`: section 7's table in the
 /// words Null writes them.
@@ -132,7 +132,7 @@ pub struct SubObject {
     pub kind: String,
     /// Its handle, with its `@`.
     pub handle: String,
-    /// A node's kind (`principled-bsdf`), or a modifier's or constraint's type, as written.
+    /// A node's kind (`bsdf-principled`), or a modifier's or constraint's type, as written.
     pub of: Option<String>,
     /// Where it is defined.
     pub at: (FileId, Span),
@@ -465,7 +465,7 @@ fn walk_path(
             ));
         };
         let node_kind = node.of.as_deref().unwrap_or_default();
-        if let Some(def) = schema.nodes.iter().find(|n| n.kind == node_kind) {
+        if let Some(def) = schema.node(SHADER_TREE, node_kind) {
             let names: Vec<&str> = def
                 .inputs
                 .iter()

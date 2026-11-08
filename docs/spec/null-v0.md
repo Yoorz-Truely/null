@@ -112,7 +112,7 @@ mesh @pier-deck "PierDeck" {
 material @weathered-oak "Weathered Oak" {
   nodes {
     node @tex image-texture { image @oak-diffuse interpolation=cubic }
-    node @bsdf principled-bsdf {
+    node @bsdf bsdf-principled {
       base-color @tex.color             // a link: the socket takes another node's output
       roughness 0.62
     }
@@ -251,16 +251,13 @@ Blender gives a modifier its `persistent_uid` from a hash of its name when it is
 
 ## 8. The objects
 
-Every one of Blender's datablock types (31 kinds of ID in this source tree) has a node kind, generated from RNA and refined by hand only where RNA is not enough:
+Every one of Blender's datablock types that holds project data has a kind, generated from RNA (Sau's tasks 1b-03b and 1b-03c), and so does every node, modifier, constraint, strip and other struct of a family. One rule names them all, with no exceptions beyond the slice's core (Sau's decision S67):
 
-| Area | Kinds |
-| --- | --- |
-| Structure | `project`, `scene`, `view-layer`, `collection`, `object`, `workspace`, `screen` |
-| Object data | `mesh`, `curve`, `curves` (hair), `surface`, `metaball`, `text`, `point-cloud`, `volume`, `grease-pencil`, `armature`, `lattice`, `camera`, `light`, `light-probe`, `speaker` |
-| Look | `material`, `world`, `node-group` (geometry, shader, compositor), `texture`, `image`, `movie-clip`, `palette`, `brush`, `line-style` |
-| Motion | `action` (with slots and layers), `nla` tracks on their owners, `driver` on any property, `shape-key`, `cache-file`, `mask` |
-| Media | `image`, `sound`, `font`, `movie-clip`, `volume` and `cache-file` sources, all pointing into `media/` |
-| Settings | `render` (Cycles, EEVEE, Workbench), `color-management`, `units`, `preferences`, `keymap`, `theme` |
+- **The rule.** A kind is the Blender type identifier with its family's affix removed, and the rest in kebab case, a capital starting each word. The affix is the longest identifier of a struct it extends that it starts or ends with, `ID` never counting: `ShaderNodeBsdfPrincipled` is `bsdf-principled`, `BevelModifier` is `bevel`, `CopyLocationConstraint` is `copy-location`, `ColorStrip` is `color`, `BlendTexture` is `blend`. With no such affix, the whole identifier is the kind: `PointCloud` is `point-cloud`, `FreestyleLineStyle` is `freestyle-line-style`. The name can be computed both ways, so the schema maps each kind back to its identifier.
+- **Where two meet.** Kinds read in one place (the datablock types; a node tree; a family such as modifiers) are unique there. Where two would share a name, the one of that place's own family, or the one with no affix, keeps it, and the other keeps its affix's word: in a compositor tree `CompositorNodeSwitch` is `switch` and `GeometryNodeSwitch` is `geometry-switch`; among datablocks `Image` is `image` and `ImageTexture` is `image-texture`. A kind left starting with a digit keeps its affix's word too, since a name starts with a letter (S16).
+- **The core.** The slice's kinds keep their names: `project`, `scene`, `units`, `collection`, `object`, `mesh`, `mesh-vertex`, `mesh-polygon`, `material`, `camera`, `light`, `point-light`, `sun-light`, `spot-light`, `area-light`. The slice's `principled-bsdf` follows the rule and is `bsdf-principled`.
+- **The datablock types** by this rule, as Blender 5.3 has them: `action`, `annotation`, `armature`, `cache-file`, `camera`, `collection`, `curve`, `curves` (hair), `surface`, `text-curve`, `grease-pencil`, `image`, `key` (shape keys), `lattice`, `library`, `light` and `point-light`, `sun-light`, `spot-light`, `area-light`, `light-probe` and `plane`, `sphere`, `light-probe-volume`, `mask`, `material`, `mesh`, `meta-ball`, `movie-clip`, `node-tree` and `shader`, `geometry`, `compositor`, `texture-node-tree`, `object`, `paint-curve`, `palette`, `particle-settings`, `point-cloud`, `scene`, `sound`, `speaker`, `text`, `texture` and `blend`, `clouds`, `distorted-noise`, `image-texture`, `magic`, `marble`, `musgrave`, `noise`, `stucci`, `voronoi`, `wood`, `vector-font`, `volume`, `world`. The interface's types (screens, workspaces, the window manager, brushes) are not project data; they belong in `view.noll`, settings and packages.
+- **Nodes** are read in their tree: the schema lists, for each node, the trees that take it and its kind in each. Its sockets come from the node's declaration in the running app, not RNA, each with its type, unit, range and default. A socket a node shows only for some of its settings is marked `enabled: false` (at the node's defaults); the empty socket that adds an item when linked, as a menu switch's or a repeat zone's lists grow, is `virtual`; a socket that takes several links is `multi-input`; one with no value of its own is `hide-value`; a menu socket's items are its node's at run time. Where a node's sockets differ between trees, the schema gives each tree's.
 
 Each object kind's properties are the RNA properties of its struct, by the same names. The generated field reference, one table per struct, is an appendix produced from the schema at build time; it is never written by hand.
 
@@ -308,7 +305,7 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
 
 - A node is `node @handle <kind> { <socket> <value or link> … <property> <value> … }`, the kind being the node's RNA identifier in kebab-case.
 - A link is a socket value that names another node's output: `base-color @tex.color`. A socket with no line takes its default.
-- Group nodes reference a `node-group`; group interfaces list their inputs and outputs with types and defaults.
+- Group nodes reference a node tree (`shader`, `geometry`, `compositor` or `texture-node-tree`, by S67); group interfaces list their inputs and outputs with types and defaults.
 - Zones (repeat, simulation, for-each) are blocks containing their nodes.
 - **Layout is kept apart.** Node positions, frames, colours and widths live in the tree's trailing `layout` block, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout.
 

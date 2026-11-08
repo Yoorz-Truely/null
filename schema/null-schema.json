@@ -6851,7 +6851,7 @@
  ],
  "nodes": [
   {
-   "kind": "principled-bsdf",
+   "kind": "bsdf-principled",
    "rna": "ShaderNodeBsdfPrincipled",
    "label": "Principled BSDF",
    "inputs": [
@@ -6963,6 +6963,7 @@
      "name": "normal",
      "socket": "Normal",
      "class": "NodeSocketVector",
+     "hide-value": true,
      "type": "float32",
      "array": [
       3
@@ -6987,6 +6988,7 @@
      "name": "weight",
      "socket": "Weight",
      "class": "NodeSocketFloat",
+     "enabled": false,
      "type": "float32",
      "range": {
       "hard": [
@@ -7083,6 +7085,7 @@
      "name": "subsurface-ior",
      "socket": "Subsurface IOR",
      "class": "NodeSocketFloatFactor",
+     "enabled": false,
      "type": "float32",
      "subtype": "factor",
      "range": {
@@ -7199,6 +7202,7 @@
      "name": "tangent",
      "socket": "Tangent",
      "class": "NodeSocketVector",
+     "hide-value": true,
      "type": "float32",
      "array": [
       3
@@ -7355,6 +7359,7 @@
      "name": "coat-normal",
      "socket": "Coat Normal",
      "class": "NodeSocketVector",
+     "hide-value": true,
      "type": "float32",
      "array": [
       3
@@ -7546,6 +7551,7 @@
      "name": "displacement",
      "socket": "Displacement",
      "class": "NodeSocketVector",
+     "hide-value": true,
      "type": "float32",
      "array": [
       3
@@ -7570,6 +7576,7 @@
      "name": "thickness",
      "socket": "Thickness",
      "class": "NodeSocketFloat",
+     "hide-value": true,
      "type": "float32",
      "range": {
       "hard": [
@@ -8449,7 +8456,7 @@
    "shape",
    "size"
   ],
-  "principled-bsdf": [
+  "bsdf-principled": [
    "Base Color",
    "Roughness"
   ],

@@ -8,7 +8,7 @@ use null_syntax::{Diagnostic, FileId, Parse, Span, SyntaxToken, closest};
 
 use crate::codes;
 use crate::forms;
-use crate::schema::{Property, Schema};
+use crate::schema::{Property, SHADER_TREE, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
     Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
@@ -961,7 +961,7 @@ impl<'s> Checker<'s> {
                 "`nodes` takes a block of `node @handle <kind>` lines",
             );
         };
-        let kinds: Vec<&str> = self.schema.nodes.iter().map(|n| n.kind.as_str()).collect();
+        let kinds: Vec<&str> = self.schema.node_kinds(SHADER_TREE);
         let mut seen = HashSet::new();
         for child in tree.children() {
             let Some(name) = child.name_token() else {
@@ -980,7 +980,7 @@ impl<'s> Checker<'s> {
                 self.out(file).error(
                     codes::TYPE,
                     child.code_span(),
-                    "a node is written `node @handle <kind>`, such as `node @bsdf principled-bsdf`",
+                    "a node is written `node @handle <kind>`, such as `node @bsdf bsdf-principled`",
                 );
                 continue;
             };
@@ -1002,7 +1002,7 @@ impl<'s> Checker<'s> {
                 );
             }
             let kind = k.text();
-            let Some(def) = self.schema.nodes.iter().find(|n| n.kind == kind) else {
+            let Some(def) = self.schema.node(SHADER_TREE, kind) else {
                 let near = closest(kind, kinds.iter().copied());
                 self.out(file).error_fix(
                     codes::KIND,
@@ -1073,7 +1073,7 @@ impl<'s> Checker<'s> {
                 }),
             );
         };
-        if let Some(def) = self.schema.nodes.iter().find(|n| &n.kind == kind) {
+        if let Some(def) = self.schema.node(SHADER_TREE, kind) {
             let outs: Vec<&str> = def.outputs.iter().map(|o| o.name.as_str()).collect();
             if !outs.contains(&socket) {
                 let near = closest(socket, outs.iter().copied());
