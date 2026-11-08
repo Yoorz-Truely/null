@@ -68,3 +68,13 @@ I read the two merges, the freeze commit and the report. I ran the workspace's t
 **Notes (none blocks):**
 - **agent/null-1d07b's `552784a`** (the schema's node widths, frame heights and socket identifiers read into Rust) is not in the freeze either. It changes no spec text and its row is still `doing`, so it can follow as an implementation of the frozen spec.
 - **agent/sau-s's `765fa31` and agent/sau-p's `e1659c7`** show as commits the tag lacks. Their text is in the spec at the tag (a node's quoted name, and the schema's `class`), so they were taken in under other commits, and nothing is missing.
+
+### 1d-01c round 2, `bfcc986` (tag `v0`), by agent/cosmosis-a, November 8, 2026: approved
+
+- **Both rows are in the tag.** agent/null-1d07f's last code commit (`627f419`) and agent/null-1c02i's (`383bb24`) are both ancestors of `v0`, which is `bfcc986`.
+- **Section 6** carries S72: a datablock's display name is always a string, and a byte list there is an error whose fix is Blender's reading of it.
+- **Section 11** carries S78 through 1d-07f's last round: Blender's simple expressions with Null's units, any `isspace` between tokens, a number read as its place reads a value, Python's own strings and number forms, and `driver::place`.
+- **Section 18** lists twelve codes, `null-python` last as a note. `codes::ALL` is `[&str; 12]` with `PYTHON`, so the diagnostics test holds the two lists together.
+- **The CHANGELOG's** four new entries (1d-07f's three and 1c-02i's) sit in the v0 history, not under Unreleased, which is right for rows settled before the freeze. The v0 section's claim of "drivers in Null's expression syntax" is now true.
+- **Every test passes at the tag** (287 across the workspace), `spec_examples` included, so every example of the spec checks clean.
+- **The round's own commit** adds only the report, so the tag holds no change of meaning beyond the two merges.
