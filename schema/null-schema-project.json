@@ -11624,7 +11624,7 @@
        "name": "none",
        "rna": "NONE",
        "label": "None",
-       "value": -1
+       "value": 1024
       },
       {
        "name": "blender:agxlog_rec2020_scene",
@@ -12093,7 +12093,7 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 10,
+       "value": 1024,
        "quoted": true
       },
       {
@@ -12548,7 +12548,7 @@
        "name": "none",
        "rna": "NONE",
        "label": "None",
-       "value": -1
+       "value": 1024
       },
       {
        "name": "blender:agxlog_rec2020_scene",
@@ -14096,7 +14096,7 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 10,
+       "value": 1024,
        "quoted": true
       },
       {
@@ -14551,7 +14551,7 @@
        "name": "none",
        "rna": "NONE",
        "label": "None",
-       "value": -1
+       "value": 1024
       },
       {
        "name": "blender:agxlog_rec2020_scene",
@@ -15007,7 +15007,7 @@
        "name": "ACES 1.3 sRGB",
        "rna": "ACES 1.3 sRGB",
        "label": "ACES 1.3 sRGB",
-       "value": 10,
+       "value": 1024,
        "quoted": true
       },
       {
@@ -15462,7 +15462,7 @@
        "name": "none",
        "rna": "NONE",
        "label": "None",
-       "value": -1
+       "value": 1024
       },
       {
        "name": "blender:agxlog_rec2020_scene",
