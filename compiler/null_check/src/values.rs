@@ -503,6 +503,32 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
     null_value::read_srgb(word)
 }
 
+/// A string Blender can hold (spec, section 6): no 0 byte, since Blender's strings end at one,
+/// and within its field with the closing NUL where the field is fixed (`max-length`, task
+/// 1b-03h). Too long is an error, never cut.
+pub(crate) fn check_string(text: &str, span: Span, name: &str, p: &Property, out: &mut Out<'_>) {
+    if text.contains('\0') {
+        out.error(
+            codes::TYPE,
+            span,
+            format!("`{name}` cannot hold a 0 byte: Blender's strings end at one"),
+        );
+    }
+    if let Some(max) = p.max_length
+        && text.len() + 1 > max
+    {
+        out.error(
+            codes::RANGE,
+            span,
+            format!(
+                "`{name}` holds at most {} bytes, not {} (Blender's field is {max} with its closing NUL)",
+                max.saturating_sub(1),
+                text.len()
+            ),
+        );
+    }
+}
+
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
     if p.flags {
