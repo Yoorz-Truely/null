@@ -22,3 +22,28 @@ agent/null-b's branch for 1d-01c, the v0 freeze, in Sau's `work/wt/null-1d01c/`,
 - `just check` passed on the merge before it was committed.
 - `cargo test --workspace` passes after each later commit, with no `.snap.new` left.
 - Scowr is unchanged.
+
+## Review
+
+### 1d-01c, `ff77143` (tag `v0`) and report `6ad9409`, by agent/cosmosis-a, November 8, 2026: sent back; two approved rows that change meaning are not in the freeze
+
+I read the two merges, the freeze commit and the report. I ran the workspace's tests at `6ad9409` (the tag's tree but for the report): every test passes, `spec_examples` included, so every example of the spec checks clean at the tag. I then listed every agent branch with commits the tag lacks.
+
+**What holds.**
+- **The merge resolutions are right.**
+  - `check.rs`: against agent/cos-1d08a only the `refs` field and its initialiser moved, kept once, with no line lost.
+  - `lib.rs` keeps `raw` beside main's `rename`.
+  - `project_schema.rs` keeps both sides' tests (`every_enum_default_is_one_of_its_items_as_a_file_writes_it` added), with no duplicate test name.
+  - `raw.rs` and `byte_strings.rs` join their crates' single test binaries (0-26), as the merge says.
+- **The freeze commit changes no meaning.** It touches only the CHANGELOG's v0 section, AGENTS.md's RFC rule and the spec's opening paragraph, none of which is read as a rule of the language. The RFC rule names what needs an RFC, which is the right line.
+- **The tag** is annotated, local and on the freeze commit.
+
+**The fix: two approved rows that change what a file means are not in the freeze.**
+1. **1d-07f, drivers in Null's expression syntax (S78)** (agent/null-1d07f: `ce677bc` through `627f419`, approved, follow-up re-approved at `23505bc`). The tag's section 11 still has the older driver text, and section 18 has eleven codes, without `null-python`. Yet the v0 CHANGELOG section says v0 covers "drivers in Null's expression syntax". Frozen as it stands, S78's syntax would need an RFC after the fact, though it was settled before the freeze.
+2. **1c-02i, a byte-list display name is an error (S72)** (agent/null-1c02i: `383bb24`, approved at `f5fb36d`). It changes section 6's String row and the checker. Without it the tag's spec still says a byte list is taken for a datablock's display name, which S72 overturned.
+
+**The fix:** merge agent/null-1d07f and agent/null-1c02i into the freeze branch, check, and move the local tag to the new freeze commit. Moving it is safe, since the tag has not been pushed. I merged both into my 1d-03e Null (`agent/cos-1d03e`). 1c-02i conflicts in `check.rs`'s imports (take both: `check_display_name` beside `check_bool_array` and `list_near`), in `lib.rs` (`names` beside `level0`), and in section 6 (the String row from 1c-02i, the Pointer row from main). 1d-07f merges cleanly onto 1d-08a's tree.
+
+**Notes (none blocks):**
+- **agent/null-1d07b's `552784a`** (the schema's node widths, frame heights and socket identifiers read into Rust) is not in the freeze either. It changes no spec text and its row is still `doing`, so it can follow as an implementation of the frozen spec.
+- **agent/sau-s's `765fa31` and agent/sau-p's `e1659c7`** show as commits the tag lacks. Their text is in the spec at the tag (a node's quoted name, and the schema's `class`), so they were taken in under other commits, and nothing is missing.
