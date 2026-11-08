@@ -850,6 +850,15 @@ action @bob "Bob" {
 
 Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a value's, since Blender clamps it), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly` and `null-repeated`. The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
 
+How the messages are worded (task 1d-02e):
+- **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.
+- **One mistake gives one error.** A known property written in another case (`pass_index`) gives `null-name` with its fix, and no `null-unknown-property` beside it.
+- **`key = value`** says that `=` takes no spaces. The fix writes `key value` as a line of its own.
+- **A read-only property** says that a file cannot set it. The fix removes its line.
+- **A range note** gives the value Blender clamps to (`Blender clamps it to 0 when it is set`), or says that its clamp leaves a NaN as it is.
+
+The snapshots show what each fix makes of the text, as well as its words.
+
 ## 19. Converting `.blend` files
 
 Tasks 1d-05a to 1d-05e build this section on 1b-04's coverage audit, which lists the data RNA does not reach. `sau convert scene.blend Scene.sau/` writes a Cosmósis project from any `.blend`; `sau convert Scene.sau/ scene.blend` goes back. The conversion is lossless:

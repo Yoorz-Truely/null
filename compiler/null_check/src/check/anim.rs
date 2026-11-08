@@ -10,7 +10,7 @@ use null_syntax::{FileId, Span, closest};
 use super::{Attr, Checker, args_of, article, attrs, header, kebab_handle};
 use crate::codes;
 use crate::schema::Property;
-use crate::values::{check_enum, check_float, list};
+use crate::values::{check_enum, check_float, list, list_near};
 
 /// An action's slots, by handle, with the kind of datablock each animates.
 pub(super) type Slots = Vec<(String, String)>;
@@ -211,7 +211,7 @@ impl Checker<'_> {
                     format!(
                         "`{}` is not a kind of action strip: {}",
                         t.text(),
-                        list(&shown)
+                        list_near(t.text(), &shown)
                     ),
                 );
                 continue;
@@ -758,7 +758,10 @@ impl Checker<'_> {
                     self.out(file).error(
                         codes::ENUM,
                         b.args[1].span(),
-                        format!("`{ty}` is not a kind of driver variable: {}", list(&shown)),
+                        format!(
+                            "`{ty}` is not a kind of driver variable: {}",
+                            list_near(ty, &shown)
+                        ),
                     );
                     continue;
                 }

@@ -3,4 +3,10 @@ source: compiler/null_check/tests/diagnostics.rs
 expression: out
 ---
 --- object @o "O" { mode edit }\n
-case.noll:1:17 error[null-readonly]: `mode` is read-only in Blender, so it is not written
+case.noll:1:17 error[null-readonly]: `mode` is read-only in Blender, so a file cannot set it; remove the line
+  fix: remove `mode`
+  `remove `mode`` gives: object @o "O" { }\n
+--- object @o "O" {\n  mode edit\n  pass-index 1\n}\n
+case.noll:2:3 error[null-readonly]: `mode` is read-only in Blender, so a file cannot set it; remove the line
+  fix: remove `mode`
+  `remove `mode`` gives: object @o "O" {\n  pass-index 1\n}\n

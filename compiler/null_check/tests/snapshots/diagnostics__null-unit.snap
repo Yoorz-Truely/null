@@ -9,3 +9,4 @@ case.noll:1:29 error[null-unit]: `clip-start` cannot take `s`: it takes m, cm, m
 --- camera @c "C" { lens 5zz }\n
 case.noll:1:23 error[null-unit]: `zz` is not a unit `lens` takes; it takes mm, cm, m, um or a bare number
   fix: write `mm`
+  `write `mm`` gives: camera @c "C" { lens 5mm }\n

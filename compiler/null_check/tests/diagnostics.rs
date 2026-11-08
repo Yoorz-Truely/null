@@ -67,6 +67,7 @@ const CASES: &[(&str, &[&str])] = &[
         &[
             "material @m \"M\" { roughness 2 }\n",
             "object @o \"O\" { pass-index -1 }\n",
+            "material @m \"M\" { roughness nan }\n",
         ],
     ),
     (
@@ -84,7 +85,13 @@ const CASES: &[(&str, &[&str])] = &[
             "object @o \"O\"\nobject @o \"Again\"\n",
         ],
     ),
-    (codes::READONLY, &["object @o \"O\" { mode edit }\n"]),
+    (
+        codes::READONLY,
+        &[
+            "object @o \"O\" { mode edit }\n",
+            "object @o \"O\" {\n  mode edit\n  pass-index 1\n}\n",
+        ],
+    ),
     (
         codes::REPEATED,
         &["object @o \"O\" {\n  pass-index 1\n  pass-index 2\n}\n"],
@@ -101,7 +108,18 @@ fn rendered(text: &str) -> (String, Vec<String>) {
         found.extend(check(schema(), &[(id, &file)]));
     }
     let codes = found.iter().map(|d| d.code.to_string()).collect();
-    (map.render_all(&found), codes)
+    // What each fix makes of the text, so a snapshot holds the edit as well as its words.
+    let mut out = map.render_all(&found);
+    for fix in found.iter().flat_map(|d| &d.fixes) {
+        let edits: Vec<_> = fix
+            .edits
+            .iter()
+            .map(|e| (e.span, e.replacement.as_str()))
+            .collect();
+        let after = null_syntax::apply_edits(text, &edits).replace('\n', "\\n");
+        out.push_str(&format!("  `{}` gives: {after}\n", fix.message));
+    }
+    (out, codes)
 }
 
 #[test]
