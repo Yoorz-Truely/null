@@ -323,15 +323,22 @@ component @branch \"Branch\" {
     }
   }
 }
+
+component @fence \"Fence\" {
+  object @fence \"Fence\" { }
+  use @branch @row count=2 { parent @fence }
+}
 ";
     let woods = "collection @woods \"Woods\" {\n  use @branch @tree { depth 3 }\n}\n";
     let (out, _, refs) = renamed(&[branch, woods], "@branch", "@bough").unwrap();
-    assert_eq!(refs, 2);
+    // A `use` right inside another component's block is a reference too (1d-08a's `@fence`).
+    assert_eq!(refs, 3);
     assert_eq!(
         out[0],
         branch
             .replace("component @branch", "component @bough")
             .replace("use @branch @left", "use @bough @left")
+            .replace("use @branch @row", "use @bough @row")
     );
     assert_eq!(out[1], woods.replace("use @branch", "use @bough"));
 }

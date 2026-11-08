@@ -296,7 +296,7 @@ impl Walker<'_> {
             && (SUB_KINDS.contains(&name.as_ref())
                 || (cx == Context::Tree
                     && (name == "node" || name == "zone" || name.ends_with("-item")))
-                || (in_component && defines(node)));
+                || (in_component && defines(node) && !matches!(name.as_ref(), "use" | "override")));
         for (i, v) in args.iter().enumerate() {
             if (top || own) && i == 0 {
                 continue; // The definition's own handle: renamed above, or not this datablock's.
