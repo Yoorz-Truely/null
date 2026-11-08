@@ -207,6 +207,8 @@ impl NodeDef {
 
 /// A material's node tree, the slice's one kind of tree.
 pub const SHADER_TREE: &str = "ShaderNodeTree";
+/// The RNA name of a texture node tree, the tree a texture holds (Null spec, section 10).
+pub const TEXTURE_TREE: &str = "TextureNodeTree";
 
 /// A mesh primitive.
 #[derive(Clone, Debug, Deserialize)]

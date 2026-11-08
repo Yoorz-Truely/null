@@ -545,15 +545,15 @@ Shape keys, curves, point clouds and Grease Pencil drawings take the same forms 
 
 ## 10. Node trees
 
-Shader, geometry and compositor node trees are written as their nodes and links (task 1d-07a). Texture node trees wait for a row of their own (1d-07b).
+Shader, geometry, compositor and texture node trees are written as their nodes and links (tasks 1d-07a and 1d-07b).
 
-- **Where a tree is.** A material's, a world's and a light's tree is its `nodes` block, a shader tree. A node group is a datablock of its tree's kind (S67): `shader`, `geometry` or `compositor`. It holds its interface, its `nodes` and its `layout`, as below. A scene's compositor is the `compositor` group its `compositing-node-group` names, and a geometry nodes modifier names its group with `node-group` (section 8).
+- **Where a tree is.** A material's, a world's and a light's tree is its `nodes` block, a shader tree. A texture's tree, whatever the texture's type (`texture`, `noise`, `wood` and the rest of section 8's), is its `nodes` block too, a texture node tree: Blender's procedural texture nodes, which a texture reads with `use-nodes`. A node group is a datablock of its tree's kind (S67): `shader`, `geometry`, `compositor` or `texture-node-tree` (`texture` being the texture datablock's). It holds its interface, its `nodes` and its `layout`, as below. A scene's compositor is the `compositor` group its `compositing-node-group` names, and a geometry nodes modifier names its group with `node-group` (section 8).
 - **A node** is `node @handle <kind> "Name" { … }`:
   - Its kind is named by section 8's rule (`tex-noise`, `bsdf-principled`, `transform`), and a node is read in its tree, since the schema gives each node the trees that take it.
   - Its handle is unique in the tree. The quoted name is the node's Blender name and may be left out; then the name is the handle without `@` (Sau's task 1b-02d).
   - Its block holds its **settings**: the node struct's own properties (`operation`, `interpolation`), and of the properties every node has, `label`, `mute`, `hide`, `parent`, `color`, `use-custom-color`, `color-tag`, `show-options`, `show-preview` and `show-texture`.
   - It also holds its **inputs**, by the names the schema gives its sockets, each a value of the socket's type or a link. Where a setting and an input share a name, the name is the input's. A socket with no line takes its default.
-  - A node's position and width are the `layout` block's, never its own lines.
+  - A node's position and size are the `layout` block's, never its own lines.
 - **A link** is a socket value that names another node's output: `base-color @ramp.color`. A socket that takes several links (a join's `geometry`) takes a list of them, `[@a.geometry @b.geometry]`. A geometry, shader, bundle or closure socket has no value of its own, so it takes only links.
 - **Frames.** A frame is a node, `node @box frame "Box"`, and a node drawn in it says `parent @box`.
 - **A group's interface** is its `input`, `output` and `panel` lines, in the interface's order:
@@ -569,6 +569,8 @@ Shader, geometry and compositor node trees are written as their nodes and links 
 
   Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
 - **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+  - **A position is absolute** on the canvas, not relative to the node's frame: DNA's `location`, which RNA calls `location_absolute` (Sau's decision S79). So a line means the same whatever the node's `parent`, and moving a frame in the editor rewrites its nodes' lines with its own.
+  - **A size** follows the position where it is not the node kind's default, which the schema gives each kind: `width=`, and for a frame, the one node whose height is its own rather than its sockets', `height=` (S79): `@box [-120 60] width=300 height=200`. Both are plain numbers in the editor's units, as positions are.
 
 A material, with a frame:
 
@@ -585,7 +587,7 @@ material @clay "Clay" {
     }
     node @out output-material { surface @bsdf.bsdf }
   }
-  layout { @noise [-600 0]; @ramp [-350 0]; @box [-120 60]; @bsdf [-100 0]; @out [200 0] }
+  layout { @noise [-600 0]; @ramp [-350 0]; @box [-120 60] width=300 height=200; @bsdf [-100 0] width=240; @out [200 0] }
 }
 ```
 

@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use null_syntax::ast::{Node, Value};
 use null_syntax::{FileId, closest};
 
-use super::{Attr, Checker, args_of, attrs, header, kebab_handle};
+use super::{Attr, Checker, args_of, attrs, header, kebab_handle, props_of};
 use crate::codes;
 use crate::schema::{NodeDef, Property};
 use crate::values::{check_float, list_near};
@@ -214,6 +214,15 @@ impl<'s> Checker<'s> {
     pub(super) fn tree_of(&self, kind: &str) -> Option<(&'s str, bool)> {
         match kind {
             "material" | "world" | "light" => Some(("ShaderNodeTree", false)),
+            // A texture's tree, whatever its type (`noise`, `wood`): a texture node tree.
+            _ if kind == "texture"
+                || self
+                    .schema
+                    .struct_by_kind(kind)
+                    .is_some_and(|s| s.base.as_deref() == Some("Texture")) =>
+            {
+                Some(("TextureNodeTree", false))
+            }
             _ => {
                 let s = self.schema.struct_by_kind(kind)?;
                 (s.base.as_deref() == Some("NodeTree")).then(|| {
@@ -822,12 +831,55 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            let zone = tree.entries.get(handle).is_some_and(|e| e.zone);
+            let entry = tree.entries.get(handle);
+            let zone = entry.is_some_and(|e| e.zone);
+            let frame = entry.is_some_and(|e| e.kind == "frame");
             if !tree.entries.contains_key(handle) {
                 out.error(
                     codes::HANDLE,
                     name.span,
                     format!("no node of this tree is called `{handle}`"),
+                );
+            }
+            // A node's size, where it is not its kind's default: `width=`, and `height=` for a
+            // frame, the one node whose height is its own (section 10).
+            for (key, value) in props_of(child) {
+                match key.text {
+                    "width" if !zone => {}
+                    "height" if frame => {}
+                    "height" if !zone => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            "only a frame's layout line takes `height=`; a node's height follows from its sockets",
+                        );
+                        continue;
+                    }
+                    "width" | "height" => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            "a zone's layout line holds its two positions only",
+                        );
+                        continue;
+                    }
+                    other => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            format!(
+                                "a layout line takes `width=`, and `height=` for a frame, not `{other}=`"
+                            ),
+                        );
+                        continue;
+                    }
+                }
+                check_float(
+                    &value,
+                    "layout",
+                    null_value::Dimension::None,
+                    &Property::any(),
+                    &mut out,
                 );
             }
             let args = args_of(child);
@@ -1003,6 +1055,7 @@ fn tree_word(rna: &str) -> &str {
         "ShaderNodeTree" => "shader",
         "GeometryNodeTree" => "geometry",
         "CompositorNodeTree" => "compositor",
+        "TextureNodeTree" => "texture",
         _ => "node",
     }
 }
