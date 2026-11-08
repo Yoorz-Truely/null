@@ -273,8 +273,27 @@ fn a_run_time_item_that_is_not_one_word_is_a_string() {
         let v = Typed::Enum(name.to_string());
         round_trip(&v, p, &plain()).unwrap();
         let text = print_value(&v, p, &plain()).unwrap();
-        assert_eq!(text.starts_with('"'), name != "some-item", "{name}: {text}");
+        // Always a string, so never read as a misspelling of a listed item (the 1c-02b review).
+        assert!(text.starts_with('"'), "{name}: {text}");
     }
+}
+
+#[test]
+fn integers_past_32_bits_are_refused_both_ways() {
+    // Blender cannot store them, unlike a value past the range (the 1c-02b review).
+    let p = schema()
+        .properties_of("Scene")
+        .into_iter()
+        .find(|p| p.name == "frame-start")
+        .unwrap();
+    for n in [1i64 << 31, i64::MIN, -(1i64 << 31) - 1] {
+        assert!(print_value(&Typed::Int(n), p, &plain()).is_err(), "{n}");
+        assert!(
+            read_value(&n.to_string(), p, &Scene::default()).is_err(),
+            "{n}"
+        );
+    }
+    round_trip(&Typed::Int(i64::from(i32::MAX)), p, &plain()).unwrap();
 }
 
 #[test]

@@ -145,7 +145,8 @@ fn print_scalar(
         ("bool", Typed::Bool(b)) => Ok(if *b { "on" } else { "off" }.to_string()),
         // A value outside the property's range, an infinity included, is written as it is: a
         // `.blend` can hold it, and the checker says so in a note (section 6).
-        ("int", Typed::Int(n)) => Ok(n.to_string()),
+        ("int", Typed::Int(n)) if i32::try_from(*n).is_ok() => Ok(n.to_string()),
+        ("int", Typed::Int(n)) => err(format!("`{}` holds a 32-bit whole number, not {n}", p.name)),
         ("float32", Typed::F32(x)) => Ok(print_float(*x, dimension, how)),
         ("float64", Typed::F64(x)) => Ok(print_float(*x, dimension, how)),
         ("enum", Typed::Enum(name)) if !p.flags => print_item(name, p),
@@ -166,11 +167,9 @@ fn print_item(name: &str, p: &Property) -> Result<String, TypedError> {
         Some(i) => Ok(i.name.clone()),
         // An item of the data (an attribute's or a UV map's name) may hold spaces or capitals, or
         // be empty: written as a string unless it is one kebab-case word.
-        None if p.items_at_run_time => Ok(if null_syntax::names::is_kebab_case(name) {
-            name.to_string()
-        } else {
-            escape(name)
-        }),
+        // One the data gives (an attribute's or a UV map's name) is always a string, so it is
+        // never taken for a misspelling of a listed item (the 1c-02b review).
+        None if p.items_at_run_time => Ok(escape(name)),
         None => err(format!("`{name}` is not an item of `{}`", p.name)),
     }
 }

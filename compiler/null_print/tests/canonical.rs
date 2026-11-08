@@ -110,6 +110,31 @@ object @pier \"Pier\" {
 }
 
 #[test]
+fn a_comment_after_an_opening_brace_or_a_semicolon_stays_on_its_line() {
+    // From the 1c-01e review.
+    let text = "object @a \"A\" { // the deck\n  scale [1 1 1]\n  location [0m 0m 0m]\n}\n";
+    assert_eq!(
+        canonical(text, schema()),
+        "object @a \"A\" { // the deck\n  location [0m 0m 0m]\n  scale [1 1 1]\n}\n"
+    );
+    let semicolon =
+        "object @a \"A\" {\n  scale [1 1 1]; // after the scale\n  location [0m 0m 0m]\n}\n";
+    let out = canonical(semicolon, schema());
+    assert_eq!(canonical(&out, schema()), out);
+    assert_eq!(tokens(&out), tokens(semicolon), "{out}");
+}
+
+#[test]
+fn units_keep_the_specs_short_order() {
+    // The lead's call on the 1c-01e review: S35's form is already canonical.
+    let text = "project \"P\" {\n  units metric scale=1 length=m rotation=deg\n  scene @main\n}\n";
+    assert_eq!(canonical(text, schema()), text);
+    let shuffled =
+        "project \"P\" {\n  units metric rotation=deg length=m scale=1\n  scene @main\n}\n";
+    assert_eq!(canonical(shuffled, schema()), text);
+}
+
+#[test]
 fn forms_stand_where_their_rna_property_stands() {
     let scene = "\
 scene @main \"Main\" {
@@ -190,17 +215,33 @@ fn shuffled(text: &str, seed: u64) -> String {
             continue;
         }
         let children: Vec<Node<'_>> = Node(node.0).children().collect();
-        // Comments and lines commented out stay where they are, so blocks holding any are left.
-        if children.len() < 2 || block.text().contains('/') {
+        // Block comments, lines commented out and a comment after `{` stay where they are, so
+        // blocks holding any are left; a comment on its own line travels with the line below.
+        let opening = &block.text()[..block.text().find('\n').unwrap_or(0)];
+        if children.len() < 2
+            || block.text().contains("/*")
+            || block.text().contains("/-")
+            || opening.contains("//")
+        {
             continue;
         }
-        let first = children[0].span().start;
+        let first = block.span().start + block.text().find('\n').unwrap_or(0) + 1;
         let last = children.last().unwrap().span().end;
+        let mut units: Vec<(String, String)> = Vec::new();
+        let mut prev = first;
+        for c in &children {
+            let unit = text[prev..c.span().end]
+                .trim_matches('\n')
+                .trim()
+                .to_string();
+            units.push((c.name().to_string(), unit));
+            prev = c.span().end;
+        }
         // A random order of the names, each name's lines in their order.
         let mut names: Vec<String> = Vec::new();
-        for c in &children {
-            if !names.contains(&c.name().to_string()) {
-                names.push(c.name().to_string());
+        for (n, _) in &units {
+            if !names.contains(n) {
+                names.push(n.clone());
             }
         }
         for i in (1..names.len()).rev() {
@@ -209,11 +250,12 @@ fn shuffled(text: &str, seed: u64) -> String {
         }
         let mut lines = Vec::new();
         for n in &names {
-            for c in children.iter().filter(|c| c.name() == *n) {
-                lines.push(text[c.span().start..c.span().end].trim_end().to_string());
+            for (_, u) in units.iter().filter(|(m, _)| m == n) {
+                lines.push(u.clone());
             }
         }
         out.push_str(&text[at..first]);
+        out.push_str("  ");
         out.push_str(&lines.join("\n  "));
         out.push('\n');
         at = last;
@@ -222,12 +264,34 @@ fn shuffled(text: &str, seed: u64) -> String {
     out
 }
 
+/// Comments on lines of their own, which travel with the line below them.
+const COMMENTED: &str = "\
+object @pier \"Pier\" {
+  // Where it stands.
+  location [0m -4m 0.35m]
+  scale [1 1 1]
+  // The deck's mesh,
+  // shared with nothing.
+  data mesh @deck
+  rotation-euler [0deg 0deg 12deg] // turned
+}
+
+camera @lens \"Lens\" {
+  clip-end 1000m
+  // Short for a harbour.
+  lens 35mm
+  type persp
+}
+";
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
 
     #[test]
     fn a_shuffled_slice_file_comes_back_in_canonical_order(seed in any::<u64>(), pick in any::<prop::sample::Index>()) {
-        let files = slice_files();
+        // The slice's files, and one whose blocks hold comments on lines of their own.
+        let mut files = slice_files();
+        files.push(COMMENTED.to_string());
         let text = &files[pick.index(files.len())];
         let mixed = shuffled(text, seed);
         prop_assert_eq!(tokens(&mixed), tokens(text));

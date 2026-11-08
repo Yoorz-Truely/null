@@ -167,9 +167,9 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | RNA type | Written | Examples |
 | --- | --- | --- |
 | Boolean | `on` or `off`; the property's name alone means `on` | `use-shadow`, `use-shadow off` |
-| Integer | A whole number in decimal, which may have an exponent (`1e3`), within 32 bits; outside the property's hard range a note ("Numbers"); never a unit | `samples 512`, `frame-start 1` |
+| Integer | A whole number in decimal, which may have an exponent (`1e3`); outside the property's hard range a note ("Numbers"), but past 32 bits an error, since Blender cannot store it; never a unit | `samples 512`, `frame-start 1` |
 | Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
-| Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is an item an enum's items at run time give that is not one kebab-case word (an attribute's or a UV map's name, the empty name) | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
+| Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is every item an enum's items at run time give that is not one the schema lists (an attribute's or a UV map's name), so it is never read as a misspelling of a listed one | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none. Another order, or an item twice, is an error whose fix is the schema's order: the order is part of the written form, so the same set is always the same text | `delimit [normal material]` (a decimate modifier), `delimit []` |
 | String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
 | Pointer | A handle (section 7); `none` for an empty pointer where the property allows one | `camera @shot-cam`, `parent none` |
@@ -349,7 +349,7 @@ Formatting keeps every comment and every other token as written.
 The canonical order (task 1c-01e, `null_print::canonical`):
 
 - **Attributes in the schema's order.** Within a block, and among a line's `key=value`s, attributes follow RNA's definition order: the base struct's properties first, then each struct's own (`ID`'s, then `Object`'s: `data`, … `location`, `rotation-euler`, … `scale`). A light's follow its type's struct.
-- **Null's forms stand where the RNA property they write stands:**
+- **Null's forms stand where the RNA property they write stands** (and `units`' short forms keep section 8's order: system, `scale`, `length`, `rotation`, then the rest in RNA's, so S35's `units metric scale=1 length=m rotation=deg` is already canonical; the lead's call):
   - a scene's `units` at `unit-settings`, `fps` and `fps-base` at `render`, and its `object` and `collection` members at `collection`;
   - an object's `material` slots at `material-slots`;
   - a mesh's `primitive` before `vertices`;
@@ -358,7 +358,7 @@ The canonical order (task 1c-01e, `null_print::canonical`):
   - a `units` block's settings in `UnitSettings`' order, short names standing for full ones.
 - **Some orders stay as written:** lines of one name keep theirs among themselves (members, material slots), and a node tree's `node` lines keep theirs. A node's settings come first, then its inputs as its declaration lists them.
 - **Attributes the schema does not know** come last, as written. So do lines commented out with `/-`.
-- **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them, and a comment at a line's end stays on that line.
+- **Comments.** A comment on the lines just above an attribute moves with it, unless a blank line separates them. A comment at a line's end stays on that line, and so does one after a block's `{` or after a `;`.
 - **Blank lines.** There are none between the lines of a block. Between datablocks, a file keeps at most one.
 - **Files that do not parse** keep their order, and only get the layout.
 

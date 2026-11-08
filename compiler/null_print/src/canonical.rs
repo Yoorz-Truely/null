@@ -182,14 +182,17 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
 
 /// A `units` block's order: `UnitSettings`', with the short names standing for the full ones.
 fn units_order(schema: &Schema) -> Order {
-    let mut names = Vec::new();
+    // Null's own short form keeps the spec's order (S35: `units metric scale=1 length=m
+    // rotation=deg`; the lead's call on the 1c-01e review), then the rest in RNA's.
+    let mut names: Vec<String> = ["system", "scale", "scale-length", "length", "length-unit"]
+        .iter()
+        .chain(&["rotation", "system-rotation"])
+        .map(|s| s.to_string())
+        .collect();
     for p in schema.properties_of("UnitSettings") {
-        for (short, full) in forms::UNITS_SHORT {
-            if full == p.name {
-                names.push(short.to_string());
-            }
+        if !names.contains(&p.name) {
+            names.push(p.name.clone());
         }
-        names.push(p.name.clone());
     }
     Order {
         names,
@@ -278,10 +281,16 @@ fn rewrite_block(schema: &Schema, block: SyntaxNode<'_>, order: &Order, out: &mu
     let mut after_newline = false;
     for e in &elements {
         match e {
+            // Only a comment that begins a line goes with the line below it; one after `{` or
+            // after a line's `;` stays where it is (the 1c-01e review).
             SyntaxElement::Token(t)
                 if matches!(t.kind, TokenKind::LineComment | TokenKind::BlockComment) =>
             {
-                comment_start.get_or_insert(t.span.start);
+                if after_newline || comment_start.is_some() {
+                    comment_start.get_or_insert(t.span.start);
+                }
+                after_newline = false;
+                continue;
             }
             SyntaxElement::Token(t) if t.kind == TokenKind::Newline => {
                 // A blank line between a comment and the next line detaches the comment.
@@ -299,6 +308,9 @@ fn rewrite_block(schema: &Schema, block: SyntaxNode<'_>, order: &Order, out: &mu
                     start,
                     end: Node(*n).content_span().end,
                 });
+                // A line holds its own line feed, so the next starts a line.
+                after_newline = n.text().ends_with('\n');
+                continue;
             }
             _ => comment_start = None,
         }

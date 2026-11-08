@@ -214,6 +214,16 @@ pub(crate) fn check_int(
         return None;
     };
     match read_int(word) {
+        // Past 32 bits Blender cannot store it at all: an error, not the range's note (the
+        // lead's call on the 1c-02b review).
+        Ok(n) if i32::try_from(n).is_err() => {
+            out.error(
+                codes::RANGE,
+                value.span(),
+                format!("`{word}` does not fit `{name}`, a 32-bit whole number"),
+            );
+            None
+        }
         Ok(n) => {
             check_range(n as f64, word, value.span(), name, p, out);
             Some(n)

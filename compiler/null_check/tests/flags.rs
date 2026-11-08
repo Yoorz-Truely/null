@@ -62,3 +62,23 @@ fn a_free_text_item_is_a_string() {
     assert!(!errors(&thing("space \"linear\"")).is_empty());
     assert!(!errors(&thing("space \"ACES 2.0\"")).is_empty());
 }
+
+#[test]
+fn an_integer_past_32_bits_is_an_error_not_a_note() {
+    // From the 1c-02b review: past the range is a note, since Blender can store it; past 32
+    // bits it cannot, so that is an error.
+    let schema = Schema::from_json(include_str!("../../../schema/null-schema.json")).unwrap();
+    let file = parse("scene @s \"S\" {\n  frame-start 3000000000\n}\n");
+    let found = check(&schema, &[(FileId(0), &file)]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::RANGE);
+    assert_eq!(found[0].severity, null_syntax::Severity::Error);
+    let file = parse("scene @s \"S\" {\n  frame-start 2000000000\n}\n");
+    let found = check(&schema, &[(FileId(0), &file)]);
+    assert!(
+        found
+            .iter()
+            .all(|d| d.severity == null_syntax::Severity::Note),
+        "{found:#?}"
+    );
+}
