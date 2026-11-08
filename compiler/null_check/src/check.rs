@@ -659,6 +659,20 @@ impl<'s> Checker<'s> {
                     .struct_by_rna(target)
                     .map(|s| s.kind.clone())
                     .unwrap_or_default();
+                // `none` empties a pointer (section 6), as write-back writes one (`parent none`),
+                // where Blender lets it be empty (Sau's task 1c-02j).
+                if value.as_word() == Some("none") {
+                    if p.never_none {
+                        self.out(file).error(
+                            codes::TYPE,
+                            value.span(),
+                            format!(
+                                "`{name}` is never empty in Blender, so it takes a handle of a {kind}, not `none`"
+                            ),
+                        );
+                    }
+                    return;
+                }
                 self.handle_ref(file, value, &kind, name);
             }
             other => out.error(

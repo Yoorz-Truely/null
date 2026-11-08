@@ -117,6 +117,10 @@ pub struct Property {
     /// The struct a pointer or collection refers to.
     #[serde(default)]
     pub target: Option<String>,
+    /// A pointer Blender never lets be empty (RNA's `PROP_NEVER_NULL`): `none` is an error there
+    /// (Sau's task 1c-02j).
+    #[serde(default, rename = "never-none")]
+    pub never_none: bool,
     /// Whether RNA lets it be set.
     #[serde(default)]
     pub readonly: bool,
@@ -310,6 +314,7 @@ impl Property {
             range: None,
             items: None,
             target: None,
+            never_none: false,
             readonly: false,
             items_at_run_time: false,
             flags: false,

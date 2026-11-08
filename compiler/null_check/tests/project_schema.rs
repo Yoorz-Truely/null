@@ -419,3 +419,42 @@ fn a_string_with_no_field_length_takes_any_length() {
         vec![]
     );
 }
+
+#[test]
+fn none_empties_a_pointer_blender_lets_be_empty() {
+    // Sau's task 1c-02j: `none` empties a pointer (section 6), as write-back writes one, where the
+    // schema does not mark the pointer `never-none`; where it does, `none` is an error.
+    let text =
+        "object @lamp \"Lamp\" {\n  parent none\n}\n\nscene @main \"Main\" {\n  camera none\n}\n";
+    for (file, json) in [("project", PROJECT), ("slice", SLICE)] {
+        let schema = Schema::from_json(json).unwrap();
+        assert_eq!(errors(&schema, &[text]), vec![], "{file}");
+    }
+    // A pointer the schema marks `never-none`: Object.parent marked so here, in a copy of the
+    // slice's schema, since no settable pointer of the slice's is.
+    let mut json: serde_json::Value = serde_json::from_str(SLICE).unwrap();
+    for s in json["structs"].as_array_mut().unwrap() {
+        if s["rna"] == "Object" {
+            for p in s["properties"].as_array_mut().unwrap() {
+                if p["name"] == "parent" {
+                    p["never-none"] = serde_json::Value::Bool(true);
+                }
+            }
+        }
+    }
+    let schema = Schema::from_json(&json.to_string()).unwrap();
+    let found = errors(&schema, &[text]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::TYPE);
+    assert!(
+        found[0].message.contains("never empty") && found[0].message.contains("parent"),
+        "{}",
+        found[0].message
+    );
+    // Any other word is still a handle, or its error.
+    let found = errors(
+        &Schema::from_json(SLICE).unwrap(),
+        &["object @lamp \"Lamp\" {\n  parent nothing\n}\n"],
+    );
+    assert!(found[0].message.contains("takes a handle"), "{found:#?}");
+}
