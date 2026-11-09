@@ -133,6 +133,11 @@ pub struct Property {
     /// Whether RNA lets it be set.
     #[serde(default)]
     pub readonly: bool,
+    /// The property whose DNA field this one also reads, when it is that one's alias (Sau's task
+    /// 1b-03m: an image's `filepath-raw` of `filepath`): classed derived, so never printed, and a
+    /// block that writes both sets the field twice.
+    #[serde(default, rename = "alias-of")]
+    pub alias_of: Option<String>,
     /// Whether the enum's items are computed when it is used, so `items` are only those RNA
     /// lists ahead (task 1b-03b): another value is not refused.
     #[serde(default, rename = "items-at-run-time")]
@@ -351,6 +356,7 @@ impl Property {
             target: None,
             never_none: false,
             readonly: false,
+            alias_of: None,
             items_at_run_time: false,
             flags: false,
             max_length: None,
