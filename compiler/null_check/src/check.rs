@@ -801,7 +801,7 @@ impl<'s> Checker<'s> {
             // A v0 path without an embedded struct array's index reads as element 0 (S94).
             if let Some((_, true)) = resolved {
                 self.out(file).warning_fix(
-                    codes::UNKNOWN_PROPERTY,
+                    codes::RAW_OLD_PATH,
                     line.name_span,
                     format!(
                         "`{}` leaves out the index of the element it names, and reads as element 0: write `{path}`",

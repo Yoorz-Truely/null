@@ -179,7 +179,12 @@ fn a_v0_raw_path_without_an_elements_index_reads_as_element_0_with_a_warning() {
         &scene("    orientation_slots.index_custom 2\n    r.mblur_shutter_curve.cm.maxtable 1"),
     );
     assert_eq!(found.len(), 2, "{found:?}");
-    assert!(found.iter().all(|d| !d.is_error()), "{found:?}");
+    assert!(
+        found
+            .iter()
+            .all(|d| !d.is_error() && d.code == codes::RAW_OLD_PATH),
+        "{found:?}"
+    );
     assert!(
         found[0]
             .message
