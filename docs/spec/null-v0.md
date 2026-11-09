@@ -658,6 +658,9 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
   - It also holds its **inputs**, by the names the schema gives its sockets, each a value of the socket's type or a link. Where a setting and an input share a name, the name is the input's. A socket with no line takes its default.
   - A node's position and size are the `layout` block's, never its own lines.
 - **A link** is a socket value that names another node's output: `base-color @ramp.color`. A socket that takes several links (a join's `geometry`) takes a list of them, `[@a.geometry @b.geometry]`. A geometry, shader, bundle or closure socket has no value of its own, so it takes only links.
+  - **A muted link** carries nothing: the input takes its own value, as if unlinked. It is written `mute=on` after the link, `base-color @ramp.color mute=on`; for a socket that takes several links, `mute=` is a list of `on` and `off`, one for each link in the list's order, `geometry [@a.geometry @b.geometry] mute=[off on]`. A link with no `mute=` is live (RFC 0009, Sau's decision S95).
+  - **The value under a link.** A linked input keeps its own value, which it takes when the link goes or is muted: `value=` after the link, written as the socket's value is, `roughness @noise.fac value=0.6`, left out at the socket's default. A socket with no value of its own and one that takes several links take no `value=`.
+  - Any other `key=` after a link is a warning naming it, and is ignored, as v0 ignored it (S95).
 - **Frames.** A frame is a node, `node @box frame "Box"`, and a node drawn in it says `parent @box`.
 - **A group's interface** is its `input`, `output` and `panel` lines, in the interface's order:
   - `input @h <socket-type> "Name" { … }` and `output @h <socket-type> "Name" { … }`. The socket type is an interface socket's kind (`float`, `float-distance`, `int`, `vector`, `geometry`, `object`, and the schema's others), and the block holds that type's settings (`default-value`, `min-value`, `max-value`, `description`, `hide-value` and the rest).
@@ -674,6 +677,7 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
 - **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's, each at its node kind's default width. A node with no layout line is placed by Sau.
   - **A position is absolute** on the canvas, not relative to the node's frame: DNA's `location`, which RNA calls `location_absolute` (Sau's decision S79). So a line means the same whatever the node's `parent`, and moving a frame in the editor rewrites its nodes' lines with its own.
   - **A size** follows the position where it is not the node kind's default, which the schema gives each kind: `width=`, and for a frame, the one node whose height is its own rather than its sockets', `height=` (S79): `@box [-120 60] width=300 height=200`. Both are plain numbers in the editor's units, as positions are.
+  - **Hidden sockets** are the editor's too: `hide-inputs=` and `hide-outputs=`, lists of the node's sockets by the names its input lines use (a group's by its interface handles less `@`), `@tint [-100 0] hide-inputs=[fac]`. A list left out is empty. A linked input is never hidden, since Blender refuses to hide one, and a zone's layout line takes neither (RFC 0009, S95).
 
 A material, with a frame:
 

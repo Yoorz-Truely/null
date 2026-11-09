@@ -35,6 +35,11 @@ impl Out<'_> {
         self.list.push(d);
     }
 
+    pub fn warning(&mut self, code: &'static str, span: Span, message: impl Into<String>) {
+        let d = Diagnostic::warning(code, self.file, span, message);
+        self.list.push(d);
+    }
+
     pub fn warning_fix(
         &mut self,
         code: &'static str,

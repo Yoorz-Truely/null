@@ -10,7 +10,7 @@
 use std::collections::{HashMap, HashSet};
 
 use null_syntax::ast::{Node, Value};
-use null_syntax::{FileId, closest};
+use null_syntax::{FileId, SyntaxToken, closest};
 
 use super::{Attr, Checker, args_of, attrs, header, kebab_handle, props_of};
 use crate::codes;
@@ -92,6 +92,8 @@ pub(super) struct Entry {
     /// A zone's items' sockets, or a group node's group, by handle.
     items: Vec<String>,
     group: Option<String>,
+    /// The inputs its block links (RFC 0009: a linked socket cannot be hidden).
+    linked: Vec<String>,
 }
 
 /// A tree being checked: its type (`ShaderNodeTree`), its handles, and its own interface
@@ -156,6 +158,12 @@ impl Tree {
                     .and_then(|a| a.args.first())
                     .and_then(|v| v.as_word())
                     .map(str::to_string);
+                let linked = attrs(child)
+                    .iter()
+                    .filter(|a| !matches!(a.name.as_str(), "parent" | "node-tree"))
+                    .filter(|a| links_of(&a.args).is_some())
+                    .map(|a| a.name.clone())
+                    .collect();
                 entries.insert(
                     h.text().to_string(),
                     Entry {
@@ -163,6 +171,7 @@ impl Tree {
                         zone,
                         items,
                         group,
+                        linked,
                     },
                 );
                 if zone {
@@ -433,6 +442,7 @@ impl<'s> Checker<'s> {
             }
             if let Some(p) = inputs.iter().find(|p| p.name == a.name) {
                 self.socket_value(file, &a, p, tree, zone);
+                self.input_props(file, &a, Some(p));
                 continue;
             }
             if group_inputs.as_ref().is_some_and(|g| g.contains(&a.name)) {
@@ -443,6 +453,7 @@ impl<'s> Checker<'s> {
                 {
                     self.link(file, v, tree, zone);
                 }
+                self.input_props(file, &a, None);
                 continue;
             }
             if let Some(p) = settings.iter().find(|p| p.name == a.name) {
@@ -503,6 +514,83 @@ impl<'s> Checker<'s> {
                 )
             }
             _ => self.property(file, a, p, false),
+        }
+    }
+
+    /// An input line's `key=value`s (RFC 0009, S95): `mute=` on a link line, `on` or `off`, or a
+    /// list of them for a list of links, one each; `value=` on a line of one link, the value the
+    /// socket keeps under it, of its type (`p`, the schema's socket; none for a group's, whose
+    /// type the checker does not read yet). Any other key on a link line, which v0 took and
+    /// ignored, is a warning naming it, so a v0 file that checked clean still does (S95).
+    fn input_props(&mut self, file: FileId, a: &Attr<'_>, p: Option<&Property>) {
+        // A value line's keys are its value's to refuse, as v0 refuses them.
+        let Some(links) = links_of(&a.args) else {
+            return;
+        };
+        for (key, v) in &a.props {
+            match (key.text, Some(links)) {
+                ("mute", Some(n)) => {
+                    let one = |v: &Value<'_>| matches!(v.as_word(), Some("on" | "off"));
+                    let ok = match (n, v) {
+                        (LinkCount::One, v) => one(v),
+                        (LinkCount::List(len), v @ Value::List(_)) => {
+                            v.items().len() == len && v.items().iter().all(one)
+                        }
+                        _ => false,
+                    };
+                    if !ok {
+                        let want = match n {
+                            LinkCount::One => "`on` or `off`".to_string(),
+                            LinkCount::List(len) => {
+                                format!("a list of {len} `on` or `off`, one for each link")
+                            }
+                        };
+                        self.out(file).error(
+                            codes::TYPE,
+                            v.span(),
+                            format!("`mute=` on `{}` takes {want}", a.name),
+                        );
+                    }
+                }
+                ("value", Some(LinkCount::One)) => {
+                    let Some(p) = p else { continue };
+                    if matches!(
+                        p.ty.as_str(),
+                        "geometry" | "shader" | "custom" | "bundle" | "closure"
+                    ) {
+                        self.out(file).error(
+                            codes::TYPE,
+                            v.span(),
+                            format!("`{}` has no value of its own to keep under its link", a.name),
+                        );
+                        continue;
+                    }
+                    let under = Attr {
+                        name: a.name.clone(),
+                        name_span: key.span,
+                        span: key.span.cover(v.span()),
+                        args: vec![*v],
+                        props: Vec::new(),
+                        node: None,
+                    };
+                    self.property(file, &under, p, false);
+                }
+                ("value", Some(LinkCount::List(_))) => self.out(file).error(
+                    codes::TYPE,
+                    v.span(),
+                    format!(
+                        "`{}` takes several links and keeps no value of its own under them",
+                        a.name
+                    ),
+                ),
+                (other, _) => self.out(file).warning(
+                    codes::UNKNOWN_PROPERTY,
+                    key.span,
+                    format!(
+                        "an input line takes `mute=` and `value=` after a link, not `{other}=`; it is ignored (S95)"
+                    ),
+                ),
+            }
         }
     }
 
@@ -842,9 +930,15 @@ impl<'s> Checker<'s> {
                 );
             }
             // A node's size, where it is not its kind's default: `width=`, and `height=` for a
-            // frame, the one node whose height is its own (section 10).
+            // frame, the one node whose height is its own (section 10); its hidden sockets
+            // (RFC 0009), checked after.
+            let mut hidden = Vec::new();
             for (key, value) in props_of(child) {
                 match key.text {
+                    "hide-inputs" | "hide-outputs" if !zone => {
+                        hidden.push((key, value));
+                        continue;
+                    }
                     "width" if !zone => {}
                     "height" if frame => {}
                     "height" if !zone => {
@@ -855,7 +949,7 @@ impl<'s> Checker<'s> {
                         );
                         continue;
                     }
-                    "width" | "height" => {
+                    "width" | "height" | "hide-inputs" | "hide-outputs" => {
                         out.error(
                             codes::UNKNOWN_PROPERTY,
                             key.span,
@@ -868,7 +962,7 @@ impl<'s> Checker<'s> {
                             codes::UNKNOWN_PROPERTY,
                             key.span,
                             format!(
-                                "a layout line takes `width=`, and `height=` for a frame, not `{other}=`"
+                                "a layout line takes `width=`, `height=` for a frame, and `hide-inputs=` and `hide-outputs=`, not `{other}=`"
                             ),
                         );
                         continue;
@@ -921,6 +1015,80 @@ impl<'s> Checker<'s> {
                     codes::TYPE,
                     child.code_span(),
                     "a layout line is `@node [x y]`",
+                );
+            }
+            for (key, value) in hidden {
+                self.hidden_sockets(file, &key, &value, entry, tree);
+            }
+        }
+    }
+
+    /// `hide-inputs=[…]` or `hide-outputs=[…]` on a node's layout line (RFC 0009, S95): the
+    /// node's sockets the editor hides, by the names its input lines use (a group's by its
+    /// interface handles less `@`); a linked input is never hidden, as Blender refuses it.
+    fn hidden_sockets(
+        &mut self,
+        file: FileId,
+        key: &SyntaxToken<'_>,
+        value: &Value<'_>,
+        entry: Option<&Entry>,
+        tree: &Tree,
+    ) {
+        let inputs = key.text == "hide-inputs";
+        let Value::List(_) = value else {
+            return self.out(file).error(
+                codes::TYPE,
+                value.span(),
+                format!("`{}=` is a list of socket names, such as `[fac]`", key.text),
+            );
+        };
+        let Some(entry) = entry else { return };
+        // The node's sockets of that side, where the checker knows them.
+        let names: Option<Vec<String>> = match (entry.kind.as_str(), inputs) {
+            ("group", _) => entry
+                .group
+                .as_deref()
+                .and_then(|g| self.groups.get(g))
+                .map(|i| {
+                    if inputs {
+                        i.inputs.clone()
+                    } else {
+                        i.outputs.clone()
+                    }
+                }),
+            ("group-input", false) => tree.interface.as_ref().map(|i| i.inputs.clone()),
+            ("group-output", true) => tree.interface.as_ref().map(|i| i.outputs.clone()),
+            (kind, _) => self.schema.node(&tree.rna, kind).map(|d| {
+                let list = if inputs { &d.inputs } else { &d.outputs };
+                list.iter().map(|p| p.name.clone()).collect()
+            }),
+        };
+        for item in value.items() {
+            let Some(w) = item.as_word() else {
+                self.out(file)
+                    .error(codes::TYPE, item.span(), "a socket is named by its word");
+                continue;
+            };
+            if let Some(names) = &names
+                && !names.iter().any(|n| n == w)
+            {
+                let near = closest(w, names.iter().map(String::as_str));
+                self.out(file).error_fix(
+                    codes::UNKNOWN_PROPERTY,
+                    item.span(),
+                    format!(
+                        "`{w}` is none of this node's {}",
+                        if inputs { "inputs" } else { "outputs" }
+                    ),
+                    near.map(|n| (format!("write `{n}`"), item.span(), n.to_string())),
+                );
+                continue;
+            }
+            if inputs && entry.linked.iter().any(|l| l == w) {
+                self.out(file).error(
+                    codes::TYPE,
+                    item.span(),
+                    format!("`{w}` is linked, and Blender hides no linked socket"),
                 );
             }
         }
@@ -1057,5 +1225,26 @@ fn tree_word(rna: &str) -> &str {
         "CompositorNodeTree" => "compositor",
         "TextureNodeTree" => "texture",
         _ => "node",
+    }
+}
+
+/// How many links a line's values are (RFC 0009): one link, a list of them, or none.
+#[derive(Clone, Copy)]
+enum LinkCount {
+    One,
+    List(usize),
+}
+
+fn is_link(v: &Value<'_>) -> bool {
+    v.as_word().is_some_and(|w| w.starts_with('@'))
+}
+
+fn links_of(args: &[Value<'_>]) -> Option<LinkCount> {
+    match args {
+        [v] if is_link(v) => Some(LinkCount::One),
+        [v @ Value::List(_)] if !v.items().is_empty() && v.items().iter().all(is_link) => {
+            Some(LinkCount::List(v.items().len()))
+        }
+        _ => None,
     }
 }
