@@ -557,7 +557,7 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 
 - **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. `sau convert --inline` writes everything inline whatever its size. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
 - **The summary.** The line that names the file gives the array's `count=` and `bounds=` as values (S74 (1)). They are checked on load, and a summary that disagrees with the data is an error (1d-06b).
-- **Binary only as a cache, or by choice.** Sau keeps a binary copy of large arrays in `.sau/` as a cache. The cache is rebuilt when the text changes and is never the source (1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
+- **Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/` as a cache. It opens the snapshot in place of the text only when nothing the snapshot was made from has changed, makes a new one otherwise, and never treats it as the source (Sau's decision S92, task 1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
 - **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is. Lifting is phase 4b of Sau's roadmap; v0 writes levels 0 and 1.
 
@@ -642,7 +642,7 @@ array mesh @rock vertices [
 - Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
 - `sau convert --inline` writes every array inline whatever its size.
 
-**Binary only as a cache, or by choice.** Sau keeps a binary copy of each large array in `.sau/` as a cache, rebuilt when its text changes, never the source (1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
+**Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/` as a cache, opened in place of the text only when nothing it was made from has changed and never the source (Sau's decision S92, task 1d-06e); what a file means is the same either way. Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
 
 Shape keys, curves, point clouds and Grease Pencil drawings take the same forms for their own arrays (1d-06f).
 
