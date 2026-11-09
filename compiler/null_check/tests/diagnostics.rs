@@ -7,11 +7,16 @@ use null_check::{Schema, check, codes};
 use null_syntax::{SourceMap, parse};
 
 const PROJECT: &str = include_str!("../../../schema/null-schema-project.json");
+const RAW: &str = include_str!("../../../schema/null-raw.json");
 const SPEC: &str = include_str!("../../../docs/spec/null-v0.md");
 
 fn schema() -> &'static Schema {
     static S: std::sync::OnceLock<Schema> = std::sync::OnceLock::new();
-    S.get_or_init(|| Schema::from_json(PROJECT).unwrap())
+    S.get_or_init(|| {
+        Schema::from_json(PROJECT)
+            .unwrap()
+            .with_raw(null_check::raw::RawTable::from_json(RAW).unwrap())
+    })
 }
 
 /// Each code with the files that raise it: one or more cases, each one file.
@@ -140,6 +145,20 @@ const CASES: &[(&str, &[&str])] = &[
         codes::KEY_FILE_INLINE,
         &[
             "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m\n      keys file=\"a.s.location-2.keys.noll\" count=1 frames=[1 1]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n",
+        ],
+    ),
+    (
+        codes::RAW_OLD_PATH,
+        &[
+            // A v0 raw path without the element's index: element 0, a warning (S94).
+            "scene @s \"S\" {\n  raw {\n    orientation_slots.index_custom 2\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::RAW_STATE_CONFLICT,
+        &[
+            // A masked raw line against its enum's state (S97, task 1b-03n): a warning.
+            "scene @s \"S\" {\n  sync-mode frame-drop\n  raw {\n    flag 0\n  }\n}\n",
         ],
     ),
     (

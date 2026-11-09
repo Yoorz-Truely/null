@@ -70,6 +70,7 @@ const SUB_OBJECTS: &[&str] = &[
     "slot",
     "layer",
     "layer-group",
+    "drawing",
     "strip",
     "track",
     "marker",

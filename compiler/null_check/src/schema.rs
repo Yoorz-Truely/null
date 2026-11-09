@@ -159,6 +159,26 @@ pub struct Property {
     /// the formatter leaves out (task 1d-02b).
     #[serde(default)]
     pub new: Option<Json>,
+    /// For an enum over a field's bits that names fewer states than they hold, the bits it
+    /// cannot name, which a `raw` block carries masked (Sau's task 1b-03n).
+    #[serde(default)]
+    pub hides: Vec<Hides>,
+}
+
+/// Bits an enum cannot name (Sau's task 1b-03n): the field (by its datablock's DNA struct and
+/// path), the mask, and the states that fix those bits, by Null's item name, with their value.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Hides {
+    /// The datablock's DNA struct, `Scene`.
+    #[serde(rename = "struct")]
+    pub owner: String,
+    /// The field's path in the code's names, `flag`.
+    pub path: String,
+    /// The bits, as an unsigned number.
+    pub mask: u64,
+    /// Each state in which the bits are always one value, with that value (`frame-drop`: 8).
+    #[serde(default)]
+    pub states: std::collections::BTreeMap<String, u64>,
 }
 
 /// A property's ranges.
@@ -363,6 +383,7 @@ impl Property {
             multi_input: false,
             default: None,
             new: None,
+            hides: Vec::new(),
         }
     }
 
