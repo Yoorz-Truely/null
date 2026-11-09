@@ -322,6 +322,24 @@ impl<'s> Checker<'s> {
         })
     }
 
+    /// Another texture kind's definition of `handle`, where `kind` is a texture's (S101).
+    fn texture_twin(&self, kind: &str, handle: &str) -> Option<(String, (FileId, Span))> {
+        let is_texture = |k: &str| {
+            k == "texture"
+                || self
+                    .schema
+                    .struct_by_kind(k)
+                    .is_some_and(|s| s.base.as_deref() == Some("Texture"))
+        };
+        if !is_texture(kind) {
+            return None;
+        }
+        self.defs
+            .iter()
+            .find(|((k, h), _)| h == handle && k != kind && is_texture(k))
+            .map(|((k, _), at)| (k.clone(), *at))
+    }
+
     fn collect(&mut self, file: FileId, node: Node<'_>, top: bool) {
         let kind = node.name().into_owned();
         let defining =
@@ -335,6 +353,21 @@ impl<'s> Checker<'s> {
                     span,
                     format!(
                         "`{handle}` is defined twice as {}; a handle is unique within its kind",
+                        article(&kind)
+                    ),
+                )
+                .with_label(f0, s0, "first defined here");
+                self.out.push(d);
+            } else if let Some((other, (f0, s0))) = self.texture_twin(&kind, &handle) {
+                // A texture of each type is its own kind, but a reference to a texture names any
+                // of them: one handle is one texture (S101, task 1d-07w).
+                let d = Diagnostic::error(
+                    codes::HANDLE,
+                    file,
+                    span,
+                    format!(
+                        "`{handle}` is defined twice, as {} and as {}; a texture's handle is unique among every texture kind, as a reference to a texture names any",
+                        article(&other),
                         article(&kind)
                     ),
                 )
