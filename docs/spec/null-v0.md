@@ -912,7 +912,30 @@ Blender's `//`, relative to a `.blend` file, is never written: a project has no 
 
 **A missing file at apply.** Sau reports it and still makes the datablock, so references to it resolve. A sound, a font and a movie clip are made from their file when it exists. When it does not, they are made empty, with the path set, as Blender keeps a datablock whose file has gone: a sound that plays nothing, a font with no glyphs, a clip with no frames. They load once the file is there. An image, a cache file and a volume are made from their name, with the path set, as now.
 
-The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, a sequence's frame range on the image user. Image sequences, UDIM tiles and movie frames are not yet copied one file per frame; converting a `.blend` reports them.
+**A tiled image or an image sequence** (Sau's decision S96, RFC 0007) is a folder of files in `media/`, one file per tile or frame, since Blender reads every member from one `filepath` by its number:
+- **A tile set** is `media/<sha256>.tiles/`, each tile named `<number>.<ext>` (`1001.png`, `1002.png`), and the image's `filepath` is `media/<sha256>.tiles/<UDIM>.<ext>`.
+- **A sequence** is `media/<sha256>.frames/`, each frame named `<number>.<ext>`, with the number padded to one width for the whole folder (`0001.png` … `0240.png`, the width the source had). The `filepath` names one frame, as Blender's does: `media/<sha256>.frames/0001.png`. A movie clip made of image files is written the same way.
+
+Every file in the folder has the same extension. The folder's `<sha256>` is the SHA-256 of a listing of its files: one line for each, in increasing number, holding its name, a space, the SHA-256 of its bytes in lowercase hexadecimal, and a line feed (`1001.png 3f2a…\n1002.png 9b74…\n`). A folder is therefore named by its contents as a single file is.
+
+- **Converting** a `.blend` copies every tile Blender reads, or holds packed, into a tile set. A set written with `<UVTILE>` (`u1_v1`) is renumbered with UDIM numbers (`1001 + (u - 1) + 10 × (v - 1)`), which is how Blender numbers the tiles inside. A sequence copies every file that Blender's rule reaches from the `filepath`: the same folder, head and tail, and the same number of digits. A missing number stays missing, as Blender shows that frame missing.
+- **A tile's own settings** (`UDIMTile`: its `label`, and the generated colour of a tile with no file) are written `tile <number> { … }` in the image's block, only for a tile that has any. The tiles themselves are the folder's files, and Sau gives Blender the tiles the folder holds, as reloading the image finds them.
+- **`sau check`** reports `cosmosis-media-set`, an error at the `filepath` line, for any of these: a folder whose name is not the hash of its listing; a file in it not named `<number>.<ext>`; two extensions, or two widths in a sequence; a tile number outside 1001 to 2000; a tiled image whose path under `media/` has no `<UDIM>` or has `<UVTILE>`; a sequence whose `filepath` names no file of its folder. A path that names no file or folder is `cosmosis-media-missing`, as before.
+- **Outside the project**, an absolute path to a tile set or a sequence keeps Blender's own form, its tokens and digits as Blender reads them, with the `cosmosis-media-outside` warning that every absolute path gets.
+
+```null (1d-05m)
+image @wood "wood" {
+  filepath "media/<the hash of its listing>.tiles/<UDIM>.png"
+  source tiled
+  tile 1002 { label "Back" }
+}
+image @shot "shot" {
+  filepath "media/<the hash of its listing>.frames/0001.png"
+  source sequence
+}
+```
+
+The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, and a sequence's frame range, which is on the image user (`frame-start`, `frame-duration`, `frame-offset`).
 
 ## 13. Generators (optional)
 

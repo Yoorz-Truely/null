@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- November 9, 2026: RFC 0007, accepted as Sau's decision S96 (task 1d-05m): section 12 says a tiled image or an image sequence is a folder in `media/`, `<sha256>.tiles/` or `<sha256>.frames/`, each file named by its number, the folder named by the SHA-256 of a listing of its files' names and hashes; the `filepath` is `media/<sha256>.tiles/<UDIM>.<ext>`, or names one frame of a sequence; `<UVTILE>` sets convert to UDIM numbers; a tile's own settings are `tile <number> { … }`; `sau check` reports `cosmosis-media-set`. No file changes meaning; the Null format is unchanged.
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
 - November 9, 2026: RFC 0004, accepted as Sau's decision S86 (task 1d-07o): section 11 says an f-curve of more than 2,000 keys writes them in a Null text file of its own beside the action's file, one key per line, named by the f-curve's `keys file=… count=… frames=[…]` line, which the checker holds the file to; the file's name is the printer's choice and carries no meaning; a moved key is one line's edit. No file changes meaning; the Null format is unchanged.
