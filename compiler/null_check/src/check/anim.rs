@@ -500,7 +500,7 @@ impl Checker<'_> {
                 ),
             };
             out.warning_fix(
-                codes::READONLY,
+                codes::HANDLE_PLACED,
                 k.span,
                 format!(
                     "Blender places a key's `{side}` itself while its `{ty}` is `{word}`, so the one written here does not hold; make the type `free` (or `aligned`) to keep it"

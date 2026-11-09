@@ -1,0 +1,11 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n
+case.noll:4:16 warning[null-handle-placed]: Blender places a key's `handle-left` itself while its `handle-left-type` is `auto-clamped`, so the one written here does not hold; make the type `free` (or `aligned`) to keep it
+  fix: write `handle-left-type=free`
+case.noll:5:41 warning[null-handle-placed]: Blender places a key's `handle-right` itself while its `handle-right-type` is `vector`, so the one written here does not hold; make the type `free` (or `aligned`) to keep it
+  fix: write `handle-right-type=free`
+  `write `handle-left-type=free`` gives: action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      key 1 0m handle-left-type=free handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n
+  `write `handle-right-type=free`` gives: action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=free handle-right=[10 1]\n    }\n  }\n}\n
