@@ -572,8 +572,8 @@ Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Null's checker
   - Blender's internal attributes (`.edge_verts`, `.corner_vert` and the others whose names start with `.`) are never written: `edges` and `polygons` are they.
 - **`uv-map @h "Name" [[u v] …]`**: a UV map, one `[u v]` per corner, with its settings in a block (`active-render`).
 - **`vertex-group @h "Name" { weights [[index weight] …] }`**: a vertex group, a sub-object of the mesh as Blender 5.3 keeps it (section 7), with its weights: only the vertices in the group, by index, in increasing order.
-- **`shape-key @h "Name" { … }`**: one shape key of the mesh's `Key`, in Blender's order (RFC 0005, Sau's decision S88, task 1d-07q). It holds:
-  - `positions [[x y z] …]`: one position per vertex, as `vertices` are written, and in a data file of its own past 2,000, as any array (`positions file="face.smile.noll" count=… bounds=…`, the file's `array mesh @face @smile [ … ]`);
+- **`shape-key @h "Name" { … }`**: one shape key of the mesh's `Key`, in Blender's order (RFC 0005, Sau's decision S88, task 1d-07q). A curve's, a surface's and a lattice's are written the same, in their blocks. It holds:
+  - `positions [[x y z] …]`: one position per vertex, as `vertices` are written, and in a data file of its own past 2,000, as any array (`positions file="face.smile.noll" count=… bounds=…`, the file's `array mesh @face @smile [ … ]`). A lattice's are one per point, and a curve's one per control point, a Bézier point's with its handles as `handles-left [[x y z] …]` and `handles-right [[x y z] …]`, one each per point; the checker holds a mesh's to its vertex count, and a curve's and a lattice's are Blender's to hold to its points;
   - `relative-key @h`, the shape key it is relative to (the basis when left out), and `vertex-group @h`, the vertex group that weighs it: both handles, of the mesh's own shape keys and vertex groups;
   - `ShapeKey`'s other settings: `value`, `slider-min`, `slider-max`, `interpolation`, `mute`, `lock-shape`.
 
@@ -594,6 +594,17 @@ mesh @face "Face" {
     value 0.3
   }
   shape-keys { eval-time 10 }
+}
+```
+
+A lattice's shape key, its eight points moved:
+
+```null
+lattice @cage "Cage" {
+  shape-key @basis "Basis"
+  shape-key @squash "Squash" {
+    positions [[-0.5m -0.5m -0.25m] [0.5m -0.5m -0.25m] [-0.5m 0.5m -0.25m] [0.5m 0.5m -0.25m] [-0.5m -0.5m 0.25m] [0.5m -0.5m 0.25m] [-0.5m 0.5m 0.25m] [0.5m 0.5m 0.25m]]
+  }
 }
 ```
 

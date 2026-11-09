@@ -546,6 +546,8 @@ impl<'s> Checker<'s> {
                 "shape-key",
                 "shape-keys",
             ],
+            // A curve's, a surface's and a lattice's shape keys too (RFC 0005, S88).
+            "curve" | "surface" | "lattice" => vec!["shape-key", "shape-keys"],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
         };
@@ -594,6 +596,7 @@ impl<'s> Checker<'s> {
                         "mesh",
                         "attribute" | "uv-map" | "vertex-group" | "shape-key"
                     )
+                    | ("curve" | "surface" | "lattice", "shape-key")
                     | ("armature", "bone" | "bone-collection")
                     | ("scene", "marker")
             ) || (tree.is_some()
@@ -655,8 +658,13 @@ impl<'s> Checker<'s> {
                 // RFC 0005 (S88, task 1d-07q).
                 ("armature", "bone") => self.armature_bone(file, a, &all),
                 ("armature", "bone-collection") => self.bone_collection(file, a, &all),
-                ("mesh", "shape-key") => self.shape_key(file, a, &all),
-                ("mesh", "shape-keys") => self.shape_keys(file, a),
+                ("mesh" | "curve" | "surface" | "lattice", "shape-key") => {
+                    let owner = header(node).handle.map(|(h, _)| (kind.to_string(), h));
+                    self.shape_key(file, a, &all, kind, owner)
+                }
+                ("mesh" | "curve" | "surface" | "lattice", "shape-keys") => {
+                    self.shape_keys(file, a)
+                }
                 ("scene", "marker") => self.marker(file, a),
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),

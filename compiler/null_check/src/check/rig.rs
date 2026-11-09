@@ -216,8 +216,18 @@ impl Checker<'_> {
         }
     }
 
-    /// A mesh's `shape-key @h "Name" { … }`; its `positions` are the mesh's arrays' to check.
-    pub(super) fn shape_key(&mut self, file: FileId, a: &Attr<'_>, all: &[Attr<'_>]) {
+    /// A `shape-key @h "Name" { … }` of a mesh, a curve, a surface or a lattice (`kind`, the
+    /// owner's handle `owner`). A mesh's `positions` are checked with its arrays, one per vertex
+    /// (`level0`); a curve's or a lattice's here, element by element, their count Blender's to
+    /// hold, and a curve's Bézier points also take `handles-left` and `handles-right`.
+    pub(super) fn shape_key(
+        &mut self,
+        file: FileId,
+        a: &Attr<'_>,
+        all: &[Attr<'_>],
+        kind: &str,
+        owner: Option<(String, String)>,
+    ) {
         if !self.sub_header(file, a, "shape-key @smile \"Smile\"") {
             return;
         }
@@ -229,14 +239,42 @@ impl Checker<'_> {
             self.schema.properties_of("ShapeKey"),
             &["relative-key", "vertex-group"],
         );
+        let curve = matches!(kind, "curve" | "surface");
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
         names.extend(["positions", "relative-key", "vertex-group"]);
+        if curve {
+            names.extend(["handles-left", "handles-right"]);
+        }
+        let whose = super::article(kind);
         for b in attrs(block) {
             match b.name.as_str() {
-                "positions" => {}
-                "relative-key" => self.sibling_ref(file, &b, &own, &keys, "the mesh's shape keys"),
+                "positions" if kind == "mesh" => {}
+                "positions" | "handles-left" | "handles-right"
+                    if b.name == "positions" || curve =>
+                {
+                    if let Some(owner) = &owner {
+                        let array = if b.name == "positions" {
+                            own.clone()
+                        } else {
+                            format!("{own}.{}", b.name)
+                        };
+                        self.array_line(
+                            file,
+                            &b,
+                            owner,
+                            &array,
+                            super::level0::Elements::Positions,
+                            None,
+                        );
+                    }
+                }
+                "relative-key" => {
+                    let what = format!("{whose}'s shape keys");
+                    self.sibling_ref(file, &b, &own, &keys, &what)
+                }
                 "vertex-group" => {
-                    self.sibling_ref(file, &b, "", &groups, "the mesh's vertex groups")
+                    let what = format!("{whose}'s vertex groups");
+                    self.sibling_ref(file, &b, "", &groups, &what)
                 }
                 _ => match props.iter().find(|p| p.name == b.name) {
                     Some(p) => self.property(file, &b, p, false),
@@ -246,7 +284,8 @@ impl Checker<'_> {
         }
     }
 
-    /// A mesh's `shape-keys { … }`: its `Key`'s settings and what plays on it.
+    /// The `shape-keys { … }` of a mesh, a curve, a surface or a lattice: its `Key`'s settings
+    /// and what plays on it.
     pub(super) fn shape_keys(&mut self, file: FileId, a: &Attr<'_>) {
         if !a.args.is_empty() || !a.props.is_empty() {
             self.out(file).error(
@@ -265,7 +304,7 @@ impl Checker<'_> {
                 "track" => self.track(file, &b, "key"),
                 _ => match props.iter().find(|p| p.name == b.name) {
                     Some(p) => self.property(file, &b, p, false),
-                    None => self.unknown(file, &b, "a mesh's shape keys", &names, None),
+                    None => self.unknown(file, &b, "the shape keys' block", &names, None),
                 },
             }
         }
