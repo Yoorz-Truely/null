@@ -781,22 +781,31 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
     - The f-curve's block names the file and gives its summary, which the checker holds the file to: `keys file="hop.ball.location-2.keys.noll" count=1200 frames=[1 1200]`.
       - `count=` is the number of keys.
       - `frames=` is the first and the last key's frame, as Blender sorts them.
-      - A summary that disagrees with the file is an error, at the line that names it, as section 9's is.
-      - An f-curve writes its keys inline or names a file, never both.
+      - A summary that is missing or disagrees with the file is an error, at the line that names it, as section 9's is (`null-key-file-summary`).
+      - An f-curve writes its keys inline or names a file, never both (`null-key-file-inline`).
     - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. Its name is the printer's choice and carries no meaning, since the line names the file. The printer names it after the action's file, the slot, the property's path and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle where it has one: `rig.arm.pose-bones.forearm.rotation-quaternion-1.keys.noll`. A name another f-curve's file already takes gets `-2`, `-3`.
     - **The file** holds one node: `keys`, the action's handle, the slot's, the property, `index=` for an array's item, and a block of `key` lines exactly as an inline f-curve's (frame, value in the property's unit, settings as `name=value`), in frame order, as in the file below.
 
-    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
+    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A line whose key file no file holds is `null-key-file-missing`; a key file no line names, or a second one for a line, is `null-key-file-unnamed` (Sau's decision S97: codes of their own). A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
     - **Write-back** follows section 17's smallest edit:
       - A key moved or changed in Sau rewrites its own line in the key file, and nothing else, unless the move changes the first or last frame, which also rewrites `frames=`.
       - A key added or removed adds or removes its line, and rewrites `count=` and, where it changes, `frames=`.
       - A curve that grows past 2,000 keys moves its keys into a file, and one that shrinks to 2,000 or fewer moves them back inline. Either is a change of the f-curve's own lines, the only time both files change for one edit.
     - `sau convert --inline` writes every f-curve's keys inline, whatever their number, as it does for arrays.
-A key file, beside `actions/hop.noll` (its 1,200 lines shortened here to three; fenced as text until the checker reads key files, so the spec's numbered examples keep their numbers):
+An f-curve whose keys are in a key file, and the file, beside `actions/capture.noll` (a capture's 1,200 keys shortened here to three, its `count=` and `frames=` with them):
 
-```text
-// actions/hop.ball.location-2.keys.noll
-keys @hop @ball location index=2 {
+```null
+// actions/capture.noll
+action @capture "Capture" {
+  slot @runner object "Runner" {
+    fcurve location index=2 {
+      keys file="capture.runner.location-2.keys.noll" count=3 frames=[1 3]
+    }
+  }
+}
+
+// actions/capture.runner.location-2.keys.noll
+keys @capture @runner location index=2 {
   key 1 0m
   key 2 0.0123m
   key 3 0.049m
@@ -1034,7 +1043,7 @@ action @bob "Bob" {
 
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated`, `null-python` (a driver's expression that is Python: a note) and `null-handle-placed` (a key's handle written beside an automatic handle type, which Blender places again: a warning, S87). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated`, `null-python` (a driver's expression that is Python: a note), `null-handle-placed` (a key's handle written beside an automatic handle type, which Blender places again: a warning, S87), `null-key-file-summary` (a key file's `count=` or `frames=` missing or disagreeing with the file, S86), `null-key-file-missing` (a `keys file=` line whose key file no file holds), `null-key-file-unnamed` (a key file no f-curve's line names, or a second one for a line) and `null-key-file-inline` (an f-curve that writes keys inline and names a key file). Each new diagnostic has a code of its own, never an existing code whose meaning differs (Sau's decision S97). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
 
 How the messages are worded (task 1d-02e):
 - **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.

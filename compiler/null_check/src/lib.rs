@@ -69,6 +69,15 @@ pub mod codes {
     /// A key's handle written beside an automatic handle type, which Blender places again: a
     /// warning (Sau's decision S87).
     pub const HANDLE_PLACED: &str = "null-handle-placed";
+    /// An f-curve's key file whose `count=` or `frames=` is missing or disagrees with the file
+    /// (Sau's decisions S86 and S97, task 1d-07t).
+    pub const KEY_FILE_SUMMARY: &str = "null-key-file-summary";
+    /// A `keys file=` line whose key file none of the project's files holds (S86, S97).
+    pub const KEY_FILE_MISSING: &str = "null-key-file-missing";
+    /// A key file no f-curve's line names, or a second for one line (S86, S97).
+    pub const KEY_FILE_UNNAMED: &str = "null-key-file-unnamed";
+    /// An f-curve that writes keys inline and names a key file (S86, S97).
+    pub const KEY_FILE_INLINE: &str = "null-key-file-inline";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -77,7 +86,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 13] = [
+    pub const ALL: [&str; 17] = [
         SYNTAX,
         NAME,
         KIND,
@@ -91,5 +100,9 @@ pub mod codes {
         REPEATED,
         PYTHON,
         HANDLE_PLACED,
+        KEY_FILE_SUMMARY,
+        KEY_FILE_MISSING,
+        KEY_FILE_UNNAMED,
+        KEY_FILE_INLINE,
     ];
 }

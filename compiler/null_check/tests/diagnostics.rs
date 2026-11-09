@@ -115,6 +115,33 @@ const CASES: &[(&str, &[&str])] = &[
             "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n",
         ],
     ),
+    // Key files (S86, S97, task 1d-07t): a summary that disagrees, a line whose file is not
+    // there, a file no line names, an f-curve whose keys are in both places.
+    (
+        codes::KEY_FILE_SUMMARY,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\" count=3 frames=[1 9]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n  key 5 1m\n}\n",
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\"\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_MISSING,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\" count=1 frames=[1 1]\n    }\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_UNNAMED,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\"\n}\nkeys @a @s location index=1 {\n  key 1 0m\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_INLINE,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m\n      keys file=\"a.s.location-2.keys.noll\" count=1 frames=[1 1]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n",
+        ],
+    ),
     (
         codes::PYTHON,
         &[

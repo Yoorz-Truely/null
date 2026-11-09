@@ -262,3 +262,24 @@ fn a_second_data_file_for_one_line_says_so() {
         "{found:?}"
     );
 }
+
+#[test]
+fn a_key_files_keys_are_checked_at_their_own_lines_against_the_f_curves_property() {
+    // Section 11, S86 (task 1d-07t): a key file named with its summary checks clean, in the
+    // full form as in the short; a key's mistake is reported in the key file, at its line, by the
+    // property its f-curve animates (a light's energy, a power).
+    let action = "action @flicker \"Flicker\" {\n  slot @lamp light \"Lamp\" {\n    fcurve energy {\n      keys file=\"flicker.lamp.energy.keys.noll\" count=2 frames=[1 6]\n    }\n  }\n}\n";
+    let keys = "keys @flicker @lamp energy {\n  key 1 800W\n  key 6 620W interpolation=linear\n}\n";
+    assert_eq!(messages(&[action, keys]), Vec::<String>::new());
+    let layered = "action @hop \"Hop\" {\n  slot @ball object \"Ball\"\n  layer @base \"Base\" {\n    strip @keys keyframe {\n      channels @ball {\n        fcurve location index=2 {\n          keys file=\"hop.ball.location-2.keys.noll\" count=1 frames=[12 12]\n        }\n      }\n    }\n  }\n}\n";
+    let hop_keys = "keys @hop @ball location index=2 {\n  key 12 1.5m\n}\n";
+    assert_eq!(messages(&[layered, hop_keys]), Vec::<String>::new());
+    let bad = "keys @flicker @lamp energy {\n  key 1 800m\n  key 6 620W interpolation=lineer\n}\n";
+    let found = errors(&[action, bad]);
+    let codes_found: Vec<&str> = found.iter().map(|d| d.code).collect();
+    assert_eq!(codes_found, [codes::UNIT, codes::ENUM], "{found:#?}");
+    assert!(
+        found.iter().all(|d| d.primary.file == FileId(1)),
+        "{found:#?}"
+    );
+}

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- November 9, 2026: the checker reads key files (RFC 0004, S86; task 1d-07t): an f-curve's `keys file="…" count=N frames=[first last]` line and the file's `keys @action @slot <path> index=N { key … }` node, matched by the action, the slot, the path and the index; each key in the file is checked as an inline key is, at its own line. Section 18 gains four codes, each its own (Sau's decision S97): `null-key-file-summary`, `null-key-file-missing`, `null-key-file-unnamed` and `null-key-file-inline`. Section 11's key-file example is now a checked example, a capture's f-curve and its file. No file changes meaning.
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
 - November 9, 2026: RFC 0004, accepted as Sau's decision S86 (task 1d-07o): section 11 says an f-curve of more than 2,000 keys writes them in a Null text file of its own beside the action's file, one key per line, named by the f-curve's `keys file=… count=… frames=[…]` line, which the checker holds the file to; the file's name is the printer's choice and carries no meaning; a moved key is one line's edit. No file changes meaning; the Null format is unchanged.
