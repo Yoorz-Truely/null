@@ -51,6 +51,22 @@ pub(super) fn settable<'s>(props: Vec<&'s Property>, except: &[&str]) -> Vec<&'s
 }
 
 impl Checker<'_> {
+    /// Whether a shape key's array line `b` is a list, or names a data file (`file=`); said
+    /// when it is neither, with `example` (1d-07q's review: `tilts 0.5` is no list).
+    pub(super) fn array_or_file(&mut self, file: FileId, b: &Attr<'_>, example: &str) -> bool {
+        if b.props.iter().any(|(k, _)| k.text == "file")
+            || matches!(b.args.as_slice(), [Value::List(_)])
+        {
+            return true;
+        }
+        self.out(file).error(
+            codes::TYPE,
+            b.span,
+            format!("`{}` is a list, one per point, such as `{example}`", b.name),
+        );
+        false
+    }
+
     /// A line `kind @h "Name"`, its handle first; false, said, when it is not.
     pub(super) fn sub_header(&mut self, file: FileId, a: &Attr<'_>, example: &str) -> bool {
         match a.args.as_slice() {
@@ -253,7 +269,9 @@ impl Checker<'_> {
                 "positions" | "handles-left" | "handles-right"
                     if b.name == "positions" || curve =>
                 {
-                    if let Some(owner) = &owner {
+                    if let Some(owner) = &owner
+                        && self.array_or_file(file, &b, &format!("{} [[0m 0m 0m] …]", b.name))
+                    {
                         let array = if b.name == "positions" {
                             own.clone()
                         } else {
@@ -272,7 +290,9 @@ impl Checker<'_> {
                 // A curve point's tilt and radius, which its shape key stores beside its position
                 // (`key.cc`): one number each per point.
                 "tilts" | "radii" if curve => {
-                    if let Some(owner) = &owner {
+                    if let Some(owner) = &owner
+                        && self.array_or_file(file, &b, &format!("{} [0 0.5]", b.name))
+                    {
                         let p = crate::level0::element("float").expect("float is a data type");
                         let array = format!("{own}.{}", b.name);
                         self.array_line(
