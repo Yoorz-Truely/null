@@ -35,3 +35,4 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | Number | Title | Status |
 | --- | --- | --- |
 | [0001](0001-srgb-table.md) | The sRGB rule by a table of exactly rounded values | accepted (S62) |
+| [0004](0004-dense-keys.md) | Dense keys in a Null text file of their own | proposed (Sau's task 1d-07o) |
