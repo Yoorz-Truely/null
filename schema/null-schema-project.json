@@ -5821,7 +5821,8 @@
        "value": 4
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "new": "armature-defined"
     },
     {
      "name": "use-connect",
@@ -5949,7 +5950,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.25
     },
     {
      "name": "envelope-weight",
@@ -5966,7 +5968,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     },
     {
      "name": "head-radius",
@@ -5985,7 +5988,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.1
     },
     {
      "name": "tail-radius",
@@ -6004,7 +6008,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.05
     },
     {
      "name": "bbone-segments",
@@ -6021,7 +6026,8 @@
       ]
      },
      "default": 0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1
     },
     {
      "name": "bbone-mapping-mode",
