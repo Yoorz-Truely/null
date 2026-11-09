@@ -280,7 +280,7 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 - **Made from the name.** A new sub-object's handle is its Blender name in kebab-case, as for datablocks (S18): `Spine.002` gives `spine-002`, `Base Color` gives `base-color`.
 - **Unique within its owner, across kinds.** No two sub-objects of one owner share a handle, whatever their kinds, so `@pier/@bevel` names one thing without saying whether it is a modifier or a constraint. Blender lets a modifier and a constraint of one object share a name; the second then gets `-2` (`@bevel-2`), as Blender itself numbers names. A duplicate handle within an owner is an error.
 - **Paths.** `/` steps from an owner to a sub-object, and may step again where a sub-object owns others (`@rig/@spine-002/@ik`, a bone's constraint on the object's pose). `.` followed by a name names a socket of a node (`@bsdf.roughness`); `.` followed by a number is a copy made by a pattern (`@plank.7`, Sau's decision S61 (6)). Nothing else uses `.`. A path starts at a datablock handle; inside the owner's own block the owner may be left out (`@bevel`). There a path starts at that owner's own sub-objects first, so a datablock elsewhere with the same handle never shadows them, and the owner is that one datablock, its kind and handle (an object and a mesh may both be `@pier`); a path whose first step names none of the owner's sub-objects is read as written, from a datablock; once it names one, the path stays the owner's and its errors are the owner's.
-- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind> "Name"` (the quoted name optional) and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy resolves through its placement (`@plank.7`, `@plank.7/@plank-mesh`, task 1d-03b); a package's datablock parses, and resolves once packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
+- **Lines and the checker.** A sub-object is defined by a line `<kind> @handle …` in its owner's block: `modifier`, `constraint`, `bone`, `bone-collection`, `shape-key`, `vertex-group`, `uv-map`, `attribute`, `view-layer`, `slot`, `layer`, `layer-group`, `drawing`, `strip`, `track`, `marker`, `input`, `output` or `panel`, and `node @handle <kind> "Name"` (the quoted name optional) and `zone @handle <kind>` in a `nodes` block, the nodes inside a zone's block among the tree's own (section 10). The checker indexes them, resolves every path against them, and reports a path that names nothing with the path written right (`@pier/@bevle`: write `@pier/@bevel`). A pattern's copy resolves through its placement (`@plank.7`, `@plank.7/@plank-mesh`, task 1d-03b); a package's datablock parses, and resolves once packages (task 1d-04) are read. A modifier's, a constraint's, a pose bone's, a node's, a zone's, an interface socket's, a slot's, a layer's, a strip's and an NLA track's own properties are checked (task 1d-07a, sections 8, 10 and 11); the other kinds' once their forms are specified (task 1d-07). Task 1b-02c.
 - **What keeps identity across a rename.** Where Blender keeps an identity of its own that survives renaming, Sau maps the handle to it. Where Blender identifies the sub-object only by its name, Sau keeps the handle through the project's map, `.sau/ids.noll`, keyed by the owner's persistent ID (Sau's decision S61 (3), task 1b-02b). Either way a rename in Sau changes the quoted name and keeps the handle and every reference.
 
 | Sub-object | Owner | Blender's own identity (checked in Blender 5.3's DNA) | Kept by |
@@ -295,11 +295,12 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 | Bone | Armature (its pose bone in the object shares the name) | The name only (`Bone::name`); `bPoseChannel::session_uid` lasts one session | `.sau/ids.noll` |
 | Bone collection | Armature | The name only | `.sau/ids.noll` |
 | Vertex group | Mesh, lattice or Grease Pencil data | The name only (`bDeformGroup::name`) | `.sau/ids.noll` |
-| UV map, colour attribute, any attribute | Mesh, curves, point cloud | The name only; `CustomDataLayer::uid` serves shape keys alone | `.sau/ids.noll` |
+| UV map, colour attribute, any attribute | Mesh, curves, point cloud, Grease Pencil data and its drawings | The name only; `CustomDataLayer::uid` serves shape keys alone | `.sau/ids.noll` |
 | View layer | Scene | The name only | `.sau/ids.noll` |
 | Action layer and strip, NLA track and strip | Action; the animated datablock | The name only (a strip may have none, and gets its handle from its track and position) | `.sau/ids.noll` |
 | Timeline marker | Scene or action | The name only, which may be empty or repeated; a marker without a usable name gets its handle from its frame (`@f120`) | `.sau/ids.noll` |
 | Grease Pencil layer and layer group | Grease Pencil data | The name only | `.sau/ids.noll` |
+| Grease Pencil drawing | Grease Pencil data | Its index in the datablock's drawings, which Blender compacts when one is removed; Sau renumbers the map's entries whenever it adds or removes a drawing (RFC 0006, Sau's decision S91) | `.sau/ids.noll` |
 
 Blender gives a modifier its `persistent_uid` from a hash of its name when it is created, and a node its `identifier` at random, so neither is a handle: the handle is still made from the name, and the map ties the two together. A node socket is the one sub-object never renamed by a person outside node groups, so its handle is its name.
 
@@ -644,7 +645,45 @@ array mesh @rock vertices [
 
 **Binary only as a cache, or by choice.** Sau keeps a binary copy of each large array in `.sau/` as a cache, rebuilt when its text changes, never the source (1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
 
-Shape keys, curves, point clouds and Grease Pencil drawings take the same forms for their own arrays (1d-06f).
+**Curves, point clouds and Grease Pencil drawings** (RFC 0006, Sau's decision S91, task 1d-06f) take the same forms for their own arrays: inline up to 2,000 elements, a data file of their own past that with `count=` and `bounds=`, and `attribute @h <domain> <type> "Name" [values]` for any other attribute, with Blender's internal attributes (names starting `.`) never written. Each array is one line in its owner's block, in the order below. A curve datablock's splines (`curve`, `surface`, `text-curve`, Blender's legacy curves) are not attribute arrays and keep their forms over RNA.
+
+- **A point cloud** (`point-cloud`): `points [[x y z] …]`, each point's position (the `position` attribute), lengths as `location` is written; then `attribute @h point <type> "Name" [values]` on its one domain, `radius` included.
+- **A curves datablock** (`curves`, Blender's hair):
+  - `points [[x y z] …]`: each point's position;
+  - `curves [n …]`: each curve's number of points, in order, its points the next `n` of `points` (Blender keeps each curve's first point, `curve_offsets`, which the sizes give);
+  - `attribute @h <domain> <type> "Name" [values]` on `point` or `curve`. A curve's type, resolution, cyclic flag, handles and handle types, NURBS order, weights and knots mode, radius and tilt are attributes by Blender's names (`attribute @curve-type curve int8 "curve_type" [0 0]`).
+
+  The checker holds the sizes' sum to the points' count, each size to at least one, and each attribute to its domain's count: the points, or the number of curves.
+- **A Grease Pencil datablock** (`grease-pencil`):
+  - `drawing @h { … }`: each drawing, a sub-object, in Blender's order, holding the lines of a curves datablock (`points`, `curves`, and `attribute` on `point` or `curve`). A stroke's material, colours, opacities and widths are its attributes by Blender's names (`material_index`, `vertex_color`, `opacity`, `radius`, `fill_color` and the rest);
+  - `layer @h "Name" { … }` and `layer-group @h "Name" { … }`: sub-objects in the order of Blender's layer tree, a group holding its own layers and groups in its block. A layer holds `frame <number> @drawing`, from that frame on showing that drawing, with `keyframe-type=` when it is not a keyframe (`breakdown`, `moving-hold`, `extreme`, `jitter`, `generated`); one drawing may be shown by several frames, on any layers. Its other settings are `GreasePencilLayer`'s by their Null names (`opacity`, `blend-mode`, `use-lights`, `translation`, `rotation`, `scale`, `parent`). A group holds `GreasePencilLayerGroup`'s (`is-expanded`, `color-tag`) and its children;
+  - `attribute @h layer <type> "Name" [values]`: the datablock's own attributes, one value per layer in the tree's order.
+
+  A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the drawings (section 7). A drawing's array past 2,000 elements goes in a file of its own named after the datablock, the drawing and the array (`sketch.first.points.noll`); its `array` node names the array in one word, the drawing's handle, a dot and the line's name for the drawing's own arrays (`array grease-pencil @sketch @first.points [ … ]`), and the drawing's handle, `/` and the attribute's for an attribute (`@first/@radius`). A drawing that is a reference to another datablock's (`GreasePencilDrawingReference`) has no form yet, and conversion says so.
+
+```null (1d-06f)
+grease-pencil @sketch "Sketch" {
+  drawing @first {
+    points [[0m 0m 0m] [0.5m 0m 0m] [0.5m 0m 0.5m]]
+    curves [3]
+    attribute @radius point float "radius" [0.01 0.01 0.01]
+  }
+  drawing @second {
+    points [[0m 0m 0m] [0.5m 0m 0.25m]]
+    curves [2]
+  }
+  layer @lines "Lines" {
+    frame 1 @first
+    frame 12 @second keyframe-type=breakdown
+    opacity 0.8
+  }
+  layer-group @effects "Effects" {
+    layer @glow "Glow" {
+      frame 1 @first
+    }
+  }
+}
+```
 
 ## 10. Node trees
 

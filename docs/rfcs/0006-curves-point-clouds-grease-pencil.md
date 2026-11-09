@@ -1,8 +1,8 @@
 # 0006: Level 0 arrays for curves, point clouds and Grease Pencil drawings
 
-- Status: proposed
+- Status: accepted (S91)
 - Date: November 9, 2026
-- Decided by: the lead under the user's standing instruction (Sau's decision S59)
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S91
 - Affects: geometry as source (section 9), identity (section 7), canonical form
 - Null format: unchanged
 
@@ -85,9 +85,13 @@ grease-pencil @sketch "Sketch" {
 }
 ```
 
-**Identity (section 7's table).** A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the datablock's drawings, as a shape key's is by its `uid`. Layers and layer groups are known by their names, as the table already says.
+**Identity (section 7's table).** A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the datablock's drawings. Blender compacts the drawings when one is removed, so Sau renumbers the map's drawing entries whenever it adds or removes a drawing, and every other handle keeps naming its drawing. Layers and layer groups are known by their names, as the table already says.
 
-**Data files.** A drawing's array past 2,000 elements goes in a file of its own as any array, named after the datablock, the drawing and the array (`sketch.first.points.noll`), whose `array` node names the drawing's path: `array grease-pencil @sketch @first points [ … ]`, and an attribute's `array grease-pencil @sketch @first/@radius [ … ]`.
+**Data files.** A drawing's array past 2,000 elements goes in a file of its own as any array, named after the datablock, the drawing and the array (`sketch.first.points.noll`). Its `array` node names the array in one word, as a shape key's other arrays are named (`@lift.tilts`): the drawing's handle, a dot and the line's name for its own arrays (`array grease-pencil @sketch @first.points [ … ]`), and the drawing's handle, `/` and the attribute's for an attribute (`array grease-pencil @sketch @first/@radius [ … ]`).
+
+## Decision
+
+Accepted by the lead as Sau's decision S91, November 9, 2026, with one amendment folded in above: Sau renumbers the map's drawing entries whenever it adds or removes a drawing, since Blender compacts the drawings on removal, and a test removes a middle drawing and checks every other handle still names its drawing. The data files' `array` node names a drawing's array in one word (`@first.points`, `@first/@radius`), as the checker matches a file to its line by the node's first three words (the Cosmósis worker's note).
 
 ## Compatibility
 
