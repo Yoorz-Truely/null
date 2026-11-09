@@ -21,7 +21,7 @@ use crate::codes;
 use crate::schema::Property;
 
 /// The handles of `all`'s lines of `kind`, as written.
-fn handles(all: &[Attr<'_>], kind: &str) -> Vec<String> {
+pub(super) fn handles(all: &[Attr<'_>], kind: &str) -> Vec<String> {
     all.iter()
         .filter(|a| a.name == kind)
         .filter_map(|a| a.args.first()?.as_word().map(str::to_string))
@@ -38,7 +38,7 @@ fn named(block: &[Attr<'_>], name: &str) -> Option<(String, Span)> {
 
 /// A struct's properties a line may set: not read-only, not a pointer or collection (those are
 /// written as handles where they are written at all), and not its name.
-fn settable<'s>(props: Vec<&'s Property>, except: &[&str]) -> Vec<&'s Property> {
+pub(super) fn settable<'s>(props: Vec<&'s Property>, except: &[&str]) -> Vec<&'s Property> {
     props
         .into_iter()
         .filter(|p| {
@@ -52,7 +52,7 @@ fn settable<'s>(props: Vec<&'s Property>, except: &[&str]) -> Vec<&'s Property> 
 
 impl Checker<'_> {
     /// A line `kind @h "Name"`, its handle first; false, said, when it is not.
-    fn sub_header(&mut self, file: FileId, a: &Attr<'_>, example: &str) -> bool {
+    pub(super) fn sub_header(&mut self, file: FileId, a: &Attr<'_>, example: &str) -> bool {
         match a.args.as_slice() {
             [h, rest @ ..] if h.as_word().is_some_and(|w| w.starts_with('@')) => {
                 kebab_handle(h.text(), h.span(), &mut self.out(file));

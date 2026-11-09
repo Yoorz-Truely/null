@@ -661,7 +661,7 @@ array mesh @rock vertices [
 
   A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the drawings (section 7). A drawing's array past 2,000 elements goes in a file of its own named after the datablock, the drawing and the array (`sketch.first.points.noll`); its `array` node names the array in one word, the drawing's handle, a dot and the line's name for the drawing's own arrays (`array grease-pencil @sketch @first.points [ … ]`), and the drawing's handle, `/` and the attribute's for an attribute (`@first/@radius`). A drawing that is a reference to another datablock's (`GreasePencilDrawingReference`) has no form yet, and conversion says so.
 
-```null (1d-06f)
+```null
 grease-pencil @sketch "Sketch" {
   drawing @first {
     points [[0m 0m 0m] [0.5m 0m 0m] [0.5m 0m 0.5m]]
