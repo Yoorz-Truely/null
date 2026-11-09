@@ -94,7 +94,7 @@ impl Checker<'_> {
             .unwrap_or_default();
         let mut slots: HashMap<String, String> = HashMap::new();
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
-        names.extend(["slot", "layer"]);
+        names.extend(["slot", "layer", "marker"]);
         let mut seen = HashSet::new();
         for a in &all {
             match a.name.as_str() {
@@ -154,6 +154,8 @@ impl Checker<'_> {
                     }
                 }
                 "layer" => {}
+                // RFC 0005 (S88, task 1d-07q).
+                "marker" => self.marker(file, a),
                 _ => match props.iter().find(|p| p.name == a.name) {
                     Some(p) => self.property(file, a, p, false),
                     None => self.unknown(file, a, "an action", &names, None),

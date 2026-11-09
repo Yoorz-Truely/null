@@ -361,7 +361,7 @@ Task 1d-07a. An object's modifiers, constraints and pose bones are sub-objects (
 
 - `modifier @h <kind> "Name" { … }` is one modifier, in stack order. Its kind is a modifier's (S67: `bevel`, `array`, `subsurf`, `nodes`), and its block holds that kind's properties and those every modifier has (`show-viewport`, `show-render`). A geometry nodes modifier (`nodes`) names its group with `node-group`, and its group's inputs are its lines by their handles (section 10).
 - `constraint @h <kind> "Name" { … }` is one constraint, in stack order, of a constraint kind (`damped-track`, `copy-location`, `kinematic` for inverse kinematics).
-- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (1d-07h).
+- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (below).
 
 The quoted name is Blender's and may be left out, the handle then standing for it.
 
@@ -392,7 +392,59 @@ object @rig "Rig" {
   }
 }
 
-armature @rig-bones "Rig"
+armature @rig-bones "Rig" {
+  bone @spine "Spine" {
+    head [0m 0m 0m]
+    tail [0m 0m 1m]
+  }
+}
+```
+
+### An armature's bones
+
+RFC 0005, Sau's decision S88 (task 1d-07q). `bone @h "Name" { … }` in an `armature`'s block is one bone of its rest pose, in the armature's order (Blender's: each bone after its parent). It holds:
+- `head [x y z]`, `tail [x y z]` and `roll`: the rest pose as Blender's edit bones hold it, in the armature's space, lengths as `location` is written and the roll an angle (section 6). These are the values a user types into an edit bone's fields.
+- `parent @h`, another bone of the armature, and `use-connect` when its head is its parent's tail.
+- `Bone`'s other settings by their Null names: `use-deform`, `inherit-scale`, `use-inherit-rotation`, `use-local-location`, `use-relative-parent`, the envelope's (`envelope-distance`, `envelope-weight`, `head-radius`, `tail-radius`), the B-Bone's (`bbone-segments`, `bbone-x`, `bbone-z`, …), `hide` and the rest.
+- `collections [@h …]`, the bone collections it belongs to.
+
+`bone-collection @h "Name" { … }` is one of the armature's bone collections, in Blender's order, with `BoneCollection`'s settings (`is-visible`, `is-solo`) and `parent @h` for a nested one. A bone names its collections, rather than a collection its bones, so a bone's line holds everything about it.
+
+An object's `bone @h` lines (above) pose the bones of its armature by the same name. An armature's bone and a posed bone are different lines in different blocks, as Blender keeps `Bone` and `bPoseChannel` apart. The checker holds `parent` and `collections` to the armature's own lines, and says so when a bone's parents lead back to it.
+
+```null
+armature @arm-bones "Arm" {
+  bone-collection @limbs "Limbs"
+  bone @upper "Upper" {
+    head [0m 0m 0m]
+    tail [0m 0m 1m]
+    collections [@limbs]
+  }
+  bone @fore "Fore" {
+    parent @upper
+    use-connect
+    head [0m 0m 1m]
+    tail [0m 0.1m 1.8m]
+    roll 5deg
+    collections [@limbs]
+  }
+}
+```
+
+How Sau writes them, an implementation note that adds no meaning: Blender's bone head, tail and roll are read-only outside edit mode, its stored values (relative to the parent, in armature space, and the matrices) derived from the edit bones when edit mode is left. Sau makes the armature's edit bones from its bones, sets each one's head, tail, roll, parent and connection from its line, and writes them back, which derives the stored values as leaving edit mode does; the object never enters edit mode. The printer reads them back through edit bones made the same way.
+
+### Timeline markers
+
+RFC 0005, Sau's decision S88 (task 1d-07q). `marker @h "Name" frame=N { … }` in a scene's or an action's block is one timeline marker, its frame an integer, bare, as Blender stores it, with `TimelineMarker`'s settings in its block: `camera @h`, the camera object a scene's marker switches to, and `select`. A marker's name may be empty or shared; such a marker's handle is made from its frame (`@f96`, section 7), and its quoted name is left out when it is empty. Markers are written in frame order.
+
+```null
+object @close-up "Close-up"
+
+scene @titles "Titles" {
+  marker @intro "Intro" frame=1
+  marker @cut "Cut" frame=48 { camera @close-up }
+  marker @f96 frame=96
+}
 ```
 
 ### Components, parameters and patterns
@@ -520,7 +572,30 @@ Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Null's checker
   - Blender's internal attributes (`.edge_verts`, `.corner_vert` and the others whose names start with `.`) are never written: `edges` and `polygons` are they.
 - **`uv-map @h "Name" [[u v] …]`**: a UV map, one `[u v]` per corner, with its settings in a block (`active-render`).
 - **`vertex-group @h "Name" { weights [[index weight] …] }`**: a vertex group, a sub-object of the mesh as Blender 5.3 keeps it (section 7), with its weights: only the vertices in the group, by index, in increasing order.
+- **`shape-key @h "Name" { … }`**: one shape key of the mesh's `Key`, in Blender's order (RFC 0005, Sau's decision S88, task 1d-07q). It holds:
+  - `positions [[x y z] …]`: one position per vertex, as `vertices` are written, and in a data file of its own past 2,000, as any array (`positions file="face.smile.noll" count=… bounds=…`, the file's `array mesh @face @smile [ … ]`);
+  - `relative-key @h`, the shape key it is relative to (the basis when left out), and `vertex-group @h`, the vertex group that weighs it: both handles, of the mesh's own shape keys and vertex groups;
+  - `ShapeKey`'s other settings: `value`, `slider-min`, `slider-max`, `interpolation`, `mute`, `lock-shape`.
+
+  The first shape key is the basis (Blender's reference key). Its `positions` are left out when they equal the mesh's `vertices`, as Blender keeps them, and written when they differ (a script that edits `key_blocks[0].data` can make them differ), so no data is lost; a basis with no `positions` takes the mesh's `vertices`. `shape-keys { … }` in the same block holds the `Key`'s own settings (`use-relative`, `eval-time`) and what plays on the `Key`: `action @a slot=@s` and NLA `track` lines (section 11), whose slot is of kind `key`. A shape key's animated value is an f-curve of that slot by the shape key's handle: `fcurve @smile value`.
 - **Colours, creases, bevel weights, sharp edges and faces, seams and custom normals** are attributes like any other, by Blender's names: `crease_vert`, `crease_edge`, `bevel_weight_vert`, `bevel_weight_edge`, `sharp_edge`, `sharp_face`, `custom_normal`, and a colour attribute of type `float-color` or `byte-color` on `point` or `corner`.
+
+A mesh with two shape keys, the second weighted by a vertex group:
+
+```null
+mesh @face "Face" {
+  vertices [[0m 0m 0m] [1m 0m 0m] [0m 1m 0m]]
+  polygons [[0 1 2]]
+  vertex-group @mouth "Mouth" { weights [[1 1] [2 0.5]] }
+  shape-key @basis "Basis"
+  shape-key @smile "Smile" {
+    positions [[0m 0m 0m] [1m 0m 0.2m] [0m 1m 0.1m]]
+    vertex-group @mouth
+    value 0.3
+  }
+  shape-keys { eval-time 10 }
+}
+```
 
 **Inline up to 2,000 elements.** An array of up to 2,000 elements (vertices, edges, polygons, corners, weights, or an attribute's values) is written inline, as above. A list may span lines, and the formatter puts one element on each line once it does not fit on one.
 

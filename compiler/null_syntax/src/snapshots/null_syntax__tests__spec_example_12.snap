@@ -2,11 +2,8 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  2 datablock: mesh @rock "Rock"
-  3   data file reference: vertices file="rock.vertices.noll" count=12480 bounds=[[-1.2m -0.9m 0m] [1.3m 1m 2.1m]]
-  4   data file reference: polygons file="rock.polygons.noll" count=12476
-  5   data file reference: attribute @crease-edge edge float "crease_edge" file="rock.crease-edge.noll" count=24954 bounds=[0 1]
-  6   data file reference: uv-map @uv-map "UVMap" file="rock.uv-map.noll" count=49904 bounds=[[0 0] [1 1]]
-  6     attribute: active-render
-  7   sub-object: vertex-group @base "Base"
-  7     attribute: weights [[0 1] [1 1] [2 0.5]]
+  2 datablock: collection @pier "Pier"
+  3   pattern: use @plank @plank count=20
+  4     attribute: location [0m n*25cm 0.35m]
+  6   override: override @plank.7
+  6     attribute: state liquid
