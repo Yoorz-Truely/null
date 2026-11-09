@@ -124151,7 +124151,11 @@
       {
        "struct": "Scene",
        "path": "flag",
-       "mask": 8
+       "mask": 8,
+       "states": {
+        "frame-drop": 8,
+        "none": 0
+       }
       }
      ]
     },

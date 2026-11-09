@@ -179,6 +179,11 @@ impl RawField {
         }
     }
 
+    /// The value of `bytes` as an unsigned number, masked to the field's mask where it has one.
+    pub fn carried_bits(&self, bytes: &[u8]) -> u64 {
+        Self::bits(bytes) & self.mask.unwrap_or(u64::MAX)
+    }
+
     /// The bits of `bytes` a `raw` line carries: all of them, or, for a masked field, those of
     /// its mask (the others zero).
     pub fn carried(&self, bytes: &[u8]) -> Vec<u8> {
