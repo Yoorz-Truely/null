@@ -112127,6 +112127,7 @@
      "rna": "lightgroup",
      "type": "string",
      "default": "",
+     "max-length": 64,
      "class": "stored"
     },
     {
@@ -152582,6 +152583,7 @@
      "rna": "lightgroup",
      "type": "string",
      "default": "",
+     "max-length": 64,
      "class": "stored"
     },
     {
