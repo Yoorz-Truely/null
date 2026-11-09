@@ -69,6 +69,12 @@ pub mod codes {
     /// A key's handle written beside an automatic handle type, which Blender places again: a
     /// warning (Sau's decision S87).
     pub const HANDLE_PLACED: &str = "null-handle-placed";
+    /// A key after a link other than `mute=` and `value=`, which v0 ignored: a warning (Sau's
+    /// decisions S95 and S97, RFC 0009).
+    pub const LINK_KEY: &str = "null-link-key";
+    /// A hidden socket a layout line cannot hide: one the node does not have, or a linked input
+    /// (S95, S97, RFC 0009).
+    pub const HIDDEN_SOCKET: &str = "null-hidden-socket";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -77,7 +83,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 13] = [
+    pub const ALL: [&str; 15] = [
         SYNTAX,
         NAME,
         KIND,
@@ -91,5 +97,7 @@ pub mod codes {
         REPEATED,
         PYTHON,
         HANDLE_PLACED,
+        LINK_KEY,
+        HIDDEN_SOCKET,
     ];
 }

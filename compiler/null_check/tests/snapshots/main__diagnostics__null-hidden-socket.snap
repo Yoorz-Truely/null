@@ -1,0 +1,9 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- material @m "M" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @bsdf [0 0] hide-inputs=[rougness roughness] }\n}\n
+case.noll:6:37 error[null-hidden-socket]: `rougness` is none of this node's inputs
+  fix: write `roughness`
+case.noll:6:46 error[null-hidden-socket]: `roughness` is linked, and Blender hides no linked socket
+  `write `roughness`` gives: material @m "M" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @bsdf [0 0] hide-inputs=[roughness roughness] }\n}\n

@@ -584,7 +584,7 @@ impl<'s> Checker<'s> {
                     ),
                 ),
                 (other, _) => self.out(file).warning(
-                    codes::UNKNOWN_PROPERTY,
+                    codes::LINK_KEY,
                     key.span,
                     format!(
                         "an input line takes `mute=` and `value=` after a link, not `{other}=`; it is ignored (S95)"
@@ -1074,7 +1074,7 @@ impl<'s> Checker<'s> {
             {
                 let near = closest(w, names.iter().map(String::as_str));
                 self.out(file).error_fix(
-                    codes::UNKNOWN_PROPERTY,
+                    codes::HIDDEN_SOCKET,
                     item.span(),
                     format!(
                         "`{w}` is none of this node's {}",
@@ -1086,7 +1086,7 @@ impl<'s> Checker<'s> {
             }
             if inputs && entry.linked.iter().any(|l| l == w) {
                 self.out(file).error(
-                    codes::TYPE,
+                    codes::HIDDEN_SOCKET,
                     item.span(),
                     format!("`{w}` is linked, and Blender hides no linked socket"),
                 );

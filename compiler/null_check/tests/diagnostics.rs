@@ -116,6 +116,20 @@ const CASES: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        codes::LINK_KEY,
+        &[
+            // A key after a link other than mute= and value=, which v0 ignored (S95, S97).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac colour=red }\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::HIDDEN_SOCKET,
+        &[
+            // A socket the node lacks, and a linked one (S95, S97).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @bsdf [0 0] hide-inputs=[rougness roughness] }\n}\n",
+        ],
+    ),
+    (
         codes::PYTHON,
         &[
             "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.data.objects['D'].location.z * 100\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
