@@ -9,7 +9,9 @@
 //! Null's own forms (spec, section 8) stand where the RNA property they write stands: a scene's
 //! `units` at `unit-settings`, its members at `collection`, `fps` and `fps-base` at `render`; an
 //! object's `material` slots at `material-slots`; a mesh's `primitive` before `vertices`; a
-//! material's `nodes` and `layout` at `node-tree`. A node's settings come first and then its
+//! material's `nodes` and `layout` at `node-tree`; a Grease Pencil's `drawing`s before its
+//! layers, whose `layer` and `layer-group` lines keep their order, the layer tree's; a curves
+//! datablock's `points` before its `curves` (RFC 0006). A node's settings come first and then its
 //! inputs in the order its declaration lists them.
 
 use null_check::{SHADER_TREE, Schema, TEXTURE_TREE, forms};
@@ -62,10 +64,16 @@ struct Order {
     /// The pointers to a struct written as a block of its own (S70), by name, with the struct's
     /// RNA identifier: a block of one is ordered by that struct's order.
     pointers: Vec<(String, String)>,
+    /// Names that stand where another stands, keeping their order with its lines as written: a
+    /// Grease Pencil's `layer-group` with its `layer`s, the order of its layer tree (RFC 0006).
+    same: Vec<(String, String)>,
 }
 
 impl Order {
     fn key(&self, name: &str) -> usize {
+        if let Some((_, other)) = self.same.iter().find(|(n, _)| n == name) {
+            return self.key(other);
+        }
         // `last` first: a node group's `nodes` is also its struct's RNA property, which would
         // put it before the interface lines section 10 writes first (the 1d-08a review).
         if let Some(i) = self.last.iter().position(|n| n == name) {
@@ -219,6 +227,8 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
         ],
         "object" => &[("material", "material-slots")],
         "mesh" => &[("primitive", "vertices")],
+        // A Grease Pencil's drawings before its layers (RFC 0006).
+        "grease-pencil" => &[("drawing", "layers")],
         "material" => &[("nodes", "node-tree"), ("layout", "node-tree")],
         _ if texture => &[("nodes", "node-tree"), ("layout", "node-tree")],
         _ => &[],
@@ -234,6 +244,18 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
             .position(|n| n == anchor)
             .unwrap_or(names.len());
         names.insert(at, (*form).to_string());
+    }
+    // A curves datablock's `points` before its `curves`, as section 9 writes them (RFC 0006),
+    // where RNA's collections stand the other way.
+    if kind == "curves"
+        && let Some(from) = names.iter().position(|n| n == "points")
+    {
+        let points = names.remove(from);
+        let at = names
+            .iter()
+            .position(|n| n == "curves")
+            .unwrap_or(names.len());
+        names.insert(at, points);
     }
     // A sub-object line (section 7's kinds) stands where RNA's collection of it stands: `modifier`
     // at `modifiers`, `constraint` at `constraints`, an action's `slot` at `slots` (task 1d-02b;
@@ -317,6 +339,12 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
             },
         ));
     }
+    // A Grease Pencil's layer tree keeps its order: a group stands with the layers (RFC 0006).
+    let same = if kind == "grease-pencil" {
+        vec![("layer-group".to_string(), "layer".to_string())]
+    } else {
+        Vec::new()
+    };
     Order {
         names,
         last,
@@ -326,6 +354,7 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
         children,
         nodes: false,
         pointers,
+        same,
     }
 }
 

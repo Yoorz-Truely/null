@@ -5821,7 +5821,8 @@
        "value": 4
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "new": "armature-defined"
     },
     {
      "name": "use-connect",
@@ -5949,7 +5950,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.25
     },
     {
      "name": "envelope-weight",
@@ -5966,7 +5968,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     },
     {
      "name": "head-radius",
@@ -5985,7 +5988,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.1
     },
     {
      "name": "tail-radius",
@@ -6004,7 +6008,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 0.05
     },
     {
      "name": "bbone-segments",
@@ -6021,7 +6026,8 @@
       ]
      },
      "default": 0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1
     },
     {
      "name": "bbone-mapping-mode",
@@ -6442,7 +6448,18 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      1.0,
+      0.0
+     ]
     },
     {
      "name": "matrix-local",
@@ -6482,7 +6499,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "tail",
@@ -6509,7 +6544,12 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "tail-local",
@@ -6536,7 +6576,12 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "head",
@@ -6610,7 +6655,8 @@
      },
      "default": 0.0,
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     }
    ]
   },
@@ -49883,7 +49929,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     },
     {
      "name": "tint-color",
@@ -49952,7 +49999,8 @@
      "rna": "use_lights",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "pass-index",
@@ -50167,7 +50215,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "matrix-parent-inverse",
@@ -50207,7 +50273,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     }
    ]
   },
@@ -50285,7 +50369,8 @@
        "value": 7
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "new": "none"
     },
     {
      "name": "children",
@@ -124151,7 +124236,18 @@
        "value": 2
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "hides": [
+      {
+       "struct": "Scene",
+       "path": "flag",
+       "mask": 8,
+       "states": {
+        "none": 0,
+        "frame-drop": 8
+       }
+      }
+     ]
     },
     {
      "name": "playback-loop-mode",

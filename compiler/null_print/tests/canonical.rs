@@ -462,3 +462,26 @@ fn a_groups_interface_comes_before_its_nodes() {
     assert_eq!(canonical(text, &project), want);
     assert_eq!(canonical(want, &project), want);
 }
+
+#[test]
+fn a_grease_pencils_layer_tree_and_a_curves_points_keep_section_9s_order() {
+    // RFC 0006 (task 1d-06f): a Grease Pencil's drawings come before its layers, and its `layer`
+    // and `layer-group` lines keep their order, which is the layer tree's; a curves datablock's
+    // `points` come before its `curves`, though RNA's `curves` stands first.
+    static PROJECT: std::sync::OnceLock<Schema> = std::sync::OnceLock::new();
+    let project = PROJECT.get_or_init(|| {
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap()
+    });
+    let gp = "grease-pencil @g \"G\" {\n  layer-group @fx \"FX\" {\n    layer @b \"B\"\n  }\n  layer @a \"A\" {\n    frame 1 @d\n  }\n  drawing @d {\n    points [[0m 0m 0m]]\n    curves [1]\n  }\n  onion-factor 0.25\n}\n";
+    let out = canonical(gp, project);
+    let at = |s: &str| out.find(s).unwrap_or_else(|| panic!("{s}\n{out}"));
+    assert!(at("drawing @d") < at("layer-group @fx"), "{out}");
+    assert!(at("layer-group @fx") < at("layer @a"), "{out}");
+    assert_eq!(canonical(&out, project), out);
+    let curves = "curves @c \"C\" {\n  curves [2]\n  points [[0m 0m 0m] [0m 0m 1m]]\n}\n";
+    let out = canonical(curves, project);
+    assert!(
+        out.find("points [").unwrap() < out.find("curves [").unwrap(),
+        "{out}"
+    );
+}
