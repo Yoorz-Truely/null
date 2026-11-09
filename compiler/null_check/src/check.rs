@@ -896,7 +896,7 @@ impl<'s> Checker<'s> {
                     && carried & h.mask != *want
                 {
                     self.out(file).warning(
-                        codes::TYPE,
+                        codes::RAW_STATE_CONFLICT,
                         v.span(),
                         format!(
                             "`{} {state}` sets `{}`'s bits {} to {want}, so `{}` here contradicts it",

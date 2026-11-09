@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- scene @s "S" {\n  sync-mode frame-drop\n  raw {\n    flag 0\n  }\n}\n
+case.noll:4:10 warning[null-raw-state-conflict]: `sync-mode frame-drop` sets `flag`'s bits 8 to 8, so `0` here contradicts it
