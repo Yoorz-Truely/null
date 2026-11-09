@@ -964,4 +964,16 @@ texture @plain \"Plain\" {
     // Nor a wood a clouds texture's.
     let found = broken("  wood-type ringnoise\n", "  cloud-type color\n");
     assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+    // One handle on two textures of different kinds: defined twice (S101), since a reference
+    // to a texture names any texture kind.
+    let found = broken("clouds @sky", "clouds @grain");
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    assert!(
+        found[0]
+            .message
+            .contains("defined twice, as a wood and as a clouds"),
+        "{}",
+        found[0].message
+    );
 }
