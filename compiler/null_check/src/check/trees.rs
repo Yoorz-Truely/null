@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use null_syntax::ast::{Node, Value};
 use null_syntax::{FileId, closest};
 
-use super::{Attr, Checker, args_of, attrs, header, kebab_handle};
+use super::{Attr, Checker, args_of, attrs, header, kebab_handle, props_of};
 use crate::codes;
 use crate::schema::{NodeDef, Property};
 use crate::values::{check_float, list_near};
@@ -100,11 +100,30 @@ pub(super) struct Tree {
     pub rna: String,
     entries: HashMap<String, Entry>,
     interface: Option<Interface>,
+    /// The handle of the datablock the tree is in: a path from it names one of the tree's nodes
+    /// as the short path does (section 7; short form 8, task 1d-03j).
+    owner: Option<String>,
 }
 
 impl Tree {
+    /// `word` with the tree's owner taken off the front (`@clay/@noise.fac` is `@noise.fac` in
+    /// `material @clay`), else as it is.
+    pub(super) fn local<'w>(&self, word: &'w str) -> &'w str {
+        self.owner
+            .as_deref()
+            .and_then(|o| word.strip_prefix(o))
+            .and_then(|rest| rest.strip_prefix('/'))
+            .filter(|rest| rest.starts_with('@'))
+            .unwrap_or(word)
+    }
+
     /// The handles `nodes` defines, zones and the nodes inside them included.
-    pub(super) fn new(rna: &str, nodes: Option<Node<'_>>, interface: Option<Interface>) -> Tree {
+    pub(super) fn new(
+        rna: &str,
+        nodes: Option<Node<'_>>,
+        interface: Option<Interface>,
+        owner: Option<String>,
+    ) -> Tree {
         let mut entries = HashMap::new();
         fn walk(n: Node<'_>, entries: &mut HashMap<String, Entry>) {
             for child in n.children() {
@@ -158,6 +177,7 @@ impl Tree {
             rna: rna.to_string(),
             entries,
             interface,
+            owner,
         }
     }
 }
@@ -194,6 +214,15 @@ impl<'s> Checker<'s> {
     pub(super) fn tree_of(&self, kind: &str) -> Option<(&'s str, bool)> {
         match kind {
             "material" | "world" | "light" => Some(("ShaderNodeTree", false)),
+            // A texture's tree, whatever its type (`noise`, `wood`): a texture node tree.
+            _ if kind == "texture"
+                || self
+                    .schema
+                    .struct_by_kind(kind)
+                    .is_some_and(|s| s.base.as_deref() == Some("Texture")) =>
+            {
+                Some(("TextureNodeTree", false))
+            }
             _ => {
                 let s = self.schema.struct_by_kind(kind)?;
                 (s.base.as_deref() == Some("NodeTree")).then(|| {
@@ -480,9 +509,11 @@ impl<'s> Checker<'s> {
     /// `parent @frame`: the frame node a node is drawn in.
     fn parent(&mut self, file: FileId, a: &Attr<'_>, tree: &Tree) {
         match a.args.as_slice() {
-            [v] if v
-                .as_word()
-                .is_some_and(|w| tree.entries.get(w).is_some_and(|e| e.kind == "frame")) => {}
+            [v] if v.as_word().is_some_and(|w| {
+                tree.entries
+                    .get(tree.local(w))
+                    .is_some_and(|e| e.kind == "frame")
+            }) => {}
             [v] => self.out(file).error(
                 codes::HANDLE,
                 v.span(),
@@ -503,7 +534,9 @@ impl<'s> Checker<'s> {
     /// `@zone.item` is the zone's input node's output (an item as it comes into an iteration);
     /// anywhere else, its output node's (the item as it leaves).
     pub(super) fn link(&mut self, file: FileId, v: &Value<'_>, tree: &Tree, zone: Option<&str>) {
-        let word = v.as_word().unwrap_or_default();
+        // A path from the tree's datablock reads as the short one: its first step is the
+        // owner, the rest one of the tree's nodes (section 7).
+        let word = tree.local(v.as_word().unwrap_or_default());
         let Some((node, socket)) = word.split_once('.') else {
             return self.out(file).error(
                 codes::TYPE,
@@ -798,12 +831,55 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            let zone = tree.entries.get(handle).is_some_and(|e| e.zone);
+            let entry = tree.entries.get(handle);
+            let zone = entry.is_some_and(|e| e.zone);
+            let frame = entry.is_some_and(|e| e.kind == "frame");
             if !tree.entries.contains_key(handle) {
                 out.error(
                     codes::HANDLE,
                     name.span,
                     format!("no node of this tree is called `{handle}`"),
+                );
+            }
+            // A node's size, where it is not its kind's default: `width=`, and `height=` for a
+            // frame, the one node whose height is its own (section 10).
+            for (key, value) in props_of(child) {
+                match key.text {
+                    "width" if !zone => {}
+                    "height" if frame => {}
+                    "height" if !zone => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            "only a frame's layout line takes `height=`; a node's height follows from its sockets",
+                        );
+                        continue;
+                    }
+                    "width" | "height" => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            "a zone's layout line holds its two positions only",
+                        );
+                        continue;
+                    }
+                    other => {
+                        out.error(
+                            codes::UNKNOWN_PROPERTY,
+                            key.span,
+                            format!(
+                                "a layout line takes `width=`, and `height=` for a frame, not `{other}=`"
+                            ),
+                        );
+                        continue;
+                    }
+                }
+                check_float(
+                    &value,
+                    "layout",
+                    null_value::Dimension::None,
+                    &Property::any(),
+                    &mut out,
                 );
             }
             let args = args_of(child);
@@ -979,6 +1055,7 @@ fn tree_word(rna: &str) -> &str {
         "ShaderNodeTree" => "shader",
         "GeometryNodeTree" => "geometry",
         "CompositorNodeTree" => "compositor",
+        "TextureNodeTree" => "texture",
         _ => "node",
     }
 }

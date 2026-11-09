@@ -1,0 +1,23 @@
+// scenes/main.noll
+scene @main "Main" {
+  frame-start 1
+  frame-end 240
+  fps 24
+  camera @shot-cam
+  world @dusk
+  render {
+    engine cycles
+    resolution-x 1920
+    resolution-y 1080
+  }
+  cycles { samples 512; use-denoising }
+
+  collection @harbor "Harbor" {
+    object @pier
+    object @harbor-lamp
+    object @shot-cam
+    collection @boats "Boats"
+  }
+}
+
+world @dusk "Dusk" { color [0.02 0.03 0.06] }

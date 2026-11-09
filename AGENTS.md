@@ -6,6 +6,7 @@ Null is the language of Sau's projects ([README](README.md)). This file is the r
 
 - Read the [specification](docs/spec/null-v0.md) before changing anything the language means.
 - Decisions the user settled are not reopened; propose a change through `docs/rfcs/`.
+- **Null v0 is frozen** (the local tag `v0`, November 8, 2026; Sau's task 1d-01c). A change to the spec now needs an RFC first ([`docs/rfcs/README.md`](docs/rfcs/README.md)): any new form, word, unit, default, diagnostic or rule, any change to what a file means, its canonical form or its write-back. Only a fix to wording that changes no meaning, and implementation that follows the spec as it is, go in without one. An accepted RFC names itself in the spec and in `CHANGELOG.md`.
 - Original code only, with permissive dependencies checked first. Never copy or translate GPL-family code, including Blender's: Null is MIT, and reads Blender's schema only through the file Sau generates.
 - Work from Sau's task board (`../Sau/docs/TASKS.md`, `just tasks` in Sau): claim a task before starting it, hold at most three, and move each through `review` and `done` (`../Sau/docs/agents/workflow.md`). Read Sau's `HANDOFF.md` for the current state.
 - The only agent writing Null works in this main checkout on `main`; a second agent writing Null at the same time works in its own worktree and branch, `just wt-new <name> --repos null` in Sau (Sau's decision S58, `../Sau/docs/agents/parallel.md`).

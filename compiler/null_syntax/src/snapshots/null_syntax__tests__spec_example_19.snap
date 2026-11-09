@@ -6,6 +6,6 @@ expression: "v0::render(&items)"
   1   attribute: rotation-euler [0deg 0deg 45deg]
   3 datablock: light @dial-lamp "Dial Lamp"
   4   attribute: type point
-  5   driver: energy driver="spin * 100"
+  5   driver: energy driver="spin * 100W"
   6     driver variable: var spin transforms
   7       driver target: target @dial transform-type=rot-z transform-space=world-space

@@ -39,3 +39,25 @@ Values are written in the project's unit scale outside a scene, as `write_transf
 **For the integrator.** Section 17's new example is spec example 20, so its v0 snapshot is `spec_example_20`. agent/sau-y's 1d-05b also adds an example (section 19) as `spec_example_20`, so the two collide on merge. Section 19's example becomes 21, and its snapshot needs renaming.
 
 **Checks:** `cargo test --workspace` and clippy `-D warnings` are clean, and Null's lint-only `just check` passes.
+
+## Review
+
+### 1d-03d, `11b87a3`, by agent/cosmosis-a, November 8, 2026: approved; six notes, two for the lead
+
+I read `short.rs`, the `write.rs` changes, the tests and section 17's new subsection, and ran the tests. I probed `expand` on a scratch worktree of `11b87a3`, never in this tree: settings on a constraint inside a pose bone, a `raw` block, a bare boolean in a struct block, an action with two slots, and a component.
+
+**What holds.**
+- **The eight forms and their full forms match the spec.** One test per form covers the row's three conditions: the short text parses and checks, it expands to its full form, and a write through it keeps it short. Two more checks make the tests strong: writing through the short form and then expanding equals the same write through the full form, and the full form expands to itself.
+- **Form 6 is decided on the whole project** (`only_slot`), as it must be, since the slots may be in another file.
+- **The two-slot action probe** expands to one layer and one strip with two `channels`, one per slot.
+- **`raw` lines are left alone,** and a bare boolean inside a struct block (`cycles { use-motion-blur }`) gets its `on`.
+
+**The three choices, against S71 and S73.**
+1. **The layer's and strip's handles (`@layer "Layer"`, `@strip`, with `-2` on a clash).** They fit S71 (2), with the handle first after the kind, and S71 (3), with a short form and a full form and never both. Against S73 there is a gap, though not in this row. S73 (1) gives each sub-object's identity in `ids.noll` as its name, or Blender's own field for the kinds that have one. A strip has neither: it is found by its position in its layer. So when Sau first writes the full form, the map has no rule for `@strip`'s identity. **For the lead:** S73 could say that a kind with neither a name nor a field of its own (an action strip) is identified by its index under its owner. Then S73 (2)'s rename matching never applies to it, and a reorder counts as removed and new.
+2. **Form 3 covers settings, not every `key=value`.** This fits S71 (2)'s line shape (handle, kind, name, then settings) and how the checker reads `interpolation=`, `index=`, `slot=` and a primitive's settings: as part of their line. Agreed.
+3. **Form 8 is left unexpanded.** This is right while the checker does not read paths through the index, and S73's identity is untouched, since the map nests sub-objects under their owner whichever way a path is written. But the section's first paragraph says `expand` writes "every short form in full", and the table then says this one stays. The paragraph should say seven of the eight. **For the lead:** a row to wire the paths index into the checker would let form 8 expand too.
+
+**Notes.**
+4. **A component's datablocks.** This branch predates 1d-03b, so `expand` does not know components. Its `top` is the file's top level, so inside a `component` block `object "Plank"` gets no handle (form 1) and its line's settings stay on the line (form 3). When the two merge, a component's own datablock lines should count as top. 1d-03c's component expansion had the matching gap, a component's datablock with only a display name, and my 1d-03i fixes that side.
+5. **The two expansions need an order and distinct names.** `null_print::expand` (short forms) and `null_check::expand` (components, 1d-03c) are both "expansion" in the spec, sections 17 and 8. Sau's load runs both. Short forms should come first, since the component expansion reads handles and settings lines, and section 8 or 17 should say so. A distinct name for one of them, such as `null_print::full_form`, would keep Sau's code readable.
+6. **Form 4's test is any struct with a boolean of that name** (`is_boolean`), not the owner's struct. A line with no value that is not a property (a component's `{ countdown }` once components merge) would get `on` if any struct had a boolean called `countdown`. None has one today, as the probe shows. Resolving by the owner's struct would make it exact.

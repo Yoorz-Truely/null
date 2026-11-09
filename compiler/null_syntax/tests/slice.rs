@@ -191,3 +191,17 @@ fn the_dump_shows_every_byte() {
         tokens.len()
     );
 }
+
+#[test]
+fn a_raw_blocks_lines_keep_dnas_names_and_nothing_else_does() {
+    // Section 19 (Sau's 1d-05b): inside a `raw` block, at any depth, lines are DNA's own names;
+    // the `raw` line itself and everything outside it are held to kebab-case.
+    let text = "object @o \"O\" {\n  raw {\n    loc_legacy [0 0 0]\n    r.mode 2097152\n    deep {\n      also_dna 1\n    }\n  }\n  not_kebab 1\n}\n";
+    let parse = null_syntax::parse(text);
+    let found = null_syntax::names::check(&parse, null_syntax::FileId(0));
+    let named: Vec<&str> = found
+        .iter()
+        .map(|d| &text[d.primary.span.start..d.primary.span.end])
+        .collect();
+    assert_eq!(named, ["not_kebab"], "{found:#?}");
+}

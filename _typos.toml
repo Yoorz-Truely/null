@@ -15,10 +15,12 @@ geomtry = "geomtry"
 lenght = "lenght"
 materail = "materail"
 
-# The schema Sau generates holds Blender's own names and labels (`preserve_formant`), not ours.
+# The schema and raw table Sau generates hold Blender's own names and labels (`preserve_formant`,
+# DNA's `area_sizez`), not ours.
 [files]
 # The spec's examples written wrong on purpose, one mistake each, to show their errors (task 1d-07a).
 extend-exclude = [
   "schema/null-schema-project.json",
+  "schema/null-raw.json",
   "compiler/null_check/tests/spec_examples.rs",
 ]

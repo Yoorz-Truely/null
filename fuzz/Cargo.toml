@@ -13,10 +13,19 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 null_syntax = { path = "../compiler/null_syntax" }
+null_print = { path = "../compiler/null_print" }
+null_check = { path = "../compiler/null_check" }
 
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "format"
+path = "fuzz_targets/format.rs"
 test = false
 doc = false
 bench = false

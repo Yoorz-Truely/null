@@ -8,7 +8,8 @@ use null_syntax::{TokenKind, lex};
 ///   at the start of a line one level less, a line a `\` continues one level more;
 /// - one space between entries, none just inside `[ ]`, one on each side inside a
 ///   `{ }` that stays on one line, none before `;`, `=` left as written;
-/// - no trailing whitespace, a comment's included, at most one blank line in a row, none at the start, and
+/// - no trailing whitespace, a comment's included (but for the whitespace after a lone `\`
+///   word, which keeps it a word), at most one blank line in a row, none at the start, and
 ///   exactly one line feed at the end; lines end in LF, a CRLF file's included.
 ///
 /// Every token but whitespace is kept as written, comments and strings included, so
@@ -25,6 +26,10 @@ pub fn format(text: &str) -> String {
     // A `\` continuation on this line, and so on the line it leads to.
     let mut continues = false;
     let mut continued = false;
+    // The whitespace after a `\` that is a word, kept as written: only spaces, tabs and CRs then
+    // a line's end make a `\` a continuation, so other whitespace (a vertical tab) after one is
+    // what keeps it a word, and taking it out, or making it a space, would change the token.
+    let mut after_backslash: Option<&str> = None;
     for token in tokens {
         let kind = token.kind;
         let t = &text[at..at + token.len as usize];
@@ -33,9 +38,18 @@ pub fn format(text: &str) -> String {
             TokenKind::Whitespace => {
                 if !line_start {
                     pending_space = true;
+                    if prev == Some(TokenKind::Word)
+                        && out.ends_with('\\')
+                        && word_is_backslash(&out)
+                    {
+                        after_backslash = Some(t);
+                    }
                 }
             }
             TokenKind::Newline => {
+                if let Some(ws) = after_backslash.take() {
+                    out.push_str(ws);
+                }
                 if line_start {
                     blank_lines += 1;
                     if blank_lines == 1 && !out.is_empty() {
@@ -63,6 +77,8 @@ pub fn format(text: &str) -> String {
                     let level = level + usize::from(continued);
                     out.push_str(&"  ".repeat(level));
                     line_start = false;
+                } else if let Some(ws) = after_backslash.take() {
+                    out.push_str(ws);
                 } else if space_between(prev, kind, pending_space) {
                     out.push(' ');
                 }
@@ -87,11 +103,24 @@ pub fn format(text: &str) -> String {
             }
         }
     }
+    if let Some(ws) = after_backslash {
+        out.push_str(ws);
+    }
     let trimmed = out.trim_end_matches(['\n', ' ']);
     if trimmed.is_empty() {
         return String::new();
     }
     format!("{trimmed}\n")
+}
+
+/// Whether the text written so far ends with a word that is a lone `\` (one starting a line or
+/// after whitespace or a bracket), not one ending a longer word (`a\`).
+fn word_is_backslash(out: &str) -> bool {
+    let before = &out[..out.len() - 1];
+    before
+        .chars()
+        .next_back()
+        .is_none_or(|c| c.is_whitespace() || "{}[]();=\"".contains(c))
 }
 
 /// Whether a space goes between `prev` and `next` on one line; `written` is whether

@@ -271,6 +271,13 @@
      "readonly": true
     },
     {
+     "name": "sau-persistent-id",
+     "rna": "sau_persistent_id",
+     "type": "string",
+     "default": "",
+     "readonly": true
+    },
+    {
      "name": "session-uid",
      "rna": "session_uid",
      "type": "int",
@@ -7528,7 +7535,8 @@
      "socket": "BSDF",
      "type": "shader"
     }
-   ]
+   ],
+   "width": 240.0
   },
   {
    "kind": "output-material",
@@ -7591,7 +7599,8 @@
      "default": 0.0
     }
    ],
-   "outputs": []
+   "outputs": [],
+   "width": 140.0
   }
  ],
  "primitives": [
