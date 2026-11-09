@@ -564,6 +564,11 @@ impl<'s> Checker<'s> {
         }
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
         names.extend(forms.iter().copied());
+        // `shape-keys` is the read-only pointer of every curve kind; where the block form is not
+        // taken (a text curve), it is no name to suggest for `shape-key` (1d-07q's review).
+        if !forms.contains(&"shape-keys") {
+            names.retain(|n| *n != "shape-keys");
+        }
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
         let all = attrs(node);
