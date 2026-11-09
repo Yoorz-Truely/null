@@ -2,15 +2,8 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  1 datablock: compositor @grade "Grade"
-  2   interface socket: input @image color "Image"
-  3   interface socket: output @graded color "Image"
-  4   node tree: nodes
-  5     node: node @in group-input
-  6     node: node @contrast bright-contrast
-  7       link: image @in.image
-  8       attribute: contrast 10
- 10     node: node @out group-output
- 10       link: graded @contrast.image
- 14 datablock: scene @shot "Shot"
- 14   attribute: compositing-node-group @grade
+  2 data file: array mesh @rock vertices [
+  [-1.2m 0.4m 0m]
+  [-1.1m 0.5m 0.02m]
+  …
+]

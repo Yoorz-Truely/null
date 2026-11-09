@@ -94,7 +94,7 @@ impl Checker<'_> {
             .unwrap_or_default();
         let mut slots: HashMap<String, String> = HashMap::new();
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
-        names.extend(["slot", "layer"]);
+        names.extend(["slot", "layer", "marker"]);
         let mut seen = HashSet::new();
         for a in &all {
             match a.name.as_str() {
@@ -154,6 +154,8 @@ impl Checker<'_> {
                     }
                 }
                 "layer" => {}
+                // RFC 0005 (S88, task 1d-07q).
+                "marker" => self.marker(file, a),
                 _ => match props.iter().find(|p| p.name == a.name) {
                     Some(p) => self.property(file, a, p, false),
                     None => self.unknown(file, a, "an action", &names, None),
@@ -472,6 +474,41 @@ impl Checker<'_> {
                 ),
                 _ => check_float(v, &p.name, null_value::Dimension::None, p, &mut out),
             }
+        }
+        // A handle beside an automatic handle type, the type left out (`auto-clamped`, a new
+        // key's) or written as `auto`, `auto-clamped` or `vector`, is placed again by Blender,
+        // so it does not hold. Written handles do not make a key's handles free (S87).
+        for (side, ty) in [
+            ("handle-left", "handle-left-type"),
+            ("handle-right", "handle-right-type"),
+        ] {
+            let Some((k, _)) = a.props.iter().find(|(k, _)| k.text == side) else {
+                continue;
+            };
+            let written = a.props.iter().find(|(k, _)| k.text == ty);
+            let word = match written {
+                Some((_, v)) => v.as_word(),
+                None => Some("auto-clamped"),
+            };
+            let Some(word @ ("auto" | "auto-clamped" | "vector")) = word else {
+                continue;
+            };
+            let fix = match written {
+                Some((_, v)) => (format!("write `{ty}=free`"), v.span(), "free".to_string()),
+                None => (
+                    format!("write `{ty}=free`"),
+                    Span::new(k.span.start, k.span.start),
+                    format!("{ty}=free "),
+                ),
+            };
+            out.warning_fix(
+                codes::HANDLE_PLACED,
+                k.span,
+                format!(
+                    "Blender places a key's `{side}` itself while its `{ty}` is `{word}`, so the one written here does not hold; make the type `free` to keep it as written"
+                ),
+                fix,
+            );
         }
     }
 

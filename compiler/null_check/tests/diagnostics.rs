@@ -52,6 +52,9 @@ const CASES: &[(&str, &[&str])] = &[
             "object @o \"O\" { pass-index \"three\" }\n",
             "object @o \"O\" { location [0m 0m] }\n",
             "object @o \"O\" { hide-render maybe }\n",
+            // A marker with no frame, and a shape key with a position too few (RFC 0005, S88).
+            "scene @s \"S\" {\n  marker @m \"M\"\n}\n",
+            "mesh @m \"M\" {\n  vertices [[0m 0m 0m] [1m 0m 0m]]\n  shape-key @basis \"Basis\"\n  shape-key @up \"Up\" { positions [[0m 0m 1m]] }\n}\n",
             // A driver's expression (task 1d-07f): a variable misspelt, a function with the wrong
             // number of arguments.
             "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"spn * 100W\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
@@ -91,6 +94,10 @@ const CASES: &[(&str, &[&str])] = &[
             "object @o \"O\" { parent @lamp }\nobject @lamb \"Lamb\"\n",
             "object @o \"O\" { data mesh @nothing }\n",
             "object @o \"O\"\nobject @o \"Again\"\n",
+            // An armature's bones and their collections (RFC 0005, S88): a parent chain that
+            // leads back, a collection the armature does not have.
+            "armature @a \"A\" {\n  bone @x \"X\" { parent @y }\n  bone @y \"Y\" { parent @x }\n}\n",
+            "armature @a \"A\" {\n  bone-collection @limbs \"Limbs\"\n  bone @x \"X\" { collections [@limb] }\n}\n",
         ],
     ),
     (
@@ -98,6 +105,14 @@ const CASES: &[(&str, &[&str])] = &[
         &[
             "object @o \"O\" { mode edit }\n",
             "object @o \"O\" {\n  mode edit\n  pass-index 1\n}\n",
+        ],
+    ),
+    (
+        codes::HANDLE_PLACED,
+        &[
+            // A key's handle beside an automatic handle type, which Blender places again: a
+            // warning (S87), its type left out, then written.
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n",
         ],
     ),
     (

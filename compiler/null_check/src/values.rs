@@ -35,6 +35,19 @@ impl Out<'_> {
         self.list.push(d);
     }
 
+    pub fn warning_fix(
+        &mut self,
+        code: &'static str,
+        span: Span,
+        message: impl Into<String>,
+        fix: (String, Span, String),
+    ) {
+        let (what, at, with) = fix;
+        let d =
+            Diagnostic::warning(code, self.file, span, message).with_fix_replace(what, at, with);
+        self.list.push(d);
+    }
+
     pub fn error_fix(
         &mut self,
         code: &'static str,

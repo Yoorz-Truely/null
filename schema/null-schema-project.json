@@ -25557,7 +25557,8 @@
      "rna": "select",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "lock",
@@ -25578,7 +25579,8 @@
      "rna": "hide",
      "type": "bool",
      "default": true,
-     "class": "stored"
+     "class": "stored",
+     "new": false
     },
     {
      "name": "auto-smoothing",
@@ -25614,7 +25616,8 @@
      "type": "bool",
      "default": false,
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": true
     },
     {
      "name": "sampled-points",
@@ -83354,7 +83357,8 @@
      "rna": "select",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "mute",
@@ -83375,7 +83379,8 @@
      "rna": "use_sync_length",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     }
    ]
   },

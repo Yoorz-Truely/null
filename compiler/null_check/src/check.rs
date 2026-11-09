@@ -21,6 +21,7 @@ mod anim;
 pub(crate) mod components;
 pub(crate) mod expr;
 mod level0;
+mod rig;
 mod subs;
 mod trees;
 
@@ -529,9 +530,11 @@ impl<'s> Checker<'s> {
                 "fps-base",
                 "use",
                 "override",
+                "marker",
             ],
             "collection" => vec!["object", "collection", "use", "override"],
             "object" => vec!["data", "material", "modifier", "constraint", "bone"],
+            "armature" => vec!["bone", "bone-collection"],
             "mesh" => vec![
                 "primitive",
                 "vertices",
@@ -540,6 +543,8 @@ impl<'s> Checker<'s> {
                 "attribute",
                 "uv-map",
                 "vertex-group",
+                "shape-key",
+                "shape-keys",
             ],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
@@ -585,7 +590,12 @@ impl<'s> Checker<'s> {
                 ) | (_, "if" | "else")
                     | ("object", "material" | "modifier" | "constraint" | "bone")
                     | ("pose-bone", "constraint")
-                    | ("mesh", "attribute" | "uv-map" | "vertex-group")
+                    | (
+                        "mesh",
+                        "attribute" | "uv-map" | "vertex-group" | "shape-key"
+                    )
+                    | ("armature", "bone" | "bone-collection")
+                    | ("scene", "marker")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -642,6 +652,12 @@ impl<'s> Checker<'s> {
                 ("object", "modifier") => self.family_member(file, a, "Modifier"),
                 ("object" | "pose-bone", "constraint") => self.family_member(file, a, "Constraint"),
                 ("object", "bone") => self.pose_bone(file, a),
+                // RFC 0005 (S88, task 1d-07q).
+                ("armature", "bone") => self.armature_bone(file, a, &all),
+                ("armature", "bone-collection") => self.bone_collection(file, a, &all),
+                ("mesh", "shape-key") => self.shape_key(file, a, &all),
+                ("mesh", "shape-keys") => self.shape_keys(file, a),
+                ("scene", "marker") => self.marker(file, a),
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {

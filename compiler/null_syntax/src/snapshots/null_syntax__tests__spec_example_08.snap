@@ -23,3 +23,6 @@ expression: "v0::render(&items)"
  21       attribute: target @lid
  22       attribute: chain-count 2
  27 datablock: armature @rig-bones "Rig"
+ 28   sub-object: bone @spine "Spine"
+ 29     attribute: head [0m 0m 0m]
+ 30     attribute: tail [0m 0m 1m]
