@@ -503,7 +503,7 @@ impl Checker<'_> {
                 codes::HANDLE_PLACED,
                 k.span,
                 format!(
-                    "Blender places a key's `{side}` itself while its `{ty}` is `{word}`, so the one written here does not hold; make the type `free` (or `aligned`) to keep it"
+                    "Blender places a key's `{side}` itself while its `{ty}` is `{word}`, so the one written here does not hold; make the type `free` to keep it as written"
                 ),
                 fix,
             );

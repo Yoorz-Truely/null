@@ -25557,7 +25557,8 @@
      "rna": "select",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "lock",
@@ -25577,8 +25578,9 @@
      "name": "hide",
      "rna": "hide",
      "type": "bool",
-     "default": false,
-     "class": "stored"
+     "default": true,
+     "class": "stored",
+     "new": false
     },
     {
      "name": "auto-smoothing",
@@ -25614,7 +25616,8 @@
      "type": "bool",
      "default": false,
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": true
     },
     {
      "name": "sampled-points",
