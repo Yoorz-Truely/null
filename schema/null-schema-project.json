@@ -2776,7 +2776,7 @@
        "value": 1
       }
      ],
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "show-names",
@@ -12256,7 +12256,7 @@
       }
      ],
      "items-at-run-time": true,
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "interop-id",
@@ -13055,7 +13055,7 @@
       }
      ],
      "items-at-run-time": true,
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "interop-id",
@@ -56523,7 +56523,8 @@
      "subtype": "file-path",
      "default": "",
      "max-length": 1024,
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "filepath"
     },
     {
      "name": "file-format",
@@ -73434,7 +73435,8 @@
      "rna": "show_transparent_back",
      "type": "bool",
      "default": true,
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "use-transparency-overlap"
     },
     {
      "name": "use-backface-culling",
@@ -73476,7 +73478,8 @@
      "rna": "use_screen_refraction",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "use-raytrace-refraction"
     },
     {
      "name": "use-sss-translucency",
@@ -75200,7 +75203,8 @@
      "rna": "auto_texspace",
      "type": "bool",
      "default": true,
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "use-auto-texspace"
     },
     {
      "name": "texspace-location",
@@ -113802,7 +113806,8 @@
        "value": 1
       }
      ],
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "puff-mode"
     },
     {
      "name": "curve",
@@ -116894,7 +116899,7 @@
       ]
      },
      "default": 0.0,
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "line-length-head",
@@ -116911,7 +116916,7 @@
       ]
      },
      "default": 0.0,
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "path-start",
@@ -124148,7 +124153,7 @@
        "value": 2
       }
      ],
-     "class": "derived"
+     "class": "stored"
     },
     {
      "name": "playback-loop-mode",
@@ -124349,7 +124354,7 @@
      "rna": "use_audio",
      "type": "bool",
      "default": false,
-     "class": "derived",
+     "class": "stored",
      "new": true
     },
     {
@@ -143162,7 +143167,8 @@
       ]
      },
      "default": 1.0,
-     "class": "stored"
+     "class": "derived",
+     "alias-of": "proportional-size"
     },
     {
      "name": "double-threshold",
