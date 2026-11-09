@@ -83357,7 +83357,8 @@
      "rna": "select",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "mute",
@@ -83378,7 +83379,8 @@
      "rna": "use_sync_length",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     }
    ]
   },
