@@ -575,6 +575,8 @@ impl<'s> Checker<'s> {
             // A curve's, a surface's and a lattice's shape keys too (RFC 0005, S88).
             "curve" | "surface" | "lattice" => vec!["shape-key", "shape-keys"],
             "pose-bone" => vec!["constraint"],
+            // A tiled image's tiles' own settings (RFC 0007, S96, task 1d-05m).
+            "image" => vec!["tile"],
             _ => vec![],
         };
         if let Some((_, group)) = tree_kind {
@@ -597,6 +599,7 @@ impl<'s> Checker<'s> {
         }
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
+        let mut tiles: Vec<i64> = Vec::new();
         let all = attrs(node);
         // Node handles first, so layout and links may name nodes defined later.
         let tree = tree_kind.map(|(rna, group)| {
@@ -630,6 +633,7 @@ impl<'s> Checker<'s> {
                     | ("curve" | "surface" | "lattice", "shape-key")
                     | ("armature", "bone" | "bone-collection")
                     | ("scene", "marker")
+                    | ("image", "tile")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -715,6 +719,7 @@ impl<'s> Checker<'s> {
                     self.shape_keys(file, a)
                 }
                 ("scene", "marker") => self.marker(file, a),
+                ("image", "tile") => self.udim_tile(file, a, &mut tiles),
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {

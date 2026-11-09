@@ -920,10 +920,14 @@ Every file in the folder has the same extension. The folder's `<sha256>` is the 
 
 - **Converting** a `.blend` copies every tile Blender reads, or holds packed, into a tile set. A set written with `<UVTILE>` (`u1_v1`) is renumbered with UDIM numbers (`1001 + (u - 1) + 10 × (v - 1)`), which is how Blender numbers the tiles inside. A sequence copies every file that Blender's rule reaches from the `filepath`: the same folder, head and tail, and the same number of digits. A missing number stays missing, as Blender shows that frame missing.
 - **A tile's own settings** (`UDIMTile`: its `label`, and the generated colour of a tile with no file) are written `tile <number> { … }` in the image's block, only for a tile that has any. The tiles themselves are the folder's files, and Sau gives Blender the tiles the folder holds, as reloading the image finds them.
-- **`sau check`** reports `cosmosis-media-set`, an error at the `filepath` line, for any of these: a folder whose name is not the hash of its listing; a file in it not named `<number>.<ext>`; two extensions, or two widths in a sequence; a tile number outside 1001 to 2000; a tiled image whose path under `media/` has no `<UDIM>` or has `<UVTILE>`; a sequence whose `filepath` names no file of its folder. A path that names no file or folder is `cosmosis-media-missing`, as before.
+- **`sau check`** reports each mistake with a code of its own (Sau's decision S97), as errors:
+  - at the folder: `cosmosis-media-set-hash`, a folder whose name is not the hash of its listing; `cosmosis-media-set-name`, a file in it not named `<number>.<ext>`; `cosmosis-media-set-mixed`, two extensions, or two widths in a sequence; `cosmosis-media-set-tile`, a tile number outside 1001 to 2000;
+  - at the `filepath` line: `cosmosis-media-set-token`, a tiled image's path under `media/` without `<UDIM>`, or with `<UVTILE>`; `cosmosis-media-set-frame`, a sequence's `filepath` that names no file of its folder.
+
+  A path that names no file or folder is `cosmosis-media-missing`, as before. A `tile` line's number is checked too: from 1001 to 2000, once in an image.
 - **Outside the project**, an absolute path to a tile set or a sequence keeps Blender's own form, its tokens and digits as Blender reads them, with the `cosmosis-media-outside` warning that every absolute path gets.
 
-```null (1d-05m)
+```null
 image @wood "wood" {
   filepath "media/<the hash of its listing>.tiles/<UDIM>.png"
   source tiled
