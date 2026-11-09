@@ -23,6 +23,8 @@ pub(super) enum Elements {
     Values(Box<Property>),
     /// A vertex group's weights: `[index weight]`, the index below the vertex count.
     Weights(Option<usize>),
+    /// A curves geometry's `curves`: each curve's number of points, at least one (RFC 0006).
+    Sizes,
 }
 
 /// A line that names a data file: what it expects the file to hold.
@@ -43,13 +45,16 @@ pub(super) struct ArrayRef {
     pub found: Option<(FileId, Span)>,
 }
 
-/// The sizes of a mesh's domains, where its lines say them.
+/// The sizes of a geometry's domains, where its lines say them: a mesh's, a curves geometry's
+/// (`curve`) or a Grease Pencil datablock's (`layer`, its layers).
 #[derive(Clone, Copy, Debug, Default)]
 pub(super) struct Counts {
     pub point: Option<usize>,
     pub edge: Option<usize>,
     pub face: Option<usize>,
     pub corner: Option<usize>,
+    pub curve: Option<usize>,
+    pub layer: Option<usize>,
 }
 
 impl Counts {
@@ -59,6 +64,8 @@ impl Counts {
             "edge" => self.edge,
             "face" => self.face,
             "corner" => self.corner,
+            "curve" => self.curve,
+            "layer" => self.layer,
             _ => None,
         }
     }
@@ -107,7 +114,7 @@ impl Checker<'_> {
         }
         for a in all {
             match a.name.as_str() {
-                "attribute" => self.attribute_line(file, a, &owner, &counts),
+                "attribute" => self.attribute_line(file, a, &owner, &counts, &DOMAINS, ""),
                 "uv-map" => self.uv_map(file, a, &owner, &counts),
                 "vertex-group" => self.vertex_group(file, a, &counts),
                 "shape-key" => self.shape_key_positions(file, a, &owner, &counts),
@@ -271,6 +278,16 @@ impl Checker<'_> {
                 check_float(w, name, Dimension::None, &unit, &mut out);
                 numbers(v, Dimension::None, 1.0)
             }
+            Elements::Sizes => {
+                let p = Property {
+                    ty: "int".into(),
+                    range: Some(crate::schema::Range {
+                        hard: [1.0, f64::from(i32::MAX)],
+                    }),
+                    ..Property::any()
+                };
+                check_int(v, name, &p, &mut out).map(|n| vec![n as f64])
+            }
             Elements::Values(p) => {
                 let dims = p.dimensions();
                 match (p.ty.as_str(), dims.as_slice()) {
@@ -361,13 +378,17 @@ impl Checker<'_> {
         pair
     }
 
-    /// `attribute @h <domain> <type> "Name" [values]`.
-    fn attribute_line(
+    /// `attribute @h <domain> <type> "Name" [values]`, on one of `domains` (a mesh's four, a
+    /// curves geometry's `point` and `curve`, RFC 0006); its data file's array is `prefix` and
+    /// its handle (`@first/@radius` in a Grease Pencil drawing).
+    pub(super) fn attribute_line(
         &mut self,
         file: FileId,
         a: &Attr<'_>,
         owner: &(String, String),
         counts: &Counts,
+        domains: &[&'static str],
+        prefix: &str,
     ) {
         let words: Vec<&str> = a.args.iter().filter_map(|v| v.as_word()).collect();
         let (Some(handle), Some(domain), Some(ty)) = (words.first(), words.get(1), words.get(2))
@@ -378,16 +399,16 @@ impl Checker<'_> {
                 "an attribute is `attribute @handle <domain> <type> \"Name\" [values]`, such as `attribute @crease edge float \"crease_edge\" [0 1 1]`",
             );
         };
-        if !DOMAINS.contains(domain) {
+        if !domains.contains(domain) {
             let at = a.args[1].span();
             return self.out(file).error_fix(
                 codes::ENUM,
                 at,
                 format!(
-                    "`{domain}` is not a domain: an attribute's is one of {}",
-                    list_near(domain, &DOMAINS)
+                    "`{domain}` is not a domain here: an attribute's is one of {}",
+                    list_near(domain, domains)
                 ),
-                closest(domain, DOMAINS.iter().copied())
+                closest(domain, domains.iter().copied())
                     .map(|d| (format!("write `{d}`"), at, d.to_string())),
             );
         }
@@ -404,13 +425,13 @@ impl Checker<'_> {
                     .map(|d| (format!("write `{d}`"), at, d.to_string())),
             );
         };
-        let domain: &'static str = DOMAINS
+        let domain: &'static str = domains
             .iter()
             .find(|d| **d == *domain)
             .copied()
             .unwrap_or("point");
         let expected = counts.of(domain).map(|n| (n, domain));
-        let array = handle.to_string();
+        let array = format!("{prefix}{handle}");
         let values: Vec<Value<'_>> = a
             .args
             .iter()

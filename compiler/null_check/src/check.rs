@@ -20,6 +20,7 @@ use crate::values::{
 mod anim;
 pub(crate) mod components;
 pub(crate) mod expr;
+mod geometry;
 mod level0;
 mod rig;
 mod subs;
@@ -574,6 +575,10 @@ impl<'s> Checker<'s> {
             ],
             // A curve's, a surface's and a lattice's shape keys too (RFC 0005, S88).
             "curve" | "surface" | "lattice" => vec!["shape-key", "shape-keys"],
+            // Level 0 beyond meshes (RFC 0006, S91).
+            "point-cloud" => vec!["points", "attribute"],
+            "curves" => vec!["points", "curves", "attribute"],
+            "grease-pencil" => vec!["drawing", "layer", "layer-group", "attribute"],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
         };
@@ -629,6 +634,11 @@ impl<'s> Checker<'s> {
                     )
                     | ("curve" | "surface" | "lattice", "shape-key")
                     | ("armature", "bone" | "bone-collection")
+                    | ("point-cloud" | "curves", "attribute")
+                    | (
+                        "grease-pencil",
+                        "drawing" | "layer" | "layer-group" | "attribute"
+                    )
                     | ("scene", "marker")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
@@ -715,6 +725,10 @@ impl<'s> Checker<'s> {
                     self.shape_keys(file, a)
                 }
                 ("scene", "marker") => self.marker(file, a),
+                // After the loop, against each other (RFC 0006, S91, task 1d-06f).
+                ("point-cloud", "points" | "attribute")
+                | ("curves", "points" | "curves" | "attribute") => {}
+                ("grease-pencil", "drawing" | "layer" | "layer-group" | "attribute") => {}
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
@@ -752,6 +766,16 @@ impl<'s> Checker<'s> {
             && let Some((handle, _)) = header(node).handle
         {
             self.level0(file, ("mesh".to_string(), handle), &all);
+        }
+        if matches!(kind, "point-cloud" | "curves")
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.geometry(file, kind, handle, &all);
+        }
+        if kind == "grease-pencil"
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.grease_pencil(file, handle, &all);
         }
     }
 
