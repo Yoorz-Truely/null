@@ -124146,7 +124146,14 @@
        "value": 2
       }
      ],
-     "class": "derived"
+     "class": "derived",
+     "hides": [
+      {
+       "struct": "Scene",
+       "path": "flag",
+       "mask": 8
+      }
+     ]
     },
     {
      "name": "playback-loop-mode",

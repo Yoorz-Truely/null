@@ -1207,6 +1207,12 @@
         "path": "eevee.shadow_cube_size_deprecated",
         "type": "int",
         "dims": []
+      },
+      {
+        "path": "flag",
+        "type": "short",
+        "dims": [],
+        "mask": 8
       }
     ],
     "Script": [

@@ -142,3 +142,22 @@ fn a_floats_bits_that_are_not_a_nans_are_refused_with_the_decimal_as_the_fix() {
     let quiet = errors(&schema(true), &object("    loc_legacy [0 0 0x7fc00000]"));
     assert_eq!(quiet[0].fixes[0].edits[0].replacement, "nan");
 }
+
+#[test]
+fn a_masked_raw_field_takes_only_its_masks_bits() {
+    // Sau's task 1b-03n: the committed raw table carries Scene's `flag` masked to SCE_FRAME_DROP
+    // (8), which `sync-mode` cannot name under `audio-sync`.
+    let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
+        .unwrap()
+        .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
+    let scene = |raw: &str| format!("scene @s \"S\" {{\n  raw {{\n{raw}\n  }}\n}}\n");
+    let found = errors(&project, &scene("    flag 8"));
+    assert!(found.is_empty(), "{found:?}");
+    let found = errors(&project, &scene("    flag 9"));
+    assert!(
+        found
+            .iter()
+            .any(|d| d.is_error() && d.message.contains("carries only the bits 8")),
+        "{found:?}"
+    );
+}
