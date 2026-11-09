@@ -17,6 +17,6 @@ expression: "v0::render(&items)"
  14     position: @bsdf [-160 0]
  14     position: @out [120 0]
  17 datablock: image @oak-diffuse "oak_diffuse.png"
- 18   attribute: filepath "//media/oak_diffuse.png"
+ 18   attribute: filepath "media/oak_diffuse.png"
  19   attribute: colorspace-settings
  19     attribute: name "sRGB"

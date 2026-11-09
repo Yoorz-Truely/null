@@ -12,6 +12,27 @@ use crate::codes;
 use crate::schema::Property;
 use crate::values::{check_enum, check_float, list, list_near};
 
+/// The node a key file holds (section 11, S86): `keys @action @slot <path> index=N { key … }`.
+pub(super) const KEYS: &str = "keys";
+
+/// An f-curve's `keys file=… count=N frames=[first last]` line, until its key file is read.
+#[derive(Clone)]
+pub(super) struct KeyRef {
+    pub file: FileId,
+    pub span: Span,
+    /// The action's handle, the slot's, the f-curve's path as written and its `index=`.
+    pub action: String,
+    pub slot: String,
+    pub path: String,
+    pub index: Option<String>,
+    /// The property its keys animate, where the slot's kind says it.
+    pub target: Option<Property>,
+    pub count: Option<usize>,
+    pub frames: Option<[f64; 2]>,
+    /// The key file found for it, once one is: a second is an error.
+    pub found: Option<(FileId, Span)>,
+}
+
 /// An action's slots, by handle, with the kind of datablock each animates.
 pub(super) type Slots = Vec<(String, String)>;
 
@@ -84,6 +105,7 @@ impl Checker<'_> {
     /// An action's own lines: `slot`, `layer`, and `Action`'s properties.
     pub(super) fn action_body(&mut self, file: FileId, node: Node<'_>, props: &[&Property]) {
         let schema = self.schema;
+        let action = self.handle_of(node).map(|(h, _)| h).unwrap_or_default();
         let all = attrs(node);
         let layered = all.iter().any(|a| a.name == "layer");
         let slot_items: Vec<String> = schema
@@ -150,7 +172,8 @@ impl Checker<'_> {
                             );
                             continue;
                         }
-                        self.curves(file, &curves, ty, "a slot");
+                        let slot = h.text().to_string();
+                        self.curves(file, &curves, ty, "a slot", (&action, &slot));
                     }
                 }
                 "layer" => {}
@@ -163,12 +186,12 @@ impl Checker<'_> {
             }
         }
         for a in all.iter().filter(|a| a.name == "layer") {
-            self.layer(file, a, &slots);
+            self.layer(file, a, &slots, &action);
         }
     }
 
     /// `layer @h "Name" { strip @s keyframe { channels @slot { fcurve … } } }`.
-    fn layer(&mut self, file: FileId, a: &Attr<'_>, slots: &HashMap<String, String>) {
+    fn layer(&mut self, file: FileId, a: &Attr<'_>, slots: &HashMap<String, String>, action: &str) {
         if !self.member_header(file, a, "layer @base \"Base\"", false) {
             return;
         }
@@ -245,7 +268,14 @@ impl Checker<'_> {
                 };
                 if let Some(n) = c.node {
                     let curves = attrs(n);
-                    self.curves(file, &curves, &ty.clone(), "a strip's channels");
+                    let slot = s.text().to_string();
+                    self.curves(
+                        file,
+                        &curves,
+                        &ty.clone(),
+                        "a strip's channels",
+                        (action, &slot),
+                    );
                 }
             }
         }
@@ -282,7 +312,14 @@ impl Checker<'_> {
 
     /// `fcurve <path> index=N { settings; key lines; modifier lines }` for a slot of datablock
     /// kind `id_type`.
-    fn curves(&mut self, file: FileId, curves: &[Attr<'_>], id_type: &str, owner: &str) {
+    fn curves(
+        &mut self,
+        file: FileId,
+        curves: &[Attr<'_>],
+        id_type: &str,
+        owner: &str,
+        (action, slot): (&str, &str),
+    ) {
         let schema = self.schema;
         let targets = animated(self, id_type);
         let fprops: Vec<&Property> = schema
@@ -393,10 +430,45 @@ impl Checker<'_> {
             }
             let Some(block) = c.node else { continue };
             let mut names: Vec<&str> = fprops.iter().map(|p| p.name.as_str()).collect();
-            names.extend(["key", "modifier"]);
+            names.extend(["key", "keys", "modifier"]);
+            let lines: Vec<Attr<'_>> = attrs(block)
+                .into_iter()
+                .filter(|b| b.node.is_some())
+                .collect();
+            // Keys inline or in a file of their own, never both (S86).
+            if let (Some(k), Some(f)) = (
+                lines.iter().find(|b| b.name == "key"),
+                lines.iter().find(|b| b.name == KEYS),
+            ) {
+                let d = null_syntax::Diagnostic::error(
+                    codes::KEY_FILE_INLINE,
+                    file,
+                    f.name_span,
+                    "this f-curve writes keys inline and names a key file: its keys are in one place, inline up to 2,000, else the file",
+                )
+                .with_label(file, k.name_span, "an inline key");
+                self.out.push(d);
+            }
+            let path: Vec<&str> = c.args.iter().take(path_end).map(|v| v.text()).collect();
             // The block's lines only: `index=` on the f-curve's own line is its path's.
-            for b in attrs(block).into_iter().filter(|b| b.node.is_some()) {
+            for b in lines {
                 match b.name.as_str() {
+                    KEYS => self.keys_line(
+                        file,
+                        &b,
+                        KeyRef {
+                            file,
+                            span: b.name_span,
+                            action: action.to_string(),
+                            slot: slot.to_string(),
+                            path: path.join(" "),
+                            index: index.map(|v| v.text().to_string()),
+                            target: target.cloned(),
+                            count: None,
+                            frames: None,
+                            found: None,
+                        },
+                    ),
                     "key" => self.key(file, &b, target, &kprops),
                     "modifier" => self.family_member(file, &b, "FModifier"),
                     _ => match fprops.iter().find(|p| p.name == b.name) {
@@ -405,6 +477,236 @@ impl Checker<'_> {
                     },
                 }
             }
+        }
+    }
+
+    /// An f-curve's `keys file="…" count=N frames=[first last]` line (S86): its summary read,
+    /// and the line kept until its key file is read.
+    fn keys_line(&mut self, file: FileId, a: &Attr<'_>, mut r: KeyRef) {
+        let prop = |name: &str| a.props.iter().find(|(k, _)| k.text == name).map(|(_, v)| v);
+        for v in &a.args {
+            self.out(file).error(
+                codes::TYPE,
+                v.span(),
+                "a key file's line is `keys file=\"…\" count=N frames=[first last]`",
+            );
+        }
+        for (k, _) in a
+            .props
+            .iter()
+            .filter(|(k, _)| !matches!(k.text, "file" | "count" | "frames"))
+        {
+            self.out(file).error(
+                codes::UNKNOWN_PROPERTY,
+                k.span,
+                format!(
+                    "a key file's line has no `{}`: it takes `file=`, `count=` and `frames=`",
+                    k.text
+                ),
+            );
+        }
+        match prop("file") {
+            Some(v) if v.as_string().is_some() => {}
+            Some(v) => {
+                return self.out(file).error(
+                    codes::TYPE,
+                    v.span(),
+                    "`file=` names the key file as a string, such as \"hop.ball.location-2.keys.noll\"",
+                );
+            }
+            None => {
+                return self.out(file).error(
+                    codes::TYPE,
+                    a.name_span,
+                    "a key file's line names it: `keys file=\"…\" count=N frames=[first last]`",
+                );
+            }
+        }
+        r.count = match prop("count") {
+            Some(v) => match v.as_word().and_then(|w| w.parse::<usize>().ok()) {
+                Some(n) => Some(n),
+                None => {
+                    self.out(file).error(
+                        codes::KEY_FILE_SUMMARY,
+                        v.span(),
+                        "`count=` is the number of keys the file holds, a whole number",
+                    );
+                    None
+                }
+            },
+            None => {
+                self.out(file).error(
+                    codes::KEY_FILE_SUMMARY,
+                    a.name_span,
+                    "a key file's line gives its `count=`, the number of keys it holds (S86)",
+                );
+                None
+            }
+        };
+        r.frames = match prop("frames") {
+            Some(v) => {
+                let xs: Option<Vec<f64>> = match v {
+                    Value::List(_) => v
+                        .items()
+                        .iter()
+                        .map(|i| {
+                            i.as_word()
+                                .and_then(|w| {
+                                    null_value::read::<f32>(w, null_value::Dimension::None).ok()
+                                })
+                                .map(f64::from)
+                        })
+                        .collect(),
+                    _ => None,
+                };
+                match xs.as_deref() {
+                    Some([first, last]) => Some([*first, *last]),
+                    _ => {
+                        self.out(file).error(
+                            codes::KEY_FILE_SUMMARY,
+                            v.span(),
+                            "`frames=` is the first and the last key's frame, such as `frames=[1 1200]`",
+                        );
+                        None
+                    }
+                }
+            }
+            None => {
+                self.out(file).error(
+                    codes::KEY_FILE_SUMMARY,
+                    a.name_span,
+                    "a key file's line gives its `frames=`, the first and the last key's frame (S86)",
+                );
+                None
+            }
+        };
+        self.key_refs.push(r);
+    }
+
+    /// A key file's `keys @action @slot <path> index=N { key … }` node, held to the line that
+    /// names it: each key checked as an inline key is, at its own line, and the line's `count=`
+    /// and `frames=` held to the file (S86).
+    pub(super) fn key_file(&mut self, file: FileId, node: Node<'_>) {
+        let args = args_of(node);
+        let words: Vec<&str> = args.iter().map(|v| v.text()).collect();
+        let index = node.entries().find_map(|e| match e {
+            null_syntax::ast::Entry::Prop { key, value }
+                if null_syntax::ast::scalar_text(key) == "index" =>
+            {
+                Some(value.text().to_string())
+            }
+            _ => None,
+        });
+        let span = node.code_span();
+        let (Some(action), Some(slot), path) = (
+            words.first(),
+            words.get(1),
+            words.get(2..).map(|p| p.join(" ")).unwrap_or_default(),
+        ) else {
+            return self.out(file).error(
+                codes::TYPE,
+                span,
+                "a key file holds `keys @action @slot <path> index=N { key … }`, such as `keys @hop @ball location index=2 { … }`",
+            );
+        };
+        let Some(at) = self.key_refs.iter().position(|r| {
+            r.action == *action && r.slot == *slot && r.path == path && r.index == index
+        }) else {
+            let shown = match &index {
+                Some(i) => format!("{path} index={i}"),
+                None => path.clone(),
+            };
+            return self.out(file).error(
+                codes::KEY_FILE_UNNAMED,
+                span,
+                format!("no f-curve names this key file: {action}'s slot {slot} has no `fcurve {shown}` with a `keys file=…` line"),
+            );
+        };
+        if let Some((first, first_span)) = self.key_refs[at].found {
+            let d = null_syntax::Diagnostic::error(
+                codes::KEY_FILE_UNNAMED,
+                file,
+                span,
+                "a second key file for this f-curve: its line names one file",
+            )
+            .with_label(first, first_span, "the first is here");
+            self.out.push(d);
+            return;
+        }
+        self.key_refs[at].found = Some((file, span));
+        let r = self.key_refs[at].clone();
+        let kprops: Vec<&Property> = self
+            .schema
+            .properties_of("Keyframe")
+            .into_iter()
+            .filter(|p| KEY_SETTINGS.contains(&p.name.as_str()))
+            .collect();
+        let mut frames = Vec::new();
+        let mut count = 0;
+        // The block's lines only: `index=` on the node's own line is its path's.
+        for b in attrs(node).into_iter().filter(|b| b.node.is_some()) {
+            if b.name != "key" {
+                self.unknown(file, &b, "a key file", &["key"], None);
+                continue;
+            }
+            count += 1;
+            self.key(file, &b, r.target.as_ref(), &kprops);
+            if let Some(x) = b
+                .args
+                .first()
+                .and_then(|v| v.as_word())
+                .and_then(|w| null_value::read::<f32>(w, null_value::Dimension::None).ok())
+            {
+                frames.push(x);
+            }
+        }
+        if let Some(n) = r.count
+            && n != count
+        {
+            self.out(r.file).error(
+                codes::KEY_FILE_SUMMARY,
+                r.span,
+                format!("`count={n}`, but the key file holds {count} keys"),
+            );
+        }
+        // The first and the last frame as Blender sorts them.
+        frames.sort_by(f32::total_cmp);
+        if let (Some(want), Some(first), Some(last)) = (r.frames, frames.first(), frames.last())
+            && ((want[0] as f32).to_bits() != first.to_bits()
+                || (want[1] as f32).to_bits() != last.to_bits())
+        {
+            self.out(r.file).error(
+                codes::KEY_FILE_SUMMARY,
+                r.span,
+                format!(
+                    "`frames=[{} {}]`, but the key file's keys run from frame {} to {}",
+                    null_value::print_bare(want[0] as f32),
+                    null_value::print_bare(want[1] as f32),
+                    null_value::print_bare(*first),
+                    null_value::print_bare(*last)
+                ),
+            );
+        }
+    }
+
+    /// The `keys file=…` lines whose key file none of the project's files holds.
+    pub(super) fn unmatched_key_refs(&mut self) {
+        for r in std::mem::take(&mut self.key_refs)
+            .into_iter()
+            .filter(|r| r.found.is_none())
+        {
+            let shown = match &r.index {
+                Some(i) => format!("{} index={i}", r.path),
+                None => r.path.clone(),
+            };
+            self.out(r.file).error(
+                codes::KEY_FILE_MISSING,
+                r.span,
+                format!(
+                    "no key file holds these keys: write them as `keys {} {} {shown} {{ key … }}` in a file of its own",
+                    r.action, r.slot
+                ),
+            );
         }
     }
 

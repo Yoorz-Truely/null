@@ -1,0 +1,10 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      keys file="a.s.location-2.keys.noll" count=3 frames=[1 9]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n  key 5 1m\n}\n
+case.noll:4:7 error[null-key-file-summary]: `count=3`, but the key file holds 2 keys
+case.noll:4:7 error[null-key-file-summary]: `frames=[1 9]`, but the key file's keys run from frame 1 to 5
+--- action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      keys file="a.s.location-2.keys.noll"\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n
+case.noll:4:7 error[null-key-file-summary]: a key file's line gives its `count=`, the number of keys it holds (S86)
+case.noll:4:7 error[null-key-file-summary]: a key file's line gives its `frames=`, the first and the last key's frame (S86)

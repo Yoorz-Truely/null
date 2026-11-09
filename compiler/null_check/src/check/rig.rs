@@ -10,6 +10,7 @@
 //!   mesh (its `positions` are checked with the mesh's arrays, `level0`), and
 //!   `shape-keys { use-relative; action @a slot=@s; track … }` for its `Key`.
 //! - `marker @h "Name" frame=N { camera @h; select }` in a scene or an action.
+//! - `tile <number> { label "…"; … }` in an image, a UDIM tile's own settings (RFC 0007, S96).
 
 use std::collections::HashMap;
 
@@ -382,6 +383,57 @@ impl Checker<'_> {
                     Some(p) => self.property(file, &b, p, false),
                     None => self.unknown(file, &b, "a marker", &names, None),
                 },
+            }
+        }
+    }
+
+    /// An image's `tile <number> { label "…"; … }` (Null section 12; RFC 0007, Sau's decision
+    /// S96; task 1d-05m): a UDIM tile's own settings, `UDIMTile`'s, its number from 1001 to 2000
+    /// and once per image (`seen`).
+    pub(super) fn udim_tile(&mut self, file: FileId, a: &Attr<'_>, seen: &mut Vec<i64>) {
+        let [n] = a.args.as_slice() else {
+            return self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "a tile is written `tile <number> { … }`, such as `tile 1002 { label \"Back\" }`",
+            );
+        };
+        match n.as_word().and_then(|w| w.parse::<i64>().ok()) {
+            Some(x) if (1001..=2000).contains(&x) => {
+                if seen.contains(&x) {
+                    self.out(file).error(
+                        codes::REPEATED,
+                        n.span(),
+                        format!("tile {x} is given twice; an image has one of each"),
+                    );
+                }
+                seen.push(x);
+            }
+            Some(x) => self.out(file).error(
+                codes::RANGE,
+                n.span(),
+                format!("tile {x} is outside UDIM's 1001 to 2000"),
+            ),
+            None => self.out(file).error(
+                codes::TYPE,
+                n.span(),
+                "a tile's number is a whole number, from 1001 to 2000",
+            ),
+        }
+        for (k, _) in &a.props {
+            self.out(file).error(
+                codes::TYPE,
+                k.span,
+                "a tile's settings are lines in its block, such as `tile 1002 { label \"Back\" }`",
+            );
+        }
+        let Some(block) = a.node else { return };
+        let props = settable(self.schema.properties_of("UDIMTile"), &["number"]);
+        let names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
+        for b in attrs(block) {
+            match props.iter().find(|p| p.name == b.name) {
+                Some(p) => self.property(file, &b, p, false),
+                None => self.unknown(file, &b, "a tile", &names, None),
             }
         }
     }

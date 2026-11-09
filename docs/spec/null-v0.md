@@ -154,7 +154,7 @@ material @weathered-oak "Weathered Oak" {
 }
 
 image @oak-diffuse "oak_diffuse.png" {
-  filepath "//media/oak_diffuse.png"
+  filepath "media/oak_diffuse.png"
   colorspace-settings { name "sRGB" }
 }
 ```
@@ -208,7 +208,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
 | Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is every item an enum's items at run time give that is not one the schema lists (an attribute's or a UV map's name), so it is never read as a misspelling of a listed one | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none. Another order, or an item twice, is an error whose fix is the schema's order: the order is part of the written form, so the same set is always the same text | `delimit [normal material]` (a decimate modifier), `delimit []` |
-| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). The list is taken wherever a string property goes, and is held to the field's length in bytes as a string is (task 1c-02g). A datablock's display name is the exception (Sau's decision S72, task 1c-02i): Blender strips every byte of a name that is not UTF-8 (`BKE_id_new_name_validate`), so a name is always a string. A byte list there is an error whose fix is the name Blender would make of it, its bytes with what Blender's UTF-8 check refuses taken out (`object @pur [80 252 114]`, `Pür` in Latin-1, gives `"Pr"`). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
+| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). The list is taken wherever a string property goes, and is held to the field's length in bytes as a string is (task 1c-02g). A datablock's display name is the exception (Sau's decision S72, task 1c-02i): Blender strips every byte of a name that is not UTF-8 (`BKE_id_new_name_validate`), so a name is always a string. A byte list there is an error whose fix is the name Blender would make of it, its bytes with what Blender's UTF-8 check refuses taken out (`object @pur [80 252 114]`, `Pür` in Latin-1, gives `"Pr"`). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "media/oak.png"`, `filepath [109 252 108 108 101 114 46 112 110 103]` (`m`, the Latin-1 byte 252, `ller.png`) |
 | Pointer | A handle (section 7); `none` for an empty pointer where the property allows one. The schema marks a pointer Blender never lets be empty `never-none` (RNA's never-null flag), and `none` there is an error (Sau's task 1c-02j). A struct the owner holds that is not a datablock, and that no form of Null's flattens (an add-on's settings, such as a scene's Cycles settings, or a struct such as `render`), is a block of that struct's properties. A property a flat form already sets is an error in such a block, with a fix that moves it there: a scene's `fps` is never `render { fps 30 }`, and its unit settings are `units`, never `unit-settings { … }` (S70: one spelling per property) | `camera @shot-cam`, `parent none`, `cycles { samples 64 }` |
 | Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
 | Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
@@ -300,7 +300,7 @@ Task 1b-02a, November 7, 2026. A sub-object is a named part of a datablock that 
 | Action layer and strip, NLA track and strip | Action; the animated datablock | The name only (a strip may have none, and gets its handle from its track and position) | `.sau/ids.noll` |
 | Timeline marker | Scene or action | The name only, which may be empty or repeated; a marker without a usable name gets its handle from its frame (`@f120`) | `.sau/ids.noll` |
 | Grease Pencil layer and layer group | Grease Pencil data | The name only | `.sau/ids.noll` |
-| Grease Pencil drawing | Grease Pencil data | Its index in the datablock's drawings, which Blender compacts when one is removed; Sau renumbers the map's entries whenever it adds or removes a drawing (RFC 0006, Sau's decision S91) | `.sau/ids.noll` |
+| Grease Pencil drawing | Grease Pencil data | Its index in the datablock's drawings, which Blender compacts when one is removed; Sau renumbers the map's entries whenever it adds or removes a drawing (RFC 0006, Sau's decision S91). A drawing that is a reference to another datablock is one too, and compaction never frees one (RFC 0008, S98) | `.sau/ids.noll` |
 
 Blender gives a modifier its `persistent_uid` from a hash of its name when it is created, and a node its `identifier` at random, so neither is a handle: the handle is still made from the name, and the map ties the two together. A node socket is the one sub-object never renamed by a person outside node groups, so its handle is its name.
 
@@ -352,6 +352,7 @@ The schema Sau generates from RNA gives every name, type, unit, range and enum i
 | `nodes { node @h <kind> { inputs } }` and `layout { @h [x y]; … }` in a `material` | The material's node tree: each node's handle, kind and input sockets by name, a socket taking a value or a link `@node.output`; `layout` holds positions, one node per line or `;` | Section 10 |
 | `energy` of a point, spot or area light | A power, in `W` | RNA gives `energy` no unit; Blender shows watts. A sun's `energy` is an irradiance, written bare |
 | A light's properties | `Light`'s, and those of its `type`'s struct (`point-light`, `sun-light`, …) | RNA splits lights by type |
+| A texture's type | Its kind: `blend`, `clouds`, `distorted-noise`, `image-texture`, `magic`, `marble`, `musgrave`, `noise`, `stucci`, `voronoi` or `wood` is a texture of that type, with that type's settings (`wood @grain { noise-scale 0.5; wood-type rings }`), and its `type` is not written again: a `type` line naming the kind's own type says nothing more, a warning (`null-type-line`) whose fix removes it, so text v0 accepted still checks; one naming another type gives one property two values, an error (`null-repeated`) (S101). A texture's handle is unique among every texture kind, as a reference to a texture names any of them: `wood @grain` and `clouds @grain` in one project is a handle defined twice (`null-handle`, S101). `texture` is a texture whose `type` line says its type, an image's when left out, as a new texture's; it takes `Texture`'s settings alone. Sau writes a texture as its type's kind, and `texture` for a texture of no type (`type none`) | RNA gives each type its own struct (Sau's task 1d-07s) |
 | `fps 24` and `fps-base 1.001` on a `scene` | The scene's frame rate, its render settings' `fps` (a whole number, 1 to 32767) and `fps-base` (0.00001 to 1000000), a new scene's being 24 and 1 | Seconds on the scene's frame properties are read through it (section 6, "Frames"); it is the scene's, so it is written there, as `units` is |
 | `lens` of a camera | A focal length, in `mm`: `50mm` is 50 | RNA's camera unit is millimetres, not a length |
 
@@ -556,7 +557,7 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 | 1. Procedure | Primitives with parameters, modifier stacks, geometry-node graphs, curves and their profiles | Ordinary Null nodes | Hand, AI and Blender's editors alike |
 | 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and its residual, written as level 0 data | As level 1; the residual keeps the result exact |
 
-- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. `sau convert --inline` writes everything inline whatever its size. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
+- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
 - **The summary.** The line that names the file gives the array's `count=` and `bounds=` as values (S74 (1)). They are checked on load, and a summary that disagrees with the data is an error (1d-06b).
 - **Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/` as a cache. It opens the snapshot in place of the text only when nothing the snapshot was made from has changed, makes a new one otherwise, and never treats it as the source (Sau's decision S92, task 1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
@@ -641,7 +642,6 @@ array mesh @rock vertices [
 
 - A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it. Null's checker matches a data file to its line by the `array` node's owner and array name, and reports a line whose file is missing and a data file no line names (1d-06b); that the path names that file is Cosmósis's to check, since it knows the files' paths.
 - Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
-- `sau convert --inline` writes every array inline whatever its size.
 
 **Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/` as a cache, opened in place of the text only when nothing it was made from has changed and never the source (Sau's decision S92, task 1d-06e); what a file means is the same either way. Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
 
@@ -656,10 +656,11 @@ array mesh @rock vertices [
   The checker holds the sizes' sum to the points' count, each size to at least one, and each attribute to its domain's count: the points, or the number of curves.
 - **A Grease Pencil datablock** (`grease-pencil`):
   - `drawing @h { … }`: each drawing, a sub-object, in Blender's order, holding the lines of a curves datablock (`points`, `curves`, and `attribute` on `point` or `curve`). A stroke's material, colours, opacities and widths are its attributes by Blender's names (`material_index`, `vertex_color`, `opacity`, `radius`, `fill_color` and the rest);
+  - `drawing @h { reference @other }` (RFC 0008, Sau's decision S98, task 1d-06h): a drawing that is a reference to the whole `grease-pencil` datablock `@other`, Blender's `GreasePencilDrawingReference`, which shows that datablock's drawings in their order where Blender draws references (Blender 5.3 keeps and saves a reference but draws nothing for it). Frames show it as they show any drawing (`frame 12 @h`), and its handle is kept by its index as any drawing's is. It holds the one `reference` line and nothing else: `points`, `curves` or `attribute` beside it is `null-type`. A reference that reaches its own datablock, directly or through other datablocks' references, is refused as Blender refuses one, under its own code, `null-reference-cycle`. Removing a layer never frees a reference, so the drawings after it keep their indices; only Sau's apply frees one, when the text leaves it out.
   - `layer @h "Name" { … }` and `layer-group @h "Name" { … }`: sub-objects in the order of Blender's layer tree, a group holding its own layers and groups in its block. A layer holds `frame <number> @drawing`, from that frame on showing that drawing, with `keyframe-type=` when it is not a keyframe (`breakdown`, `moving-hold`, `extreme`, `jitter`, `generated`); one drawing may be shown by several frames, on any layers. Its other settings are `GreasePencilLayer`'s by their Null names (`opacity`, `blend-mode`, `use-lights`, `translation`, `rotation`, `scale`, `parent`). A group holds `GreasePencilLayerGroup`'s (`is-expanded`, `color-tag`) and its children;
   - `attribute @h layer <type> "Name" [values]`: the datablock's own attributes, one value per layer in the tree's order.
 
-  A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the drawings (section 7). A drawing's array past 2,000 elements goes in a file of its own named after the datablock, the drawing and the array (`sketch.first.points.noll`); its `array` node names the array in one word, the drawing's handle, a dot and the line's name for the drawing's own arrays (`array grease-pencil @sketch @first.points [ … ]`), and the drawing's handle, `/` and the attribute's for an attribute (`@first/@radius`). A drawing that is a reference to another datablock's (`GreasePencilDrawingReference`) has no form yet, and conversion says so.
+  A drawing has no name in Blender: its handle is kept in `.sau/ids.noll` by its index in the drawings (section 7). A drawing's array past 2,000 elements goes in a file of its own named after the datablock, the drawing and the array (`sketch.first.points.noll`); its `array` node names the array in one word, the drawing's handle, a dot and the line's name for the drawing's own arrays (`array grease-pencil @sketch @first.points [ … ]`), and the drawing's handle, `/` and the attribute's for an attribute (`@first/@radius`).
 
 ```null
 grease-pencil @sketch "Sketch" {
@@ -697,6 +698,9 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
   - It also holds its **inputs**, by the names the schema gives its sockets, each a value of the socket's type or a link. Where a setting and an input share a name, the name is the input's. A socket with no line takes its default.
   - A node's position and size are the `layout` block's, never its own lines.
 - **A link** is a socket value that names another node's output: `base-color @ramp.color`. A socket that takes several links (a join's `geometry`) takes a list of them, `[@a.geometry @b.geometry]`. A geometry, shader, bundle or closure socket has no value of its own, so it takes only links.
+  - **A muted link** carries nothing: the input takes its own value, as if unlinked. It is written `mute=on` after the link, `base-color @ramp.color mute=on`; for a socket that takes several links, `mute=` is a list of `on` and `off`, one for each link in the list's order, `geometry [@a.geometry @b.geometry] mute=[off on]`. A link with no `mute=` is live (RFC 0009, Sau's decision S95).
+  - **The value under a link.** A linked input keeps its own value, which it takes when the link goes or is muted: `value=` after the link, written as the socket's value is, `roughness @noise.fac value=0.6`, left out at the socket's default. A socket with no value of its own and one that takes several links take no `value=`.
+  - Any other `key=` after a link is a warning naming it (`null-link-key`), and is ignored, as v0 ignored it (S95).
 - **Frames.** A frame is a node, `node @box frame "Box"`, and a node drawn in it says `parent @box`.
 - **A group's interface** is its `input`, `output` and `panel` lines, in the interface's order:
   - `input @h <socket-type> "Name" { … }` and `output @h <socket-type> "Name" { … }`. The socket type is an interface socket's kind (`float`, `float-distance`, `int`, `vector`, `geometry`, `object`, and the schema's others), and the block holds that type's settings (`default-value`, `min-value`, `max-value`, `description`, `hide-value` and the rest).
@@ -713,6 +717,7 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
 - **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's, each at its node kind's default width. A node with no layout line is placed by Sau.
   - **A position is absolute** on the canvas, not relative to the node's frame: DNA's `location`, which RNA calls `location_absolute` (Sau's decision S79). So a line means the same whatever the node's `parent`, and moving a frame in the editor rewrites its nodes' lines with its own.
   - **A size** follows the position where it is not the node kind's default, which the schema gives each kind: `width=`, and for a frame, the one node whose height is its own rather than its sockets', `height=` (S79): `@box [-120 60] width=300 height=200`. Both are plain numbers in the editor's units, as positions are.
+  - **Hidden sockets** are the editor's too: `hide-inputs=` and `hide-outputs=`, lists of the node's sockets by the names its input lines use (a group's by its interface handles less `@`), `@tint [-100 0] hide-inputs=[fac]`. A list left out is empty. A linked socket is never hidden, an input its line links or an output a line links from, since Blender refuses to hide one, and a zone's layout line takes neither (RFC 0009, S95); either mistake is `null-hidden-socket`.
 
 A material, with a frame:
 
@@ -820,22 +825,30 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
     - The f-curve's block names the file and gives its summary, which the checker holds the file to: `keys file="hop.ball.location-2.keys.noll" count=1200 frames=[1 1200]`.
       - `count=` is the number of keys.
       - `frames=` is the first and the last key's frame, as Blender sorts them.
-      - A summary that disagrees with the file is an error, at the line that names it, as section 9's is.
-      - An f-curve writes its keys inline or names a file, never both.
+      - A summary that is missing or disagrees with the file is an error, at the line that names it, as section 9's is (`null-key-file-summary`).
+      - An f-curve writes its keys inline or names a file, never both (`null-key-file-inline`).
     - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. Its name is the printer's choice and carries no meaning, since the line names the file. The printer names it after the action's file, the slot, the property's path and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle where it has one: `rig.arm.pose-bones.forearm.rotation-quaternion-1.keys.noll`. A name another f-curve's file already takes gets `-2`, `-3`.
     - **The file** holds one node: `keys`, the action's handle, the slot's, the property, `index=` for an array's item, and a block of `key` lines exactly as an inline f-curve's (frame, value in the property's unit, settings as `name=value`), in frame order, as in the file below.
 
-    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
+    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A line whose key file no file holds is `null-key-file-missing`; a key file no line names, or a second one for a line, is `null-key-file-unnamed` (Sau's decision S97: codes of their own). A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
     - **Write-back** follows section 17's smallest edit:
       - A key moved or changed in Sau rewrites its own line in the key file, and nothing else, unless the move changes the first or last frame, which also rewrites `frames=`.
       - A key added or removed adds or removes its line, and rewrites `count=` and, where it changes, `frames=`.
       - A curve that grows past 2,000 keys moves its keys into a file, and one that shrinks to 2,000 or fewer moves them back inline. Either is a change of the f-curve's own lines, the only time both files change for one edit.
-    - `sau convert --inline` writes every f-curve's keys inline, whatever their number, as it does for arrays.
-A key file, beside `actions/hop.noll` (its 1,200 lines shortened here to three; fenced as text until the checker reads key files, so the spec's numbered examples keep their numbers):
+An f-curve whose keys are in a key file, and the file, beside `actions/capture.noll` (a capture's 1,200 keys shortened here to three, its `count=` and `frames=` with them):
 
-```text
-// actions/hop.ball.location-2.keys.noll
-keys @hop @ball location index=2 {
+```null
+// actions/capture.noll
+action @capture "Capture" {
+  slot @runner object "Runner" {
+    fcurve location index=2 {
+      keys file="capture.runner.location-2.keys.noll" count=3 frames=[1 3]
+    }
+  }
+}
+
+// actions/capture.runner.location-2.keys.noll
+keys @capture @runner location index=2 {
   key 1 0m
   key 2 0.0123m
   key 3 0.049m
@@ -951,7 +964,51 @@ Blender's `//`, relative to a `.blend` file, is never written: a project has no 
 
 **A missing file at apply.** Sau reports it and still makes the datablock, so references to it resolve. A sound, a font and a movie clip are made from their file when it exists. When it does not, they are made empty, with the path set, as Blender keeps a datablock whose file has gone: a sound that plays nothing, a font with no glyphs, a clip with no frames. They load once the file is there. An image, a cache file and a volume are made from their name, with the path set, as now.
 
-The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, a sequence's frame range on the image user. Image sequences, UDIM tiles and movie frames are not yet copied one file per frame; converting a `.blend` reports them.
+**A tiled image or an image sequence** (Sau's decision S96, RFC 0007) is a folder of files in `media/`, one file per tile or frame, since Blender reads every member from one `filepath` by its number:
+- **A tile set** is `media/<sha256>.tiles/`, each tile named `<number>.<ext>` (`1001.png`, `1002.png`), and the image's `filepath` is `media/<sha256>.tiles/<UDIM>.<ext>`.
+- **A sequence** is `media/<sha256>.frames/`, each frame named `<number>.<ext>`, with the number padded to one width for the whole folder (`0001.png` … `0240.png`, the width the source had). The `filepath` names one frame, as Blender's does: `media/<sha256>.frames/0001.png`. A movie clip made of image files is written the same way.
+
+Every file in the folder has the same extension. The folder's `<sha256>` is the SHA-256 of a listing of its files: one line for each, in increasing number, holding its name, a space, the SHA-256 of its bytes in lowercase hexadecimal, and a line feed (`1001.png 3f2a…\n1002.png 9b74…\n`). A folder is therefore named by its contents as a single file is.
+
+- **Converting** a `.blend` copies every tile Blender reads, or holds packed, into a tile set; a tile neither packed nor on disk is said and left out, the others kept. A set written with `<UVTILE>` (`u1_v1`) is renumbered with UDIM numbers (`1001 + (u - 1) + 10 × (v - 1)`), which is how Blender numbers the tiles inside. A sequence copies every file that Blender's rule reaches from the `filepath`: the same folder, head and tail, and the same number of digits. A missing number stays missing, as Blender shows that frame missing.
+- **A tile's own settings** (`UDIMTile`: its `label`, and the generated colour of a tile with no file) are written `tile <number> { … }` in the image's block, only for a tile that has any. The tiles themselves are the folder's files, and Sau gives Blender the tiles the folder holds, as reloading the image finds them.
+- **`sau check`** reports each mistake with a code of its own (Sau's decision S97), as errors:
+  - at the folder: `cosmosis-media-set-hash`, a folder whose name is not the hash of its listing; `cosmosis-media-set-name`, a file in it not named `<number>.<ext>`, a tile's number exactly its UDIM number with no leading zero, as `<UDIM>` makes it; `cosmosis-media-set-mixed`, two extensions, or two widths in a sequence; `cosmosis-media-set-tile`, a tile number outside 1001 to 2000;
+  - at the `filepath` line: `cosmosis-media-set-token`, a tiled image's path under `media/` without `<UDIM>`, or with `<UVTILE>`; `cosmosis-media-set-frame`, a sequence's `filepath` that names no file of its folder.
+
+  A path that names no file or folder is `cosmosis-media-missing`, as before. A `tile` line's number is checked too: from 1001 to 2000, once in an image.
+- **Outside the project**, an absolute path to a tile set or a sequence keeps Blender's own form, its tokens and digits as Blender reads them, with the `cosmosis-media-outside` warning that every absolute path gets.
+
+```null
+image @wood "wood" {
+  filepath "media/<the hash of its listing>.tiles/<UDIM>.png"
+  source tiled
+  tile 1002 { label "Back" }
+}
+image @shot "shot" {
+  filepath "media/<the hash of its listing>.frames/0001.png"
+  source sequence
+}
+```
+
+The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, and a sequence's frame range, which is on the image user (`frame-start`, `frame-duration`, `frame-offset`).
+
+**A text's body** (RFC 0011, Sau's decision S103). A `text` datablock's content (a Python script, an OSL shader, notes) is a file of its own, named by its `body` line:
+
+```null
+text @shader-py "shader.py" {
+  body "scripts/shader.py"
+  use-module on
+}
+```
+
+- **The path** is written from the project's root, by the same rules as a media datablock's: `/` separators, no `.` or `..` parts, and no part leaving the root. Unlike a media file, it is not named by its bytes. A text is source someone edits, so its file keeps a readable name. Cosmósis's layout puts it in `scripts/`, named from the text's name (Cosmósis spec, section 2).
+- **The file** is the text's whole content, byte for byte: Blender's lines, each but the last ended by a line feed. No `body` line is an empty text.
+- **`body` is Null's own form over RNA** (section 8), standing for `Text.lines`, which RNA only reads. The text's stored settings are ordinary lines (`use-module`, `indentation`, and `filepath` for a text Blender keeps linked to a file of its own).
+- **Bytes Blender would change.** Blender keeps a text as UTF-8 lines with no control character but the tab. A file holding a carriage return, another control character or bytes that are not UTF-8 is applied as Blender reads it, compared that way, and warned of.
+- **Write-back.** A text edited in Sau writes its body file again, whole.
+
+`sau check` reports, at each `body` line, `cosmosis-body-path` (an error: not a path from the root), `cosmosis-body-missing` (an error: no file is there) and `cosmosis-body-bytes` (a warning: the file holds bytes Blender would change).
 
 ## 13. Generators (optional)
 
@@ -1025,7 +1082,7 @@ A file is written atomically, beside itself and then renamed over it, so an edit
 
 Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back each file's text from before the steps it crosses, byte for byte, where the file still holds exactly what Sau wrote; redo does the same forwards. A file edited outside Sau since then keeps the editor's text.
 
-Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
+Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. Write-back covers the values and the forms Sau applies, not transforms alone as in phase 1a's slice; the forms it does not write back yet are on Sau's task board.
 
 ### Short forms
 
@@ -1073,7 +1130,7 @@ action @bob "Bob" {
 
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated`, `null-python` (a driver's expression that is Python: a note), `null-handle-placed` (a key's handle written beside an automatic handle type, which Blender places again: a warning, S87), `null-raw-old-path` (a `raw` path without the index of the embedded struct array's element it names, read as element 0: a warning, S94) and `null-raw-state-conflict` (a masked `raw` line that contradicts the state its enum's line sets those bits to: a warning, S97). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated`, `null-python` (a driver's expression that is Python: a note), `null-handle-placed` (a key's handle written beside an automatic handle type, which Blender places again: a warning, S87), `null-raw-old-path` (a `raw` path without the index of the embedded struct array's element it names, read as element 0: a warning, S94), `null-raw-state-conflict` (a masked `raw` line that contradicts the state its enum's line sets those bits to: a warning, S97), `null-link-key` (a key after a link other than `mute=` and `value=`, which v0 ignored: a warning, S95), `null-hidden-socket` (a hidden socket a layout line cannot hide: one the node does not have, or a linked one, S95), `null-type-line` (a `type` line inside a texture of a type naming the kind's own type, which says nothing more: a warning, S101), `null-reference-cycle` (a Grease Pencil drawing that is a reference reaching its own datablock, directly or through others' references, RFC 0008, S98), `null-key-file-summary` (a key file's `count=` or `frames=` missing or disagreeing with the file, S86), `null-key-file-missing` (a `keys file=` line whose key file no file holds), `null-key-file-unnamed` (a key file no f-curve's line names, or a second one for a line) and `null-key-file-inline` (an f-curve that writes keys inline and names a key file). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
 
 How the messages are worded (task 1d-02e):
 - **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.

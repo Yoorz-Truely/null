@@ -752,6 +752,94 @@ fn point_clouds_curves_and_grease_pencil_drawings_take_level_0_arrays() {
 }
 
 #[test]
+fn a_drawing_may_be_a_reference_to_another_grease_pencil() {
+    // RFC 0008 (Sau's decision S98, task 1d-06h): `drawing @h { reference @other }` names a
+    // whole Grease Pencil datablock, frames show it like any drawing, and it holds nothing else.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "\
+grease-pencil @walk-cycle \"Walk cycle\" {
+  drawing @step {
+    points [[0m 0m 0m] [0.1m 0m 0m]]
+    curves [2]
+  }
+  layer @legs \"Legs\" {
+    frame 1 @step
+  }
+}
+
+grease-pencil @crowd \"Crowd\" {
+  drawing @first {
+    points [[0m 0m 0m] [0.5m 0m 0m]]
+    curves [2]
+  }
+  drawing @walker { reference @walk-cycle }
+  drawing @last {
+    points [[1m 0m 0m]]
+    curves [1]
+  }
+  layer @people \"People\" {
+    frame 1 @first
+    frame 12 @walker
+    frame 24 @last
+  }
+}
+";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    let broken = |from: &str, to: &str| {
+        assert!(text.contains(from), "{from}");
+        errors(&schema, &[&text.replacen(from, to, 1)])
+    };
+    // A reference holds no arrays of its own.
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{\n    reference @walk-cycle\n    points [[0m 0m 0m]]\n    curves [1]\n  }",
+    );
+    assert_eq!(found.len(), 2, "{found:#?}");
+    assert!(found.iter().all(|d| d.code == codes::TYPE), "{found:#?}");
+    assert!(
+        found[0].message.contains("a reference takes no `points`"),
+        "{}",
+        found[0].message
+    );
+    // It names a Grease Pencil of the project, by its handle, once.
+    let found = broken("reference @walk-cycle", "reference @walk-cycel");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    let found = broken("reference @walk-cycle", "reference @people");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{ reference @walk-cycle; reference @crowd }",
+    );
+    assert!(
+        found.iter().any(|d| d.code == codes::REPEATED),
+        "{found:#?}"
+    );
+    // A reference that reaches its own datablock, here through @walk-cycle, is refused, and so
+    // is each reference on the way.
+    let found = broken(
+        "  layer @legs",
+        "  drawing @back { reference @crowd }\n  layer @legs",
+    );
+    let cycles: Vec<_> = found
+        .iter()
+        .filter(|d| d.code == codes::REFERENCE_CYCLE)
+        .collect();
+    assert_eq!(cycles.len(), 2, "{found:#?}");
+    assert!(
+        cycles
+            .iter()
+            .any(|d| d.message.contains("(@crowd → @walk-cycle → @crowd)")),
+        "{cycles:#?}"
+    );
+    // A drawing's line beside `reference` that is none of a drawing's.
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{ reference @walk-cycle; opacity 1 }",
+    );
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+}
+
+#[test]
 fn a_drawings_large_arrays_are_named_in_one_word_in_their_data_files() {
     // RFC 0006: a drawing's array in a data file is named by the drawing's handle, a dot and the
     // line (`@first.points`), an attribute by the handle, `/` and the attribute's.
@@ -802,6 +890,78 @@ fn a_shape_keys_arrays_are_lists() {
 }
 
 #[test]
+fn muted_links_values_under_links_and_hidden_sockets_check() {
+    // RFC 0009 (S95, task 1d-07l): `mute=` and `value=` after a link, `hide-inputs=` and
+    // `hide-outputs=` on a layout line; any other key on an input line a warning, as v0 took it.
+    let project = Schema::from_json(PROJECT).unwrap();
+    let material = |nodes: &str, layout: &str| {
+        format!(
+            "material @m \"M\" {{\n  nodes {{\n    node @noise tex-noise\n{nodes}\n    node @out output-material {{ surface @bsdf.bsdf }}\n  }}\n  layout {{ {layout} }}\n}}\n"
+        )
+    };
+    let clean = material(
+        "    node @bsdf bsdf-principled {\n      base-color @noise.color mute=on value=[0.8 0.1 0.1 1]\n      roughness @noise.fac value=0.6\n    }",
+        "@bsdf [0 0] hide-inputs=[metallic] hide-outputs=[]",
+    );
+    let found = errors(&project, &[&clean]);
+    assert!(found.is_empty(), "{found:?}");
+    let messages = |text: &str| -> Vec<(bool, String)> {
+        errors(&project, &[text])
+            .into_iter()
+            .map(|d| (d.is_error(), d.message.clone()))
+            .collect()
+    };
+    for (nodes, layout, error, says) in [
+        (
+            "    node @bsdf bsdf-principled { base-color @noise.color mute=yes }",
+            "@bsdf [0 0]",
+            true,
+            "takes `on` or `off`",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac value=red }",
+            "@bsdf [0 0]",
+            true,
+            "roughness",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness 0.5 mute=on }",
+            "@bsdf [0 0]",
+            true,
+            "takes no properties",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac colour=red }",
+            "@bsdf [0 0]",
+            false,
+            "not `colour=`",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac }",
+            "@bsdf [0 0] hide-inputs=[roughness]",
+            true,
+            "is linked",
+        ),
+        (
+            "    node @bsdf bsdf-principled",
+            "@bsdf [0 0] hide-inputs=[rougness]",
+            true,
+            "none of this node's inputs",
+        ),
+    ] {
+        let text = material(nodes, layout);
+        let found = messages(&text);
+        assert!(
+            found.iter().any(|(e, m)| *e == error && m.contains(says)),
+            "{says}: {found:?}\n{text}"
+        );
+        if !error {
+            assert!(found.iter().all(|(e, _)| !e), "a warning alone: {found:?}");
+        }
+    }
+}
+
+#[test]
 fn a_field_written_under_two_names_is_refused() {
     // Sau's task 1b-03m: the schema step classes an alias of another property's DNA field
     // derived and names the property it reads (`alias-of`); a block that writes both sets the
@@ -840,4 +1000,121 @@ fn a_field_written_under_two_names_is_refused() {
     ] {
         assert_eq!(errors(&schema, &[one]), vec![], "{one}");
     }
+}
+
+#[test]
+fn a_texture_of_a_type_is_its_kind_with_that_types_settings() {
+    // Task 1d-07s: `wood` and `clouds` take their own structs' settings; their type is their
+    // kind, so a `type` line gives it again (S70); `texture` takes `Texture`'s alone, `type`
+    // among them.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "\
+wood @grain \"Grain\" {
+  noise-scale 0.5
+  wood-type ringnoise
+}
+
+clouds @sky \"Sky\" {
+  noise-depth 4
+  cloud-type color
+}
+
+texture @plain \"Plain\" {
+  type none
+  intensity 0.9
+}
+";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    let broken = |from: &str, to: &str| {
+        assert!(text.contains(from), "{from}");
+        errors(&schema, &[&text.replacen(from, to, 1)])
+    };
+    // Its own type again: a warning (S101), so v0's text still checks; another type: an error.
+    for (ty, code) in [("wood", codes::TYPE_LINE), ("clouds", codes::REPEATED)] {
+        let found = broken(
+            "  noise-scale 0.5\n",
+            &format!("  noise-scale 0.5\n  type {ty}\n"),
+        );
+        assert_eq!(found.len(), 1, "{found:#?}");
+        assert_eq!(found[0].code, code, "{found:#?}");
+        assert!(
+            found[0].message.contains("its kind"),
+            "{}",
+            found[0].message
+        );
+        assert_eq!(found[0].fixes[0].edits[0].replacement, "");
+    }
+    let found = broken("  noise-depth 4\n", "  noise-depth 4\n  type clouds\n");
+    assert_eq!(found[0].code, codes::TYPE_LINE, "{found:#?}");
+    // A `texture` has no type's settings.
+    let found = broken("  intensity 0.9\n", "  noise-scale 0.5\n");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+    // Nor a wood a clouds texture's.
+    let found = broken("  wood-type ringnoise\n", "  cloud-type color\n");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+    // One handle on two textures of different kinds: defined twice (S101), since a reference
+    // to a texture names any texture kind.
+    let found = broken("clouds @sky", "clouds @grain");
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    assert!(
+        found[0]
+            .message
+            .contains("defined twice, as a wood and as a clouds"),
+        "{}",
+        found[0].message
+    );
+}
+
+#[test]
+fn an_images_tile_lines_are_udim_tiles_settings() {
+    // Null section 12, RFC 0007 (Sau's decision S96, task 1d-05m): `tile <number> { … }` in an
+    // image, `UDIMTile`'s settings, its number from 1001 to 2000 and once.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let ok = "image @wood \"wood\" {\n  filepath \"media/x.tiles/<UDIM>.png\"\n  source tiled\n  tile 1002 { label \"Back\" }\n  tile 1003 { generated-type color-grid }\n}\n";
+    assert_eq!(errors(&schema, &[ok]), vec![]);
+    let bad = "image @wood \"wood\" {\n  tile 1002 { labl \"Back\" }\n  tile 1002\n  tile 999\n  tile front\n}\n";
+    let codes_found: Vec<&str> = errors(&schema, &[bad]).iter().map(|d| d.code).collect();
+    assert_eq!(
+        codes_found,
+        [
+            codes::UNKNOWN_PROPERTY,
+            codes::REPEATED,
+            codes::RANGE,
+            codes::TYPE
+        ]
+    );
+}
+
+#[test]
+fn a_text_names_its_body_file() {
+    // RFC 0011 (S103, Sau task 1d-09e): `body` is one string, the path of the text's content
+    // from the project's root; anything else is a type error; a text with no `body` is empty.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "text @shader-py \"shader.py\" {\n  body \"scripts/shader.py\"\n  use-module on\n}\n\ntext @notes \"Notes\"\n";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    for wrong in [
+        "  body scripts\n",
+        "  body \"a.py\" \"b.py\"\n",
+        "  body \"a.py\" file=\"b.py\"\n",
+        "  body\n",
+    ] {
+        let found = errors(
+            &schema,
+            &[&text.replace("  body \"scripts/shader.py\"\n", wrong)],
+        );
+        assert_eq!(found.len(), 1, "{wrong}: {found:#?}");
+        assert_eq!(found[0].code, codes::TYPE, "{wrong}: {found:#?}");
+    }
+    let twice = text.replace(
+        "  body \"scripts/shader.py\"\n",
+        "  body \"scripts/shader.py\"\n  body \"scripts/other.py\"\n",
+    );
+    assert_eq!(errors(&schema, &[&twice])[0].code, codes::REPEATED);
+    // Only a text has a body.
+    let found = errors(
+        &schema,
+        &["material @oak \"Oak\" {\n  body \"scripts/a.py\"\n}\n"],
+    );
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
 }

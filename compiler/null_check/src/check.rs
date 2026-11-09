@@ -53,6 +53,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         groups: HashMap::new(),
         actions: HashMap::new(),
         refs: Vec::new(),
+        key_refs: Vec::new(),
         components: HashMap::new(),
         placements: HashMap::new(),
         cycles: HashSet::new(),
@@ -62,6 +63,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         outside_place: crate::driver::Place::default(),
         scene_places: HashMap::new(),
         scene_place: None,
+        gp_references: Vec::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -98,7 +100,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
     cx.find_cycles();
     for (file, parse) in files {
         for node in parse.document().nodes() {
-            if node.name() != "array" {
+            if node.name() != "array" && node.name() != anim::KEYS {
                 cx.top(*file, node);
             }
         }
@@ -112,6 +114,16 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         }
     }
     cx.unmatched_refs();
+    cx.reference_cycles();
+    // Key files, each against the f-curve line that names it (section 11, S86, task 1d-07t).
+    for (file, parse) in files {
+        for node in parse.document().nodes() {
+            if node.name() == anim::KEYS {
+                cx.key_file(*file, node);
+            }
+        }
+    }
+    cx.unmatched_key_refs();
     let mut out = cx.out;
     // Sub-object handles are unique within their owner, whatever their kinds (section 7).
     out.extend(crate::paths::Index::build(files).duplicates());
@@ -161,6 +173,8 @@ struct Checker<'s> {
     actions: HashMap<String, anim::Slots>,
     /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
     refs: Vec<level0::ArrayRef>,
+    /// The f-curve lines that name a key file, until the file is read (S86, task 1d-07t).
+    key_refs: Vec<anim::KeyRef>,
     /// Every component, by handle (task 1d-03b).
     components: HashMap<String, Component>,
     /// Every placement in a scene or a collection, by its handle (task 1d-03b).
@@ -180,6 +194,8 @@ struct Checker<'s> {
     scene_places: HashMap<(u32, usize), crate::driver::Place>,
     /// The place of the scene whose block is being checked.
     scene_place: Option<crate::driver::Place>,
+    /// Every drawing that is a reference to another Grease Pencil (RFC 0008, task 1d-06h).
+    gp_references: Vec<geometry::GpReference>,
 }
 
 /// A datablock being checked, with its own sub-objects.
@@ -323,6 +339,38 @@ impl<'s> Checker<'s> {
         })
     }
 
+    /// Another texture kind's definition of `handle`, where `kind` is a texture's (S101).
+    fn texture_twin(&self, kind: &str, handle: &str) -> Option<(String, (FileId, Span))> {
+        let is_texture = |k: &str| {
+            k == "texture"
+                || self
+                    .schema
+                    .struct_by_kind(k)
+                    .is_some_and(|s| s.base.as_deref() == Some("Texture"))
+        };
+        if !is_texture(kind) {
+            return None;
+        }
+        self.defs
+            .iter()
+            .find(|((k, h), _)| h == handle && k != kind && is_texture(k))
+            .map(|((k, _), at)| (k.clone(), *at))
+    }
+
+    /// A text's `body` line (RFC 0011, S103): one string, the path of the file holding the text's
+    /// content, from the project's root. Whether the path is a path from the root and the file is
+    /// there is Cosmósis's to say (`cosmosis-body-path`, `cosmosis-body-missing`).
+    fn text_body(&mut self, file: FileId, a: &Attr<'_>) {
+        let one_string = matches!(a.args.as_slice(), [v] if v.as_string().is_some());
+        if !one_string || !a.props.is_empty() || a.node.is_some_and(|n| n.block().is_some()) {
+            self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`body` takes one string, the path of the text's file from the project's root, such as `body \"scripts/shader.py\"`",
+            );
+        }
+    }
+
     fn collect(&mut self, file: FileId, node: Node<'_>, top: bool) {
         let kind = node.name().into_owned();
         let defining =
@@ -336,6 +384,21 @@ impl<'s> Checker<'s> {
                     span,
                     format!(
                         "`{handle}` is defined twice as {}; a handle is unique within its kind",
+                        article(&kind)
+                    ),
+                )
+                .with_label(f0, s0, "first defined here");
+                self.out.push(d);
+            } else if let Some((other, (f0, s0))) = self.texture_twin(&kind, &handle) {
+                // A texture of each type is its own kind, but a reference to a texture names any
+                // of them: one handle is one texture (S101, task 1d-07w).
+                let d = Diagnostic::error(
+                    codes::HANDLE,
+                    file,
+                    span,
+                    format!(
+                        "`{handle}` is defined twice, as {} and as {}; a texture's handle is unique among every texture kind, as a reference to a texture names any",
+                        article(&other),
                         article(&kind)
                     ),
                 )
@@ -489,6 +552,62 @@ impl<'s> Checker<'s> {
         if kind == "action" {
             return self.action_body(file, node, &props);
         }
+        // A texture of a type (`wood`) is written as that type's kind, which gives its `type`
+        // (section 8, S101, task 1d-07s). A `type` line naming the kind's own type says nothing
+        // more, a warning v0's text may still hold; one naming another type is two values for one
+        // property.
+        if kind != "texture"
+            && self
+                .schema
+                .struct_by_rna(rna)
+                .is_some_and(|s| s.base.as_deref() == Some("Texture"))
+        {
+            let own = self
+                .schema
+                .properties_of("Texture")
+                .into_iter()
+                .find(|p| p.name == "type")
+                .and_then(|p| p.items.clone())
+                .unwrap_or_default()
+                .into_iter()
+                .find(|i| {
+                    let named = if i.name == "image" {
+                        "image-texture"
+                    } else {
+                        i.name.as_str()
+                    };
+                    named == kind
+                })
+                .map(|i| i.name);
+            for a in attrs(node).iter().filter(|a| a.name == "type") {
+                let said = a.args.first().and_then(|v| v.as_word()).unwrap_or_default();
+                let d = if own.as_deref() == Some(said) {
+                    Diagnostic::warning(
+                        codes::TYPE_LINE,
+                        file,
+                        a.span,
+                        format!(
+                            "a `{kind}` texture's type is its kind, so `type {said}` says nothing more"
+                        ),
+                    )
+                } else {
+                    Diagnostic::error(
+                        codes::REPEATED,
+                        file,
+                        a.span,
+                        format!(
+                            "a `{kind}` texture's type is its kind, `{}`, and `type {said}` gives it another; a texture of that type is written as its kind",
+                            own.as_deref().unwrap_or(kind)
+                        ),
+                    )
+                };
+                let d = match removal(a) {
+                    Some(span) => d.with_fix_replace("remove the line", span, String::new()),
+                    None => d,
+                };
+                self.out.push(d);
+            }
+        }
         self.attributes(file, node, kind, &props, &[]);
     }
 
@@ -580,6 +699,10 @@ impl<'s> Checker<'s> {
             "curves" => vec!["points", "curves", "attribute"],
             "grease-pencil" => vec!["drawing", "layer", "layer-group", "attribute"],
             "pose-bone" => vec!["constraint"],
+            // A tiled image's tiles' own settings (RFC 0007, S96, task 1d-05m).
+            "image" => vec!["tile"],
+            // A text's content, in a file of its own (RFC 0011, S103).
+            "text" => vec!["body"],
             _ => vec![],
         };
         if let Some((_, group)) = tree_kind {
@@ -602,6 +725,7 @@ impl<'s> Checker<'s> {
         }
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
+        let mut tiles: Vec<i64> = Vec::new();
         let all = attrs(node);
         // Node handles first, so layout and links may name nodes defined later.
         let tree = tree_kind.map(|(rna, group)| {
@@ -640,6 +764,7 @@ impl<'s> Checker<'s> {
                         "drawing" | "layer" | "layer-group" | "attribute"
                     )
                     | ("scene", "marker")
+                    | ("image", "tile")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -725,6 +850,8 @@ impl<'s> Checker<'s> {
                     self.shape_keys(file, a)
                 }
                 ("scene", "marker") => self.marker(file, a),
+                ("image", "tile") => self.udim_tile(file, a, &mut tiles),
+                ("text", "body") => self.text_body(file, a),
                 // After the loop, against each other (RFC 0006, S91, task 1d-06f).
                 ("point-cloud", "points" | "attribute")
                 | ("curves", "points" | "curves" | "attribute") => {}

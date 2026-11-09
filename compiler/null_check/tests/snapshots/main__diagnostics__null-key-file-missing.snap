@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- action @a "A" {\n  slot @s object "S" {\n    fcurve location index=2 {\n      keys file="a.s.location-2.keys.noll" count=1 frames=[1 1]\n    }\n  }\n}\n
+case.noll:4:7 error[null-key-file-missing]: no key file holds these keys: write them as `keys @a @s location index=2 { key … }` in a file of its own

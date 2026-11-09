@@ -3,6 +3,10 @@
 //! Grease Pencil datablock's `drawing` sub-objects with the same lines, its `layer` and
 //! `layer-group` tree with each layer's `frame` lines, and its `layer` attributes. Each array
 //! is written inline or named in a data file of its own, as a mesh's (`level0`).
+//!
+//! A drawing may instead be a reference to another Grease Pencil datablock, `drawing @h {
+//! reference @other }` (RFC 0008, S98, task 1d-06h), which holds nothing else; a reference that
+//! reaches its own datablock is refused under `null-reference-cycle`.
 
 use super::level0::{Counts, Elements};
 use super::rig::handles;
@@ -22,6 +26,16 @@ const KEYFRAME_TYPES: [&str; 6] = [
     "jitter",
     "generated",
 ];
+
+/// A drawing that is a reference (RFC 0008): the datablock it is in, its handle, the datablock
+/// it shows and where that is written.
+pub(super) struct GpReference {
+    from: String,
+    drawing: String,
+    to: String,
+    file: FileId,
+    span: Span,
+}
 
 impl Checker<'_> {
     /// A point cloud's or a curves datablock's level 0 lines (`kind`), after its other lines.
@@ -121,15 +135,21 @@ impl Checker<'_> {
             let Some(block) = a.node else { continue };
             let lines = attrs(block);
             for b in &lines {
-                if !matches!(b.name.as_str(), "points" | "curves" | "attribute") {
+                if !matches!(
+                    b.name.as_str(),
+                    "points" | "curves" | "attribute" | "reference"
+                ) {
                     self.unknown(
                         file,
                         b,
                         "a drawing",
-                        &["points", "curves", "attribute"],
+                        &["points", "curves", "attribute", "reference"],
                         None,
                     );
                 }
+            }
+            if self.drawing_reference(file, &owner.1, &own, &lines) {
+                continue;
             }
             self.geometry_lines(
                 file,
@@ -154,6 +174,115 @@ impl Checker<'_> {
         };
         for a in all.iter().filter(|a| a.name == "attribute") {
             self.attribute_line(file, a, &owner, &counts, &LAYER, "");
+        }
+    }
+
+    /// A drawing's `reference @other` line among `lines` (RFC 0008, S98): one handle of a
+    /// `grease-pencil`, and no other array line beside it. True when the drawing is a reference,
+    /// whose arrays are then not read. The datablock `gp`'s reference is kept for
+    /// [`Checker::reference_cycles`].
+    fn drawing_reference(
+        &mut self,
+        file: FileId,
+        gp: &str,
+        drawing: &str,
+        lines: &[Attr<'_>],
+    ) -> bool {
+        let mut references = lines.iter().filter(|b| b.name == "reference");
+        let Some(first) = references.next() else {
+            return false;
+        };
+        for again in references {
+            self.out(file).error(
+                codes::REPEATED,
+                again.name_span,
+                format!("drawing `{drawing}` is a reference once: one `reference` line"),
+            );
+        }
+        for b in lines
+            .iter()
+            .filter(|b| matches!(b.name.as_str(), "points" | "curves" | "attribute"))
+        {
+            self.out(file).error(
+                codes::TYPE,
+                b.name_span,
+                format!(
+                    "drawing `{drawing}` is a reference to another Grease Pencil, which holds its own drawings: a reference takes no `{}`",
+                    b.name
+                ),
+            );
+        }
+        self.reference(file, first, "grease-pencil");
+        if let [v] = first.args.as_slice()
+            && first.props.is_empty()
+            && let Some(to) = v.as_word().filter(|w| w.starts_with('@'))
+        {
+            self.gp_references.push(GpReference {
+                from: gp.to_string(),
+                drawing: drawing.to_string(),
+                to: to.to_string(),
+                file,
+                span: v.span(),
+            });
+        }
+        true
+    }
+
+    /// Each drawing reference that reaches its own datablock, directly or through other
+    /// datablocks' references (RFC 0008, S98), as Blender's
+    /// `BKE_grease_pencil_references_cyclic_check` refuses one: an error on each reference of
+    /// the cycle, naming the datablocks in it.
+    pub(super) fn reference_cycles(&mut self) {
+        let references = std::mem::take(&mut self.gp_references);
+        let mut graph: HashMap<&str, Vec<&str>> = HashMap::new();
+        for r in &references {
+            graph.entry(&r.from).or_default().push(&r.to);
+        }
+        // The shortest way from `from` back to `to`, the datablocks on it in order.
+        let way = |from: &str, to: &str| -> Option<Vec<String>> {
+            let mut came: HashMap<&str, &str> = HashMap::new();
+            let mut todo = std::collections::VecDeque::from([from]);
+            let mut seen = HashSet::from([from]);
+            while let Some(at) = todo.pop_front() {
+                if at == to {
+                    let mut out = vec![at.to_string()];
+                    let mut k = at;
+                    while let Some(p) = came.get(k) {
+                        out.push(p.to_string());
+                        k = p;
+                    }
+                    out.reverse();
+                    return Some(out);
+                }
+                for next in graph.get(at).into_iter().flatten() {
+                    if seen.insert(next) {
+                        came.insert(next, at);
+                        todo.push_back(next);
+                    }
+                }
+            }
+            None
+        };
+        for r in &references {
+            let Some(back) = way(&r.to, &r.from) else {
+                continue;
+            };
+            let mut cycle = vec![r.from.clone()];
+            cycle.extend(back);
+            let shown = cycle.join(" → ");
+            let message = if r.to == r.from {
+                format!(
+                    "drawing `{}` of `{}` is a reference to `{}` itself; Blender refuses a reference that reaches its own Grease Pencil",
+                    r.drawing, r.from, r.from
+                )
+            } else {
+                format!(
+                    "drawing `{}` of `{}` is a reference to `{}`, which reaches `{}` again ({shown}); Blender refuses a reference that reaches its own Grease Pencil",
+                    r.drawing, r.from, r.to, r.from
+                )
+            };
+            self.out(r.file)
+                .error(codes::REFERENCE_CYCLE, r.span, message);
         }
     }
 

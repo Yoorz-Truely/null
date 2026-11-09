@@ -120,6 +120,33 @@ const CASES: &[(&str, &[&str])] = &[
             "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n",
         ],
     ),
+    // Key files (S86, S97, task 1d-07t): a summary that disagrees, a line whose file is not
+    // there, a file no line names, an f-curve whose keys are in both places.
+    (
+        codes::KEY_FILE_SUMMARY,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\" count=3 frames=[1 9]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n  key 5 1m\n}\n",
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\"\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_MISSING,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      keys file=\"a.s.location-2.keys.noll\" count=1 frames=[1 1]\n    }\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_UNNAMED,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\"\n}\nkeys @a @s location index=1 {\n  key 1 0m\n}\n",
+        ],
+    ),
+    (
+        codes::KEY_FILE_INLINE,
+        &[
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m\n      keys file=\"a.s.location-2.keys.noll\" count=1 frames=[1 1]\n    }\n  }\n}\nkeys @a @s location index=2 {\n  key 1 0m\n}\n",
+        ],
+    ),
     (
         codes::RAW_OLD_PATH,
         &[
@@ -135,9 +162,41 @@ const CASES: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        codes::LINK_KEY,
+        &[
+            // A key after a link other than mute= and value=, which v0 ignored (S95, S97).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac colour=red }\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::HIDDEN_SOCKET,
+        &[
+            // A socket the node lacks, and a linked one (S95, S97).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @bsdf [0 0] hide-inputs=[rougness roughness] }\n}\n",
+            // An output another node's line links from (sau-y's review of 1d-07l).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @noise [0 0] hide-outputs=[fac color] }\n}\n",
+        ],
+    ),
+    (
+        codes::TYPE_LINE,
+        &[
+            // A typed texture's `type` line naming its own type, which its kind gives (S101).
+            "wood @grain \"Grain\" {\n  type wood\n  noise-scale 0.5\n}\n",
+        ],
+    ),
+    (
         codes::PYTHON,
         &[
             "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.data.objects['D'].location.z * 100\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
+        ],
+    ),
+    (
+        codes::REFERENCE_CYCLE,
+        &[
+            // A drawing that is a reference to its own Grease Pencil, and two that reach each
+            // other's (RFC 0008, S98).
+            "grease-pencil @g \"G\" {\n  drawing @d { reference @g }\n}\n",
+            "grease-pencil @a \"A\" {\n  drawing @to-b { reference @b }\n}\ngrease-pencil @b \"B\" {\n  drawing @to-a { reference @a }\n}\n",
         ],
     ),
     (
