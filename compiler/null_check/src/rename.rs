@@ -189,7 +189,7 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
     let mut references = 0;
     for (file, parse) in files {
         for node in parse.document().nodes() {
-            let subs = sub_objects(*file, node);
+            let subs = sub_objects(node);
             let mut walker = Walker {
                 file: *file,
                 old,
@@ -230,10 +230,10 @@ fn component_defines(node: Node<'_>, old: &str) -> bool {
 /// 1b-01q): its sub-object lines right in its block and its tree's nodes and zones. A sub-object's
 /// own sub-objects (a pose bone's constraints, a panel's sockets) are reached by a path from it,
 /// so a bare handle inside the datablock never names them, and does not shadow the datablock.
-fn sub_objects(file: FileId, node: Node<'_>) -> HashSet<String> {
-    crate::paths::subs_of(file, node)
+fn sub_objects(node: Node<'_>) -> HashSet<String> {
+    crate::paths::own_sub_objects(node)
         .into_iter()
-        .map(|s| s.handle)
+        .map(|(_, handle)| handle)
         .collect()
 }
 

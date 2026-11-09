@@ -394,10 +394,7 @@ impl<'s> Checker<'s> {
         self.owner = handle.map(|handle| Own {
             kind: kind.clone(),
             handle,
-            subs: crate::paths::subs_of(file, node)
-                .into_iter()
-                .map(|s| (s.kind, s.handle))
-                .collect(),
+            subs: crate::paths::own_sub_objects(node),
         });
         if kind == "scene" {
             let mut rate = frame_rate(node);
