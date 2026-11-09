@@ -1,8 +1,8 @@
 # 0009: Muted links, hidden sockets and the value under a link
 
-- Status: proposed
+- Status: accepted (S95)
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S95
 - Affects: forms over RNA, canonical form, diagnostics
 - Null format: unchanged
 
@@ -58,7 +58,7 @@ It writes all three where Blender holds them and stops reporting them as having 
 
 Nothing that Sau writes or any project holds:
 - **Layout lines.** The checker refuses `hide-inputs=` and `hide-outputs=` on a layout line today ("a layout line takes `width=`, and `height=` for a frame"), so no v0 file holds them.
-- **Input lines.** Today the checker takes any key on an input line and ignores it (probed: `base-color @ramp.color mute=on` and `roughness @ramp.alpha value=0.6` check clean). That is a gap of its own, so a hand-written v0 file could hold `mute=on` with no effect, and under this proposal it would mute. Sau's printer and write-back never write a key there. No file of Cosmósis's corpus or Null's slice has one (each is checked by the same rule). With this proposal the checker also refuses any other key on an input line, closing the gap.
+- **Input lines.** Today the checker takes any key on an input line and ignores it (probed: `base-color @ramp.color mute=on` and `roughness @ramp.alpha value=0.6` check clean). That is a gap of its own, so a hand-written v0 file could hold `mute=on` with no effect, and under this proposal it would mute. Sau's printer and write-back never write a key there. No file of Cosmósis's corpus or Null's slice has one (each is checked by the same rule). With this proposal the checker warns at any other key on an input line, naming it (`null-unknown-property`, a warning): a v0 file that checks clean today still does, and Sau never applies such a key.
 
 Write-back's smallest edit (section 17) gains three things it may rewrite in place: a link line's `mute=` and `value=`, and a layout line's lists.
 
@@ -76,4 +76,4 @@ None.
 
 ## Decision
 
-Filled in when decided.
+Accepted by the lead as Sau's decision S95, November 9, 2026, with one amendment folded in above: an unknown key on an input line, which v0 takes and ignores, becomes a warning naming it, not an error, so no v0 file that checks clean today fails; Sau never applies such a key.
