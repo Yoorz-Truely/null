@@ -752,6 +752,94 @@ fn point_clouds_curves_and_grease_pencil_drawings_take_level_0_arrays() {
 }
 
 #[test]
+fn a_drawing_may_be_a_reference_to_another_grease_pencil() {
+    // RFC 0008 (Sau's decision S98, task 1d-06h): `drawing @h { reference @other }` names a
+    // whole Grease Pencil datablock, frames show it like any drawing, and it holds nothing else.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "\
+grease-pencil @walk-cycle \"Walk cycle\" {
+  drawing @step {
+    points [[0m 0m 0m] [0.1m 0m 0m]]
+    curves [2]
+  }
+  layer @legs \"Legs\" {
+    frame 1 @step
+  }
+}
+
+grease-pencil @crowd \"Crowd\" {
+  drawing @first {
+    points [[0m 0m 0m] [0.5m 0m 0m]]
+    curves [2]
+  }
+  drawing @walker { reference @walk-cycle }
+  drawing @last {
+    points [[1m 0m 0m]]
+    curves [1]
+  }
+  layer @people \"People\" {
+    frame 1 @first
+    frame 12 @walker
+    frame 24 @last
+  }
+}
+";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    let broken = |from: &str, to: &str| {
+        assert!(text.contains(from), "{from}");
+        errors(&schema, &[&text.replacen(from, to, 1)])
+    };
+    // A reference holds no arrays of its own.
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{\n    reference @walk-cycle\n    points [[0m 0m 0m]]\n    curves [1]\n  }",
+    );
+    assert_eq!(found.len(), 2, "{found:#?}");
+    assert!(found.iter().all(|d| d.code == codes::TYPE), "{found:#?}");
+    assert!(
+        found[0].message.contains("a reference takes no `points`"),
+        "{}",
+        found[0].message
+    );
+    // It names a Grease Pencil of the project, by its handle, once.
+    let found = broken("reference @walk-cycle", "reference @walk-cycel");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    let found = broken("reference @walk-cycle", "reference @people");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{ reference @walk-cycle; reference @crowd }",
+    );
+    assert!(
+        found.iter().any(|d| d.code == codes::REPEATED),
+        "{found:#?}"
+    );
+    // A reference that reaches its own datablock, here through @walk-cycle, is refused, and so
+    // is each reference on the way.
+    let found = broken(
+        "  layer @legs",
+        "  drawing @back { reference @crowd }\n  layer @legs",
+    );
+    let cycles: Vec<_> = found
+        .iter()
+        .filter(|d| d.code == codes::REFERENCE_CYCLE)
+        .collect();
+    assert_eq!(cycles.len(), 2, "{found:#?}");
+    assert!(
+        cycles
+            .iter()
+            .any(|d| d.message.contains("(@crowd → @walk-cycle → @crowd)")),
+        "{cycles:#?}"
+    );
+    // A drawing's line beside `reference` that is none of a drawing's.
+    let found = broken(
+        "{ reference @walk-cycle }",
+        "{ reference @walk-cycle; opacity 1 }",
+    );
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+}
+
+#[test]
 fn a_drawings_large_arrays_are_named_in_one_word_in_their_data_files() {
     // RFC 0006: a drawing's array in a data file is named by the drawing's handle, a dot and the
     // line (`@first.points`), an attribute by the handle, `/` and the attribute's.

@@ -164,6 +164,15 @@ const CASES: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        codes::REFERENCE_CYCLE,
+        &[
+            // A drawing that is a reference to its own Grease Pencil, and two that reach each
+            // other's (RFC 0008, S98).
+            "grease-pencil @g \"G\" {\n  drawing @d { reference @g }\n}\n",
+            "grease-pencil @a \"A\" {\n  drawing @to-b { reference @b }\n}\ngrease-pencil @b \"B\" {\n  drawing @to-a { reference @a }\n}\n",
+        ],
+    ),
+    (
         codes::REPEATED,
         &["object @o \"O\" {\n  pass-index 1\n  pass-index 2\n}\n"],
     ),
