@@ -26,6 +26,8 @@ mod output;
 mod paths;
 #[path = "project_schema.rs"]
 mod project_schema;
+#[path = "raw.rs"]
+mod raw;
 #[path = "scale.rs"]
 mod scale;
 #[path = "spec_examples.rs"]
@@ -46,6 +48,7 @@ const MODULES: &[&str] = &[
     "output.rs",
     "paths.rs",
     "project_schema.rs",
+    "raw.rs",
     "rename.rs",
     "scale.rs",
     "spec_examples.rs",

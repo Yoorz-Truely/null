@@ -1,0 +1,27 @@
+object @lid "Lid" {
+  data mesh @lid-mesh
+  modifier @bevel bevel "Bevel" { width 4mm; segments 3 }
+  modifier @stacked nodes "Stacked" {
+    node-group @stack-up
+    count 3
+  }
+  constraint @aim damped-track "Aim" {
+    target @dial
+    track-axis track-negative-z
+  }
+}
+
+mesh @lid-mesh "Lid" { primitive cube size=1m }
+
+object @rig "Rig" {
+  data armature @rig-bones
+  bone @spine "Spine" {
+    rotation-mode xyz
+    constraint @reach kinematic "IK" {
+      target @lid
+      chain-count 2
+    }
+  }
+}
+
+armature @rig-bones "Rig"

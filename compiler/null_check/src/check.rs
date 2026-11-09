@@ -13,8 +13,8 @@ use crate::forms;
 use crate::schema::{Property, Schema};
 use crate::units::{self, Outside, Units};
 use crate::values::{
-    Out, check_bool, check_enum, check_float, check_float_array, check_float_matrix, check_int,
-    dimension, list, list_near,
+    Out, check_bool, check_bool_array, check_display_name, check_enum, check_float,
+    check_float_array, check_float_matrix, check_int, check_string, dimension, list, list_near,
 };
 
 mod anim;
@@ -57,12 +57,25 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         scope: None,
         expanded,
         owner: None,
+        outside_place: crate::driver::Place::default(),
+        scene_places: HashMap::new(),
+        scene_place: None,
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
     cx.outside = units::outside(parses);
     cx.scale = cx.outside.scale();
     cx.disagreement = disagreement(&cx.outside);
+    let all: Vec<&Parse> = files.iter().map(|(_, p)| *p).collect();
+    cx.outside_place = crate::driver::place(&all, None);
+    for (file, parse) in files {
+        for node in parse.document().nodes().filter(|n| n.name() == "scene") {
+            cx.scene_places.insert(
+                (file.0, node.span().start),
+                crate::driver::place(&all, Some(node)),
+            );
+        }
+    }
     for (file, parse) in files {
         for node in parse.document().nodes() {
             cx.collect(*file, node, true);
@@ -118,6 +131,8 @@ struct Attr<'a> {
 struct Header<'a> {
     handle: Option<(String, Span)>,
     name: Option<String>,
+    /// The display name as written: a string, or the list of its bytes (S65).
+    name_value: Option<Value<'a>>,
     rest: Vec<Value<'a>>,
 }
 
@@ -157,6 +172,12 @@ struct Checker<'s> {
     /// The datablock whose block is being checked, and its own sub-objects, (kind, handle):
     /// inside it a handle names one of them first (section 7; task 1b-01q).
     owner: Option<Own>,
+    /// Where drivers are read (task 1d-07f): outside every scene, and inside each scene node, by
+    /// its file and place, as `driver::place` gives them to the checker and to Sau alike.
+    outside_place: crate::driver::Place,
+    scene_places: HashMap<(u32, usize), crate::driver::Place>,
+    /// The place of the scene whose block is being checked.
+    scene_place: Option<crate::driver::Place>,
 }
 
 /// A datablock being checked, with its own sub-objects.
@@ -190,19 +211,42 @@ fn props_of(node: Node<'_>) -> Vec<(SyntaxToken<'_>, Value<'_>)> {
 fn header(node: Node<'_>) -> Header<'_> {
     let mut handle = None;
     let mut name = None;
+    let mut name_value = None;
     let mut rest = Vec::new();
     for (i, v) in args_of(node).into_iter().enumerate() {
         match v {
             Value::Word(t) if i == 0 && t.text.starts_with('@') => {
                 handle = Some((t.text.to_string(), t.span))
             }
-            Value::Str(_) | Value::Raw(_) if name.is_none() => {
-                name = v.as_string().map(|s| s.into_owned())
+            Value::Str(_) | Value::Raw(_) if name_value.is_none() => {
+                name = v.as_string().map(|s| s.into_owned());
+                name_value = Some(v);
+            }
+            // A name that is not UTF-8, as the list of its bytes (S65, task 1c-02g).
+            Value::List(_)
+                if name_value.is_none() && handle.is_some() && i == 1 && is_byte_list(&v) =>
+            {
+                name_value = Some(v);
             }
             _ => rest.push(v),
         }
     }
-    Header { handle, name, rest }
+    Header {
+        handle,
+        name,
+        name_value,
+        rest,
+    }
+}
+
+/// Whether `v` is a list of whole numbers, a byte list (S65).
+fn is_byte_list(v: &Value<'_>) -> bool {
+    let items = v.items();
+    !items.is_empty()
+        && items.iter().all(|i| {
+            i.as_word()
+                .is_some_and(|w| w.bytes().all(|b| b.is_ascii_digit()))
+        })
 }
 
 /// The span that takes attribute `a`'s line out of its file: a line of its own with its
@@ -338,7 +382,7 @@ impl<'s> Checker<'s> {
             return;
         };
         let rna = s.rna.clone();
-        self.header_check(file, node, &kind);
+        self.header_check(file, node, &kind, Some(&rna));
         // Inside its block, its own sub-objects come first (section 7, task 1b-01q).
         let h = header(node);
         let handle = h.handle.map(|(h, _)| h).or_else(|| {
@@ -363,6 +407,7 @@ impl<'s> Checker<'s> {
                 .scale();
             rate.scale_length = self.scale;
             self.scene = Some(rate);
+            self.scene_place = self.scene_places.get(&(file.0, node.span().start)).cloned();
         }
         match kind.as_str() {
             "light" => self.light(file, node),
@@ -370,14 +415,26 @@ impl<'s> Checker<'s> {
         }
         self.owner = None;
         self.scene = None;
+        self.scene_place = None;
         self.scale = self.outside.scale();
     }
 
-    /// The handle and display name on a datablock's line, and nothing else.
-    fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str) {
+    /// The handle and display name on a datablock's line, and nothing else. The display name is
+    /// struct `rna`'s `name`, so it must fit Blender's field for it (task 1b-03h).
+    fn header_check(&mut self, file: FileId, node: Node<'_>, kind: &str, rna: Option<&str>) {
         let h = header(node);
+        let name_property = rna.and_then(|rna| {
+            self.schema
+                .properties_of(rna)
+                .into_iter()
+                .find(|p| p.name == "name" && p.ty == "string")
+                .cloned()
+        });
         let expanded = self.expanded;
         let mut out = self.out(file);
+        if let Some(v) = &h.name_value {
+            check_display_name(v, name_property.as_ref(), &mut out);
+        }
         match &h.handle {
             Some((handle, span)) => {
                 if !(expanded && is_copy_handle(handle)) {
@@ -545,6 +602,7 @@ impl<'s> Checker<'s> {
                 rna,
                 all.iter().find(|a| a.name == "nodes").and_then(|a| a.node),
                 interface,
+                self.handle_of(node).map(|(h, _)| h),
             )
         });
         for a in &all {
@@ -593,7 +651,7 @@ impl<'s> Checker<'s> {
                 ("scene" | "collection", "collection") => {
                     if a.node.is_some_and(defines) {
                         let n = a.node.unwrap();
-                        self.header_check(file, n, "collection");
+                        self.header_check(file, n, "collection", Some("Collection"));
                         let props = self.schema.properties_of("Collection");
                         self.attributes(file, n, "collection", &props, &[]);
                     } else {
@@ -618,6 +676,7 @@ impl<'s> Checker<'s> {
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
                     self.interface_line(file, a)
                 }
+                (_, "raw") => self.raw_block(file, a, kind),
                 (_, "action") if animated => self.plays(file, a, kind),
                 (_, "track") if animated => self.track(file, a, kind),
                 _ => match props.iter().find(|p| p.name == a.name) {
@@ -649,6 +708,104 @@ impl<'s> Checker<'s> {
             && let Some((handle, _)) = header(node).handle
         {
             self.level0(file, ("mesh".to_string(), handle), &all);
+        }
+    }
+
+    /// The DNA struct whose raw fields a datablock of `kind` takes: its RNA struct, or the first
+    /// struct up its chain the raw table lists (DNA's name for a datablock's struct is RNA's).
+    fn raw_struct(&self, kind: &str) -> String {
+        let table = self.schema.raw.as_ref();
+        let mut at = self.schema.struct_by_kind(kind);
+        let first = at.map(|s| s.rna.clone()).unwrap_or_default();
+        while let Some(s) = at {
+            if table.is_some_and(|t| t.structs.contains_key(&s.rna)) {
+                return s.rna.clone();
+            }
+            at = s.base.as_deref().and_then(|b| self.schema.struct_by_rna(b));
+        }
+        first
+    }
+
+    /// A `raw` block (section 19, Sau's task 1d-05b): DNA fields RNA does not reach, each a flat
+    /// path of DNA's own names with a value of its DNA type, as the raw table lists them. Without
+    /// a raw table its lines are not checked against DNA.
+    fn raw_block(&mut self, file: FileId, a: &Attr<'_>, kind: &str) {
+        let Some(block) = a.node.filter(|n| n.block().is_some()) else {
+            return self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`raw` is a block of DNA fields, such as `raw { transflag 4 }`".to_string(),
+            );
+        };
+        if !a.args.is_empty() || !a.props.is_empty() {
+            self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`raw` takes no value of its own, only its block of DNA fields".to_string(),
+            );
+        }
+        let Some(table) = self.schema.raw.clone() else {
+            return;
+        };
+        let owner = self.raw_struct(kind);
+        let fields = table.fields(&owner);
+        let mut seen = HashSet::new();
+        for line in attrs(block) {
+            if line.node.is_some_and(|n| n.block().is_some()) {
+                self.out(file).error(
+                    codes::TYPE,
+                    line.span,
+                    format!(
+                        "a raw block's lines are flat DNA paths (`{}.flag 1`), not blocks",
+                        line.name
+                    ),
+                );
+                continue;
+            }
+            if !seen.insert(line.name.clone()) {
+                self.out(file).error(
+                    codes::REPEATED,
+                    line.name_span,
+                    format!("`{}` is given twice in this raw block", line.name),
+                );
+                continue;
+            }
+            let Some(field) = table.field(&owner, &line.name) else {
+                let paths = fields.iter().map(|f| f.path.as_str());
+                let suggestion = closest(&line.name, paths);
+                let message = match (fields.is_empty(), suggestion) {
+                    (true, _) => format!(
+                        "`{owner}` has no raw fields in this build's raw table, so no `{}`",
+                        line.name
+                    ),
+                    (false, Some(s)) => format!(
+                        "`{owner}` has no raw field `{}`; did you mean `{s}`?",
+                        line.name
+                    ),
+                    (false, None) => format!("`{owner}` has no raw field `{}`", line.name),
+                };
+                self.out(file).error_fix(
+                    codes::UNKNOWN_PROPERTY,
+                    line.name_span,
+                    message,
+                    suggestion.map(|s| (format!("write `{s}`"), line.name_span, s.to_string())),
+                );
+                continue;
+            };
+            match (line.args.as_slice(), line.props.is_empty()) {
+                ([v], true) => {
+                    if let Err(e) = crate::raw::read_value(v, field) {
+                        let at = e.fix.as_ref().map_or(v.span(), |(s, _)| *s);
+                        let fix = e.fix.map(|(s, w)| (format!("write `{w}`"), s, w));
+                        self.out(file).error_fix(codes::TYPE, at, e.message, fix);
+                    }
+                }
+                _ => self.out(file).error(
+                    codes::TYPE,
+                    line.span,
+                    format!("`{}` takes one value, {}", line.name, field.describe()),
+                ),
+            }
         }
     }
 
@@ -803,7 +960,7 @@ impl<'s> Checker<'s> {
             out.error(codes::TYPE, a.span, format!("`{name}` takes no block"));
             return;
         }
-        if p.ty == "bool" {
+        if p.ty == "bool" && p.dimensions().is_empty() && !p.is_dynamic() {
             return check_bool(&a.args, name, a.span, &mut out);
         }
         let [value] = a.args.as_slice() else {
@@ -833,19 +990,9 @@ impl<'s> Checker<'s> {
                     }
                 }
             },
+            "bool" => check_bool_array(value, name, p, &mut out),
             "enum" => check_enum(value, name, p, &mut out),
-            "string" => {
-                if value.as_string().is_none() {
-                    out.error(
-                        codes::TYPE,
-                        value.span(),
-                        format!(
-                            "`{name}` takes a string, such as \"Name\", not `{}`",
-                            value.text()
-                        ),
-                    );
-                }
-            }
+            "string" => check_string(value, name, p, &mut out),
             "pointer" => {
                 let target = p.target.as_deref().unwrap_or("ID");
                 let kind = self
@@ -853,6 +1000,20 @@ impl<'s> Checker<'s> {
                     .struct_by_rna(target)
                     .map(|s| s.kind.clone())
                     .unwrap_or_default();
+                // `none` empties a pointer (section 6), as write-back writes one (`parent none`),
+                // where Blender lets it be empty (Sau's task 1c-02j).
+                if value.as_word() == Some("none") {
+                    if p.never_none {
+                        self.out(file).error(
+                            codes::TYPE,
+                            value.span(),
+                            format!(
+                                "`{name}` is never empty in Blender, so it takes a handle of a {kind}, not `none`"
+                            ),
+                        );
+                    }
+                    return;
+                }
                 self.handle_ref(file, value, &kind, name);
             }
             other => out.error(
@@ -1343,7 +1504,7 @@ fn defines(node: Node<'_>) -> bool {
 
 /// The message for a value written with a scaled unit outside a scene when the scenes' scales
 /// disagree and the project sets no `units` (spec, section 6, "Scene scale").
-fn disagreement(outside: &Outside) -> Option<String> {
+pub(crate) fn disagreement(outside: &Outside) -> Option<String> {
     let Outside::Disagree(scenes) = outside else {
         return None;
     };
@@ -1360,7 +1521,7 @@ fn disagreement(outside: &Outside) -> Option<String> {
 
 /// A scene's frame rate from its `fps` and `fps-base` lines, a new scene's (24 and 1) where one
 /// is missing or does not read; those lines' own errors are reported where they are checked.
-fn frame_rate(scene: Node<'_>) -> null_value::Scene {
+pub(crate) fn frame_rate(scene: Node<'_>) -> null_value::Scene {
     let mut rate = null_value::Scene::default();
     for a in attrs(scene) {
         let Some(word) = a.args.first().and_then(|v| v.as_word()) else {

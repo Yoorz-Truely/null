@@ -163,8 +163,8 @@ fn every_spec_example_is_read_as_v0_constructs_and_prints_back() {
         all(&items, &mut seen);
         insta::assert_snapshot!(format!("spec_example_{:02}", i + 1), v0::render(&items));
     }
-    // Every construct the spec writes is in some example (`raw` blocks, which have none yet, are
-    // read in v0's own tests).
+    // Every construct the spec writes is in some example (section 19's `raw` block since Sau's
+    // 1d-05b).
     for construct in [
         "project",
         "datablock",
@@ -194,6 +194,7 @@ fn every_spec_example_is_read_as_v0_constructs_and_prints_back() {
         "condition",
         "otherwise",
         "override",
+        "raw block",
     ] {
         assert!(
             seen.contains(construct),

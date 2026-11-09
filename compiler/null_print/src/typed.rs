@@ -80,6 +80,25 @@ fn item_dimension(p: &Property, row: Option<usize>, column: Option<usize>) -> Di
 /// Prints `value` as property `p` writes it.
 pub fn print_value(value: &Typed, p: &Property, how: &Printing) -> Result<String, TypedError> {
     match (p.dimensions().as_slice(), value) {
+        // A dynamic array (an F-curve generator's coefficients, a polygon's vertices) is a list
+        // of any length from its minimum, as `read_value` reads it (found by Sau's round-trip
+        // harness, task 1c-02d).
+        ([], Typed::List(items)) if p.is_dynamic() => {
+            if p.min_length.is_some_and(|m| items.len() < m) {
+                return err(format!(
+                    "`{}` holds at least {} values, not {}",
+                    p.name,
+                    p.min_length.unwrap_or(0),
+                    items.len()
+                ));
+            }
+            let words: Result<Vec<_>, _> = items
+                .iter()
+                .map(|v| print_scalar(v, p, how, item_dimension(p, None, None)))
+                .collect();
+            Ok(format!("[{}]", words?.join(" ")))
+        }
+        ([], _) if p.is_dynamic() => err(format!("`{}` is an array: give a list", p.name)),
         ([], _) => print_scalar(value, p, how, item_dimension(p, None, None)),
         ([len], Typed::List(items)) => {
             if !p.is_dynamic() && items.len() != *len {

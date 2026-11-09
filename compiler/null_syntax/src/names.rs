@@ -71,6 +71,11 @@ pub fn check(parse: &Parse, file: FileId) -> Vec<Diagnostic> {
                 check_name(key, false, file, &mut out);
             }
         }
+        // A `raw` block's lines are DNA's own names (`loc_legacy`, `r.mode`; section 19), at any
+        // depth; the `raw` line itself is checked as every other.
+        if node.name() == "raw" {
+            continue;
+        }
         let mut children: Vec<_> = node.children().collect();
         children.reverse();
         stack.extend(children);

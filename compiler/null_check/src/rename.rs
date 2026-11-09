@@ -2,8 +2,9 @@
 //! decision S17, task 1b-01h): the edits that turn `@old` into `@new` where, and only where, it
 //! names that datablock.
 //!
-//! A word names the datablock when it is `@old`, a path from it (`@old/@bevel`, `@old/@bsdf.base-
-//! color`) or a pattern's copy of it (`@old.7`). It does not when the same word names something
+//! A word names the datablock when it is `@old` or a path from it (`@old/@bevel`, `@old/@bsdf.base-
+//! color`). A pattern's copy (`@old.7`) does not: it takes its placement's handle (section 8),
+//! never a datablock's. Nor does a word where the same handle names something
 //! else, which the place says:
 //! - a sub-object's own line (`modifier @old bevel`), and a word or path that starts at one of the
 //!   enclosing datablock's own sub-objects (section 7: inside its owner's block, a path starts
@@ -11,6 +12,9 @@
 //! - inside a node tree: a node's or a zone's line, a link to a node's output (`@old.color`), a
 //!   frame named by `parent`, and the `layout` block's lines;
 //! - the slot an `action` line names with `slot=`, which is the action's;
+//! - a component's placement: the second word of `use @component @placement`, and the path an
+//!   `override` line starts at a placement (`@rig.2/@spine`); and inside a component's block,
+//!   the handle of a datablock the component defines (`object @rig` in `component @rig`);
 //! - a package's datablock (`@package:old`), and any string or comment.
 //!
 //! A definition written with only a display name (`object "Old"`, S18) gets the new handle
@@ -193,8 +197,9 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
                 defined: &defined,
                 edits: &mut edits,
                 count: 0,
+                shadowed: node.name() == "component" && component_defines(node, old),
             };
-            walker.node(node, Context::Datablock, true);
+            walker.node(node, Context::Datablock, true, false);
             references += walker.count;
         }
     }
@@ -202,6 +207,21 @@ pub fn rename(files: &[(FileId, &Parse)], old: &str, new: &str) -> Result<Rename
         edits,
         kind,
         references,
+    })
+}
+
+/// Whether component `node` defines a datablock whose handle is `old`, at any depth of its block
+/// (an `if`'s too), not counting what it places with `use`.
+fn component_defines(node: Node<'_>, old: &str) -> bool {
+    node.children().any(|c| {
+        if c.name() == "use" {
+            return false;
+        }
+        let handle = c
+            .args()
+            .next()
+            .and_then(|v| v.as_word().map(str::to_string));
+        (defines(c) && handle.as_deref() == Some(old)) || component_defines(c, old)
     })
 }
 
@@ -246,10 +266,15 @@ struct Walker<'w> {
     defined: &'w HashSet<(FileId, usize)>,
     edits: &'w mut Vec<TextEdit>,
     count: usize,
+    /// Inside a component that defines a datablock of the old handle: there the handle is that
+    /// datablock's, except as the component `use` places.
+    shadowed: bool,
 }
 
 impl Walker<'_> {
-    fn node(&mut self, node: Node<'_>, cx: Context, top: bool) {
+    /// `node` walked for references: in `cx`, `top` for a file's own node, `in_component` for a
+    /// line right inside a component's block.
+    fn node(&mut self, node: Node<'_>, cx: Context, top: bool, in_component: bool) {
         let name = node.name();
         if cx == Context::Layout {
             return; // `@node [x y]`: every handle there is a node's.
@@ -267,22 +292,35 @@ impl Walker<'_> {
             }
         }
         // A line that defines a sub-object, a node or a zone: its own handle is not a reference.
+        // So does a datablock a component defines: its handle is the component's own.
         let own = !top
             && (SUB_KINDS.contains(&name.as_ref())
                 || (cx == Context::Tree
-                    && (name == "node" || name == "zone" || name.ends_with("-item"))));
+                    && (name == "node" || name == "zone" || name.ends_with("-item")))
+                || (in_component && defines(node) && !matches!(name.as_ref(), "use" | "override")));
         for (i, v) in args.iter().enumerate() {
             if (top || own) && i == 0 {
                 continue; // The definition's own handle: renamed above, or not this datablock's.
             }
+            // A placement: `use @component @placement`'s second word, and the path an
+            // `override` starts at one; neither names a datablock.
+            if (name == "use" && i == 1) || (name == "override" && i == 0) {
+                continue;
+            }
             if cx == Context::Tree && name == "parent" {
                 continue; // A frame node.
+            }
+            if self.shadowed && !(name == "use" && i == 0) {
+                continue; // The component's own datablock of that handle.
             }
             self.value(v, cx);
         }
         for (key, v) in &props {
             if key == "slot" && name == "action" {
                 continue; // The action's slot, its sub-object.
+            }
+            if self.shadowed {
+                continue;
             }
             self.value(v, cx);
         }
@@ -292,7 +330,7 @@ impl Walker<'_> {
                 "layout" => Context::Layout,
                 _ => cx,
             };
-            self.node(child, child_cx, false);
+            self.node(child, child_cx, false, top && name == "component");
         }
     }
 
@@ -306,12 +344,9 @@ impl Walker<'_> {
                 let Some(rest) = word.strip_prefix(self.old) else {
                     return;
                 };
-                // `@old`, `@old/…` and `@old.7` name it; `@older` and `@old.color` do not.
-                let names_it = rest.is_empty()
-                    || rest.starts_with('/')
-                    || rest
-                        .strip_prefix('.')
-                        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
+                // `@old` and `@old/…` name it; `@older`, `@old.color` and `@old.7` do not: a
+                // pattern's copy takes its placement's handle (section 8), never a datablock's.
+                let names_it = rest.is_empty() || rest.starts_with('/');
                 if !names_it {
                     return;
                 }

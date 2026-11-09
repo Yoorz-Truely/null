@@ -1,0 +1,6 @@
+// meshes/rock.vertices.noll
+array mesh @rock vertices [
+  [-1.2m 0.4m 0m]
+  [-1.1m 0.5m 0.02m]
+  …
+]

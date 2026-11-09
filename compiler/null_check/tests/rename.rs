@@ -156,7 +156,9 @@ object @other \"Other\" {
 }
 
 #[test]
-fn paths_and_pattern_copies_change_their_first_handle() {
+fn a_path_changes_its_first_handle_and_a_copy_is_its_placements() {
+    // `@pier.7` is a pattern's copy, which takes its placement's handle (section 8): it never
+    // names datablock `@pier`, so it stays.
     let text = "\
 object @pier \"Pier\" {
   modifier @bevel bevel { width 4mm }
@@ -168,9 +170,37 @@ object @copy \"Copy\" {
 }
 ";
     let (out, _, refs) = renamed(&[text], "@pier", "@jetty").unwrap();
-    assert_eq!(refs, 2);
-    assert!(out[0].contains("parent @jetty.7"));
+    assert_eq!(refs, 1);
+    assert!(out[0].contains("parent @pier.7"));
     assert!(out[0].contains("target @jetty/@bevel"));
+}
+
+#[test]
+fn the_handle_of_a_copy_outside_an_override_is_its_placements_not_the_component() {
+    // The batch 3b review's case: component `@plank` placed as `@plank`, and a constraint
+    // outside any override aiming at copy 7. Renaming the component changes its definition and
+    // `use`'s first word; the placement and `target @plank.7` stay, so the copy still resolves.
+    let plank = "component @plank \"Plank\" {\n  object @plank \"Plank\"\n}\n";
+    let pier = "\
+collection @pier \"Pier\" {
+  use @plank @plank count=20
+}
+
+object @lamp \"Lamp\" {
+  constraint @follow copy-location \"Follow\" { target @plank.7 }
+}
+";
+    let (out, kind, refs) = renamed(&[plank, pier], "@plank", "@board").unwrap();
+    assert_eq!(kind, "component");
+    assert_eq!(refs, 1);
+    assert_eq!(
+        out[0],
+        plank.replace("component @plank", "component @board")
+    );
+    assert_eq!(
+        out[1],
+        pier.replace("use @plank @plank", "use @board @plank")
+    );
 }
 
 #[test]
@@ -267,4 +297,78 @@ fn the_project_line_is_not_a_datablock() {
     let (out, kind, refs) = renamed(&[text], "@main", "@studio").unwrap();
     assert_eq!((kind.as_str(), refs), ("scene", 1));
     assert!(out[0].contains("  scene @studio\n"));
+}
+
+#[test]
+fn a_components_placements_and_own_datablocks_are_not_the_component() {
+    // Found assembling batch 3b: 1d-08a's corpus places component `@rig` as placement `@rig`,
+    // overrides its copy's bone by a path from that placement, and defines `object @rig` inside
+    // the component. Renaming the component changes its definition and `use`'s first word only;
+    // the placement, the override's path and the component's own object keep their handles, and
+    // a reference out of the component to a top-level datablock is still renamed.
+    let component = "\
+component @rig \"Rig\" {
+  object @rig \"Rig\" {
+    data armature @rig-bones
+    bone @spine \"Spine\" {
+      constraint @reach kinematic \"IK\" { target @lid }
+    }
+  }
+  armature @rig-bones \"Rig\"
+}
+";
+    let woods = "\
+collection @woods \"Woods\" {
+  use @rig @rig count=2 { }
+  override @rig.2/@spine/@reach { chain-count 3 }
+}
+";
+    let lid = "object @lid \"Lid\"\n";
+    let (out, kind, refs) = renamed(&[component, woods, lid], "@rig", "@rigging").unwrap();
+    assert_eq!(kind, "component");
+    assert_eq!(refs, 1);
+    assert_eq!(
+        out[0],
+        component.replace("component @rig \"Rig\"", "component @rigging \"Rig\"")
+    );
+    assert_eq!(out[1], woods.replace("use @rig @rig", "use @rigging @rig"));
+    let (out, _, refs) = renamed(&[component, woods, lid], "@lid", "@cover").unwrap();
+    assert_eq!(refs, 1);
+    assert!(out[0].contains("target @cover"), "{}", out[0]);
+}
+
+#[test]
+fn inside_a_component_its_own_datablock_shadows_it() {
+    // 1d-08a's `@branch`: the component defines `object @branch`, and its recursive `use`'s
+    // `parent @branch` is that object. Renaming the component changes its definition and each
+    // `use @branch` only.
+    let branch = "\
+component @branch \"Branch\" {
+  param depth 4 { countdown }
+  object @branch \"Branch\"
+  if \"depth > 0\" {
+    use @branch @left {
+      depth \"depth - 1\"
+      parent @branch
+    }
+  }
+}
+
+component @fence \"Fence\" {
+  object @fence \"Fence\" { }
+  use @branch @row count=2 { parent @fence }
+}
+";
+    let woods = "collection @woods \"Woods\" {\n  use @branch @tree { depth 3 }\n}\n";
+    let (out, _, refs) = renamed(&[branch, woods], "@branch", "@bough").unwrap();
+    // A `use` right inside another component's block is a reference too (1d-08a's `@fence`).
+    assert_eq!(refs, 3);
+    assert_eq!(
+        out[0],
+        branch
+            .replace("component @branch", "component @bough")
+            .replace("use @branch @left", "use @bough @left")
+            .replace("use @branch @row", "use @bough @row")
+    );
+    assert_eq!(out[1], woods.replace("use @branch", "use @bough"));
 }

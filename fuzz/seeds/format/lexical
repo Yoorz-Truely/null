@@ -1,0 +1,18 @@
+// Every lexical form of the shared syntax a slice file may use.
+scene @lexical "Lexical \"forms\"\t\u{e9}" {
+  frame-start 1; frame-end 48   // `;` ends a node
+  /- fps 30                     // `/-` comments the whole node out
+  /- collection @old { object @gone }
+  camera \
+    @shot-cam                   // `\` continues the line
+  /* a block comment, /* nested */, between nodes */
+  render cycles {
+    samples 512
+    denoise
+    use-motion-blur on
+    film-transparent off
+    filepath #"//renders/shot "a".png"#
+    resolution [1920 1080]
+  }
+  frame-current -1.5e-3
+}
