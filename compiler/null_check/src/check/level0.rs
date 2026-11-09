@@ -118,7 +118,7 @@ impl Checker<'_> {
 
     /// One array line, its list inline or named in a data file (`file=`, `count=`, `bounds=`).
     /// Returns its element count where known.
-    fn array_line(
+    pub(super) fn array_line(
         &mut self,
         file: FileId,
         a: &Attr<'_>,
