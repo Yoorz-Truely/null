@@ -201,6 +201,15 @@ pub(crate) fn check_float(
     };
     match read_in::<f32>(word, dimension, &scene) {
         Ok(x) => check_range(x as f64, word, value.span(), name, p, out),
+        // A float's bits (`0x7fa00001`) are a `raw` block's form alone (section 19).
+        Err(_) if word.starts_with("0x") => out.error(
+            codes::TYPE,
+            value.span(),
+            format!(
+                "`{name}` takes {}: a float written as its bits, `{word}`, is taken only in a raw block",
+                describe(dimension)
+            ),
+        ),
         Err(e) => unit_error(e, word, value.span(), name, dimension, out),
     }
 }
@@ -522,6 +531,140 @@ pub fn srgb(word: &str) -> Option<[f32; 3]> {
     null_value::read_srgb(word)
 }
 
+/// A string Blender can hold (spec, section 6): written as a string, or, where it is not UTF-8,
+/// as the list of its bytes (S65, task 1c-02g). No 0 byte, since Blender's strings end at one, and
+/// within its field with the closing NUL where the field is fixed (`max-length`, task 1b-03h),
+/// counted in bytes either way. Too long is an error, never cut.
+pub(crate) fn check_string(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let span = value.span();
+    let bytes: Vec<u8> = match value {
+        Value::List(_) => {
+            let mut bytes = Vec::new();
+            for item in value.items() {
+                match item
+                    .as_word()
+                    .and_then(|w| read_int(w).ok())
+                    .and_then(|n| u8::try_from(n).ok())
+                {
+                    Some(b) => bytes.push(b),
+                    None => {
+                        return out.error(
+                            codes::TYPE,
+                            item.span(),
+                            format!(
+                                "`{name}`'s bytes are whole numbers 1 to 255, not `{}`",
+                                item.text()
+                            ),
+                        );
+                    }
+                }
+            }
+            // A 0 byte first: Blender's strings end at one, whatever the rest.
+            if bytes.contains(&0) {
+                return out.error(
+                    codes::TYPE,
+                    span,
+                    format!("`{name}` cannot hold a 0 byte: Blender's strings end at one"),
+                );
+            }
+            if let Ok(text) = std::str::from_utf8(&bytes) {
+                // One spelling (S65): a string that is UTF-8 is always written as a string, with
+                // Null's own escapes, so the fix reads back as the same bytes (a carriage return
+                // is `\u{d}`, not Rust's `\r`; 1c-02g's review).
+                let fix = null_syntax::escape(text);
+                return out.error_fix(
+                    codes::TYPE,
+                    span,
+                    format!(
+                        "`{name}`'s bytes are valid UTF-8, so it is written as a string: {fix}"
+                    ),
+                    Some((format!("write {fix}"), span, fix.clone())),
+                );
+            }
+            bytes
+        }
+        _ => match value.as_string() {
+            Some(text) => text.into_owned().into_bytes(),
+            None => {
+                return out.error(
+                    codes::TYPE,
+                    span,
+                    format!(
+                        "`{name}` takes a string, such as \"Name\", or the list of its bytes, not `{}`",
+                        value.text()
+                    ),
+                );
+            }
+        },
+    };
+    if bytes.contains(&0) {
+        out.error(
+            codes::TYPE,
+            span,
+            format!("`{name}` cannot hold a 0 byte: Blender's strings end at one"),
+        );
+    }
+    if let Some(max) = p.max_length
+        && bytes.len() + 1 > max
+    {
+        out.error(
+            codes::RANGE,
+            span,
+            format!(
+                "`{name}` holds at most {} bytes, not {} (Blender's field is {max} with its closing NUL)",
+                max.saturating_sub(1),
+                bytes.len()
+            ),
+        );
+    }
+}
+
+/// A datablock's display name (S72, task 1c-02i): a string, held to Blender's field `p` (the
+/// struct's `name`) as any string is. Blender strips every byte of a name that is not UTF-8
+/// (`BKE_id_new_name_validate`), so a byte list that is not UTF-8 is an error here, unlike in a
+/// string property; its fix is the name Blender would make of it ([`crate::names::utf8_reading`]).
+/// A byte list that is UTF-8, or holds what is not a byte, gets [`check_string`]'s errors.
+pub(crate) fn check_display_name(value: &Value<'_>, p: Option<&Property>, out: &mut Out<'_>) {
+    let bytes: Option<Vec<u8>> = match value {
+        Value::List(_) => value
+            .items()
+            .iter()
+            .map(|i| {
+                i.as_word()
+                    .and_then(|w| read_int(w).ok())
+                    .and_then(|n| u8::try_from(n).ok())
+                    .filter(|b| *b != 0)
+            })
+            .collect(),
+        _ => None,
+    };
+    let Some(bytes) = bytes.filter(|b| std::str::from_utf8(b).is_err()) else {
+        if let Some(p) = p {
+            check_string(value, "name", p, out);
+        }
+        return;
+    };
+    let span = value.span();
+    let reading = crate::names::utf8_reading(&bytes);
+    if reading.is_empty() {
+        out.error(
+            codes::TYPE,
+            span,
+            "a display name is UTF-8 text (Sau's S72), and none of these bytes is: Blender would drop them all; write the name as a string".to_string(),
+        );
+        return;
+    }
+    let fix = null_syntax::escape(&reading);
+    out.error_fix(
+        codes::TYPE,
+        span,
+        format!(
+            "a display name is UTF-8 text (Sau's S72): Blender drops the bytes that are not, so this name would be {fix}; byte lists are for string properties such as file paths"
+        ),
+        Some((format!("write {fix}"), span, fix.clone())),
+    );
+}
+
 /// Checks an enum `value` against `p`'s items, with the nearest item as a fix.
 pub(crate) fn check_enum(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
     if p.flags {
@@ -655,6 +798,39 @@ pub(crate) fn list(items: &[&str]) -> String {
         format!("{} and {more} more", shown.join(", "))
     } else {
         shown.join(", ")
+    }
+}
+
+/// Checks an array of booleans (`lock-location [on off on]`, spec, section 5): a list of `on`
+/// and `off`, of the property's length, or of any length from its minimum for a dynamic one.
+pub(crate) fn check_bool_array(value: &Value<'_>, name: &str, p: &Property, out: &mut Out<'_>) {
+    let len = p.fixed_len();
+    let shape = match len {
+        Some(n) => format!(
+            "`{name}` takes {n} values, each on or off, as a list such as [{}]",
+            vec!["off"; n].join(" ")
+        ),
+        None => format!("`{name}` takes a list of values, each on or off, such as [on off]"),
+    };
+    let Value::List(_) = value else {
+        out.error(codes::TYPE, value.span(), shape);
+        return;
+    };
+    let items = value.items();
+    let short = match len {
+        Some(n) => items.len() != n,
+        None => items.len() < p.min_length.unwrap_or(0),
+    };
+    if short {
+        out.error(
+            codes::TYPE,
+            value.span(),
+            format!("{shape}; this list has {}", items.len()),
+        );
+        return;
+    }
+    for item in &items {
+        check_bool(std::slice::from_ref(item), name, item.span(), out);
     }
 }
 

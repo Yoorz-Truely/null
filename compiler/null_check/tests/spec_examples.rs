@@ -242,6 +242,26 @@ fn each_form_catches_its_mistakes() {
             "a zone's layout line is `@zone [x y] [x y]`",
         ),
         (
+            "@bsdf [-100 0] width=240",
+            "@bsdf [-100 0] height=240",
+            "only a frame's layout line takes `height=`",
+        ),
+        (
+            "width=300 height=200",
+            "width=300 depth=200",
+            "a layout line takes `width=`, and `height=` for a frame, not `depth=`",
+        ),
+        (
+            "@loop [-300 0] [400 0]",
+            "@loop [-300 0] [400 0] width=200",
+            "a zone's layout line holds its two positions only",
+        ),
+        (
+            "@bsdf [-100 0] width=240",
+            "@bsdf [-100 0] width=wide",
+            "null-type",
+        ),
+        (
             "count 6",
             "cuont 6",
             "a group node has no `cuont`; did you mean `count`?",
@@ -336,9 +356,20 @@ fn each_form_catches_its_mistakes() {
         ),
         ("transform-type=rot-z", "transform-type=rot-q", "null-enum"),
         (
-            "energy driver=\"spin * 100\"",
-            "energy 100W driver=\"spin * 100\"",
+            "energy driver=\"spin * 100W\"",
+            "energy 100W driver=\"spin * 100W\"",
             "takes no value of its own",
+        ),
+        // A driver's expression (task 1d-07f).
+        (
+            "energy driver=\"spin * 100W\"",
+            "energy driver=\"spn * 100W\"",
+            "null-type this driver has no variable `spn`",
+        ),
+        (
+            "energy driver=\"spin * 100W\"",
+            "energy driver=\"self.energy * 2\"",
+            "null-python this driver is Python",
         ),
     ];
     let mut failures = Vec::new();
@@ -397,4 +428,40 @@ fn every_example_in_the_spec_checks_clean_as_one_project() {
         let syntax = null_syntax::diagnostics(&parsed, id);
         assert!(syntax.is_empty(), "{}", map.render_all(&syntax));
     }
+}
+
+/// Checks one file alone against the project's schema; its diagnostics as `code message`.
+fn check_alone(text: &str) -> Vec<String> {
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let parse = parse(text);
+    check(&schema, &[(FileId(0), &parse)])
+        .iter()
+        .map(|d| format!("{} {}", d.code, d.message))
+        .collect()
+}
+
+#[test]
+fn a_texture_s_nodes_are_a_texture_tree_of_any_texture_type() {
+    // Section 10 (task 1d-07b): a texture's `nodes` block, whatever its type, and a
+    // `texture-node-tree` group. The texture family's node kinds join the schema with 1d-07k, so
+    // until then a node there is named as a texture tree's, not a shader tree's.
+    for kind in ["texture", "noise", "wood"] {
+        let text = format!("{kind} @t \"T\" {{\n  use-nodes\n  nodes {{\n  }}\n}}\n");
+        assert!(
+            check_alone(&text).is_empty(),
+            "{kind}: {:?}",
+            check_alone(&text)
+        );
+        let text =
+            format!("{kind} @t \"T\" {{\n  nodes {{\n    node @c bsdf-principled\n  }}\n}}\n");
+        let found = check_alone(&text);
+        assert!(
+            found
+                .iter()
+                .any(|f| f.contains("not a node kind a texture tree takes")),
+            "{kind}: {found:?}"
+        );
+    }
+    let group = "texture-node-tree @g \"G\" {\n  nodes {\n  }\n}\n";
+    assert!(check_alone(group).is_empty(), "{:?}", check_alone(group));
 }

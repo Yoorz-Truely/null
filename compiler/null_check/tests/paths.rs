@@ -267,3 +267,27 @@ mesh @pier \"Pier\"
     );
     assert!(!e.message.contains("@edge"), "{}", e.message);
 }
+
+#[test]
+fn a_trees_links_and_frames_may_be_written_from_their_datablock() {
+    // Short form 8 written in full (task 1d-03j): `@clay/@noise.fac` in `material @clay` is
+    // `@noise.fac`, and `parent @clay/@box` is `parent @box`; another datablock's node is not
+    // this tree's.
+    let schema =
+        Schema::from_json(include_str!("../../../schema/null-schema-project.json")).unwrap();
+    let errors = |text: &str| -> Vec<String> {
+        let p = parse(text);
+        check(&schema, &[(FileId(0), &p)])
+            .iter()
+            .map(|d| format!("{} {}", d.code, d.message))
+            .collect()
+    };
+    let full = "material @clay \"Clay\" {\n  nodes {\n    node @noise tex-noise { scale 4 }\n    node @box frame \"Box\"\n    node @bsdf bsdf-principled {\n      roughness @clay/@noise.fac\n      parent @clay/@box\n    }\n  }\n}\n";
+    assert_eq!(errors(full), Vec::<String>::new());
+    let other = full.replace("@clay/@noise.fac", "@oak/@noise.fac");
+    let found = errors(&other);
+    assert!(
+        found.len() == 1 && found[0].starts_with(codes::HANDLE),
+        "{found:?}"
+    );
+}

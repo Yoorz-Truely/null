@@ -12,7 +12,7 @@
 //! material's `nodes` and `layout` at `node-tree`. A node's settings come first and then its
 //! inputs in the order its declaration lists them.
 
-use null_check::{SHADER_TREE, Schema, forms};
+use null_check::{SHADER_TREE, Schema, TEXTURE_TREE, forms};
 use null_syntax::ast::Node;
 use null_syntax::{NodeKind, SyntaxElement, SyntaxNode, TokenKind, parse};
 
@@ -66,11 +66,13 @@ struct Order {
 
 impl Order {
     fn key(&self, name: &str) -> usize {
-        if let Some(i) = self.names.iter().position(|n| n == name) {
-            return i;
+        // `last` first: a node group's `nodes` is also its struct's RNA property, which would
+        // put it before the interface lines section 10 writes first (the 1d-08a review).
+        if let Some(i) = self.last.iter().position(|n| n == name) {
+            return usize::MAX - self.last.len() + i;
         }
-        match self.last.iter().position(|n| n == name) {
-            Some(i) => usize::MAX - self.last.len() + i,
+        match self.names.iter().position(|n| n == name) {
+            Some(i) => i,
             None => usize::MAX - self.last.len() - 1,
         }
     }
@@ -200,6 +202,13 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
         }
     }
     // Null's forms, before the property each writes (spec, section 8).
+    // A texture of any type (`noise`, `wood`) holds a texture node tree, as a material holds a
+    // shader tree.
+    let texture = rna == "Texture"
+        || schema
+            .struct_by_rna(rna)
+            .and_then(|s| s.base.as_deref())
+            .is_some_and(|b| b == "Texture");
     let forms: &[(&str, &str)] = match kind {
         "scene" => &[
             ("units", "unit-settings"),
@@ -211,6 +220,7 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
         "object" => &[("material", "material-slots")],
         "mesh" => &[("primitive", "vertices")],
         "material" => &[("nodes", "node-tree"), ("layout", "node-tree")],
+        _ if texture => &[("nodes", "node-tree"), ("layout", "node-tree")],
         _ => &[],
     };
     // Each form just before its anchor, after the forms placed there already; a form that has
@@ -243,6 +253,7 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
     // shader tree; a node group's is its own type's (section 10).
     let tree = match kind {
         "material" | "world" | "light" => Some(SHADER_TREE.to_string()),
+        _ if texture => Some(TEXTURE_TREE.to_string()),
         _ if schema
             .struct_by_rna(rna)
             .and_then(|s| s.base.as_deref())
@@ -262,7 +273,7 @@ fn struct_order(schema: &Schema, rna: &str, kind: &str) -> Order {
                 ..Order::default()
             },
         ));
-        if kind != "material" {
+        if kind != "material" && !texture {
             // A group's interface lines (`input`, `output`, `panel`) keep their order, then its
             // `nodes`, then its trailing `layout` (section 10).
             last = vec!["nodes".into(), "layout".into()];
@@ -579,7 +590,7 @@ fn ends_in_line_comment(node: SyntaxNode<'_>) -> bool {
     })
 }
 
-/// `text` with every run of line feeds, and the spaces between them, made one line feed.
+/// `text` with every run of line feeds, and the whitespace between them, made one line feed.
 fn no_blank_lines(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut pending = String::new();
@@ -593,7 +604,9 @@ fn no_blank_lines(text: &str) -> String {
                 newline = true;
                 pending.clear();
             }
-            ' ' | '\t' | '\r' if newline => pending.push(c),
+            // Any whitespace the lexer reads as such, a vertical tab's included (task 1d-02d's
+            // fuzzing found one keeping a blank line alive for one pass).
+            c if newline && c.is_whitespace() => pending.push(c),
             _ => {
                 out.push_str(&pending);
                 pending.clear();

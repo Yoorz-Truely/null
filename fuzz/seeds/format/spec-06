@@ -1,0 +1,20 @@
+// materials/weathered-oak.noll
+material @weathered-oak "Weathered Oak" {
+  nodes {
+    node @tex tex-image {
+      image @oak-diffuse
+      interpolation "Cubic"
+    }
+    node @bsdf bsdf-principled {
+      base-color @tex.color // a link: the socket takes another node's output
+      roughness 0.62
+    }
+    node @out output-material { surface @bsdf.bsdf }
+  }
+  layout { @tex [-420 0]; @bsdf [-160 0]; @out [120 0] }
+}
+
+image @oak-diffuse "oak_diffuse.png" {
+  filepath "//media/oak_diffuse.png"
+  colorspace-settings { name "sRGB" }
+}

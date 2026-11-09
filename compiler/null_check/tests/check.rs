@@ -342,3 +342,27 @@ fn a_handle_defined_twice_says_which_kind_with_its_article() {
         "{messages:?}"
     );
 }
+
+#[test]
+fn a_node_line_may_give_the_nodes_blender_name_in_quotes() {
+    // Sau's task 1b-02d: a node renamed in Sau keeps its handle, and its line gains the name.
+    let material = |line: &str| {
+        format!(
+            "material @clay \"Clay\" {{\n  nodes {{\n    {line} {{\n      roughness 0.7\n    }}\n    \
+             node @out output-material {{\n      surface @bsdf.bsdf\n    }}\n  }}\n}}\n"
+        )
+    };
+    let named = material("node @bsdf bsdf-principled \"Skin\"");
+    let (map, found) = run(&[("clay.noll", &named)]);
+    assert!(found.is_empty(), "{}", map.render_all(&found));
+    for wrong in [
+        "node @bsdf bsdf-principled skin",
+        "node @bsdf bsdf-principled \"Skin\" \"Again\"",
+        "node @bsdf bsdf-principled 0.7",
+    ] {
+        let text = material(wrong);
+        let (map, found) = run(&[("clay.noll", &text)]);
+        assert_eq!(found.len(), 1, "{wrong}: {}", map.render_all(&found));
+        assert_eq!(found[0].code, codes::TYPE, "{wrong}");
+    }
+}
