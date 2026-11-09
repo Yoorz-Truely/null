@@ -69,6 +69,9 @@ pub mod codes {
     /// A key's handle written beside an automatic handle type, which Blender places again: a
     /// warning (Sau's decision S87).
     pub const HANDLE_PLACED: &str = "null-handle-placed";
+    /// A `type` line inside a texture of a type that names the kind's own type, which says nothing
+    /// more: a warning (Sau's decision S101).
+    pub const TYPE_LINE: &str = "null-type-line";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -77,7 +80,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 13] = [
+    pub const ALL: [&str; 14] = [
         SYNTAX,
         NAME,
         KIND,
@@ -91,5 +94,6 @@ pub mod codes {
         REPEATED,
         PYTHON,
         HANDLE_PLACED,
+        TYPE_LINE,
     ];
 }

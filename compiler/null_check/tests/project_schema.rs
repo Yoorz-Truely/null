@@ -687,3 +687,55 @@ fn a_field_written_under_two_names_is_refused() {
         assert_eq!(errors(&schema, &[one]), vec![], "{one}");
     }
 }
+
+#[test]
+fn a_texture_of_a_type_is_its_kind_with_that_types_settings() {
+    // Task 1d-07s: `wood` and `clouds` take their own structs' settings; their type is their
+    // kind, so a `type` line gives it again (S70); `texture` takes `Texture`'s alone, `type`
+    // among them.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "\
+wood @grain \"Grain\" {
+  noise-scale 0.5
+  wood-type ringnoise
+}
+
+clouds @sky \"Sky\" {
+  noise-depth 4
+  cloud-type color
+}
+
+texture @plain \"Plain\" {
+  type none
+  intensity 0.9
+}
+";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    let broken = |from: &str, to: &str| {
+        assert!(text.contains(from), "{from}");
+        errors(&schema, &[&text.replacen(from, to, 1)])
+    };
+    // Its own type again: a warning (S101), so v0's text still checks; another type: an error.
+    for (ty, code) in [("wood", codes::TYPE_LINE), ("clouds", codes::REPEATED)] {
+        let found = broken(
+            "  noise-scale 0.5\n",
+            &format!("  noise-scale 0.5\n  type {ty}\n"),
+        );
+        assert_eq!(found.len(), 1, "{found:#?}");
+        assert_eq!(found[0].code, code, "{found:#?}");
+        assert!(
+            found[0].message.contains("its kind"),
+            "{}",
+            found[0].message
+        );
+        assert_eq!(found[0].fixes[0].edits[0].replacement, "");
+    }
+    let found = broken("  noise-depth 4\n", "  noise-depth 4\n  type clouds\n");
+    assert_eq!(found[0].code, codes::TYPE_LINE, "{found:#?}");
+    // A `texture` has no type's settings.
+    let found = broken("  intensity 0.9\n", "  noise-scale 0.5\n");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+    // Nor a wood a clouds texture's.
+    let found = broken("  wood-type ringnoise\n", "  cloud-type color\n");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+}

@@ -488,6 +488,62 @@ impl<'s> Checker<'s> {
         if kind == "action" {
             return self.action_body(file, node, &props);
         }
+        // A texture of a type (`wood`) is written as that type's kind, which gives its `type`
+        // (section 8, S101, task 1d-07s). A `type` line naming the kind's own type says nothing
+        // more, a warning v0's text may still hold; one naming another type is two values for one
+        // property.
+        if kind != "texture"
+            && self
+                .schema
+                .struct_by_rna(rna)
+                .is_some_and(|s| s.base.as_deref() == Some("Texture"))
+        {
+            let own = self
+                .schema
+                .properties_of("Texture")
+                .into_iter()
+                .find(|p| p.name == "type")
+                .and_then(|p| p.items.clone())
+                .unwrap_or_default()
+                .into_iter()
+                .find(|i| {
+                    let named = if i.name == "image" {
+                        "image-texture"
+                    } else {
+                        i.name.as_str()
+                    };
+                    named == kind
+                })
+                .map(|i| i.name);
+            for a in attrs(node).iter().filter(|a| a.name == "type") {
+                let said = a.args.first().and_then(|v| v.as_word()).unwrap_or_default();
+                let d = if own.as_deref() == Some(said) {
+                    Diagnostic::warning(
+                        codes::TYPE_LINE,
+                        file,
+                        a.span,
+                        format!(
+                            "a `{kind}` texture's type is its kind, so `type {said}` says nothing more"
+                        ),
+                    )
+                } else {
+                    Diagnostic::error(
+                        codes::REPEATED,
+                        file,
+                        a.span,
+                        format!(
+                            "a `{kind}` texture's type is its kind, `{}`, and `type {said}` gives it another; a texture of that type is written as its kind",
+                            own.as_deref().unwrap_or(kind)
+                        ),
+                    )
+                };
+                let d = match removal(a) {
+                    Some(span) => d.with_fix_replace("remove the line", span, String::new()),
+                    None => d,
+                };
+                self.out.push(d);
+            }
+        }
         self.attributes(file, node, kind, &props, &[]);
     }
 
