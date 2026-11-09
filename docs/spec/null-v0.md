@@ -154,7 +154,7 @@ material @weathered-oak "Weathered Oak" {
 }
 
 image @oak-diffuse "oak_diffuse.png" {
-  filepath "//media/oak_diffuse.png"
+  filepath "media/oak_diffuse.png"
   colorspace-settings { name "sRGB" }
 }
 ```
@@ -208,7 +208,7 @@ How each RNA property type is written (task 1c-02a, November 7, 2026; Sau's deci
 | Float | A number as above ("Numbers"), with a unit where the property has one ("Units") | `roughness 0.62`, `lens 50mm` |
 | Enum | One item's identifier in kebab-case; an item whose name is free text, not an identifier (a colour space's), as a string (S16), and so is every item an enum's items at run time give that is not one the schema lists (an attribute's or a UV map's name), so it is never read as a misspelling of a listed one | `rotation-mode xyz`, `type point`, `name "ACES 1.3 sRGB"` |
 | Enum flag set | A list of item identifiers, in the schema's item order; `[]` for none. Another order, or an item twice, is an error whose fix is the schema's order: the order is part of the written form, so the same set is always the same text | `delimit [normal material]` (a decimate modifier), `delimit []` |
-| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). The list is taken wherever a string property goes, and is held to the field's length in bytes as a string is (task 1c-02g). A datablock's display name is the exception (Sau's decision S72, task 1c-02i): Blender strips every byte of a name that is not UTF-8 (`BKE_id_new_name_validate`), so a name is always a string. A byte list there is an error whose fix is the name Blender would make of it, its bytes with what Blender's UTF-8 check refuses taken out (`object @pur [80 252 114]`, `Pür` in Latin-1, gives `"Pr"`). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "//textures/oak.png"`, `filepath [47 47 109 252 108 108 101 114 46 112 110 103]` (`//m`, the Latin-1 byte 252, `ller.png`) |
+| String | A quoted string, which is UTF-8. A string Blender holds that is not valid UTF-8 (an old file path, a name from another system) is written as the list of its byte values instead, so every byte is written exactly: the schema says the property is a string, so a list there means its raw bytes (Sau's decision S65). The list is taken wherever a string property goes, and is held to the field's length in bytes as a string is (task 1c-02g). A datablock's display name is the exception (Sau's decision S72, task 1c-02i): Blender strips every byte of a name that is not UTF-8 (`BKE_id_new_name_validate`), so a name is always a string. A byte list there is an error whose fix is the name Blender would make of it, its bytes with what Blender's UTF-8 check refuses taken out (`object @pur [80 252 114]`, `Pür` in Latin-1, gives `"Pr"`). A string that is valid UTF-8 is always written as a string, and a byte list that is valid UTF-8 is an error. A string longer than Blender's field for it is an error, never cut; the length counts bytes, the closing NUL included (a field of 64 holds 63). A 0 byte, in a string or a byte list, is an error, since Blender's strings end at one | `name "Pier"`, `filepath "media/oak.png"`, `filepath [109 252 108 108 101 114 46 112 110 103]` (`m`, the Latin-1 byte 252, `ller.png`) |
 | Pointer | A handle (section 7); `none` for an empty pointer where the property allows one. The schema marks a pointer Blender never lets be empty `never-none` (RNA's never-null flag), and `none` there is an error (Sau's task 1c-02j). A struct the owner holds that is not a datablock, and that no form of Null's flattens (an add-on's settings, such as a scene's Cycles settings, or a struct such as `render`), is a block of that struct's properties. A property a flat form already sets is an error in such a block, with a fix that moves it there: a scene's `fps` is never `render { fps 30 }`, and its unit settings are `units`, never `unit-settings { … }` (S70: one spelling per property) | `camera @shot-cam`, `parent none`, `cycles { samples 64 }` |
 | Collection | Its items as child lines, in order, each written as its struct is; a collection of one-value structs as a list of the values (section 8, `vertices` and `polygons`) | `material @oak` lines, `vertices [[0m 0m 0m] …]` |
 | Array | A list of the property's length, each item written as the single value would be; a dynamic array of any length from its minimum | `location [0m 0m 1m]`, `color [0.8 0.62 0.41 1]` |
@@ -555,9 +555,9 @@ The 3D counterpart of Scowr's "sound as source" (Scowr spec, section 20). Geomet
 | 1. Procedure | Primitives with parameters, modifier stacks, geometry-node graphs, curves and their profiles | Ordinary Null nodes | Hand, AI and Blender's editors alike |
 | 2. Lifted | An existing mesh described as a procedure plus an exact residual: "a bevelled box of these dimensions, arrayed 12 times, plus these vertex offsets" | A level 1 description and its residual, written as level 0 data | As level 1; the residual keeps the result exact |
 
-- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. `sau convert --inline` writes everything inline whatever its size. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
+- **Text, at every size** (Sau's decision S23). An array of up to 2,000 elements is written inline. A larger one goes in a Null text file of its own, one element per line, so the files people read stay short, and a diff of an edited mesh shows the elements that changed. The syntax of both forms, of the reference to the file and of its summary is task 1d-06a.
 - **The summary.** The line that names the file gives the array's `count=` and `bounds=` as values (S74 (1)). They are checked on load, and a summary that disagrees with the data is an error (1d-06b).
-- **Binary only as a cache, or by choice.** Sau keeps a binary copy of large arrays in `.sau/` as a cache. The cache is rebuilt when the text changes and is never the source (1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
+- **Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/` (`.sau/cache.blend`, with `.sau/cache.noll` listing what it was made from), and opens it in place of checking and applying only when nothing it was made from has changed; it is never the source and is never written back to the text (Sau's decision S92, task 1d-06e). Very large scanned data may opt into a binary data file; its documented, versioned format becomes part of this spec when a project first needs it.
 - **Images** follow the same ladder: pixels in `media/`; procedural textures as node graphs; lifted, a procedural texture plus a residual.
 - **Lifting quality** decides how much of an asset is editable as intent, never how accurate it is. `sau lift` writes a grading report: how much is explained by the procedure and how large the residual is. Lifting is phase 4b of Sau's roadmap; v0 writes levels 0 and 1.
 
@@ -640,9 +640,8 @@ array mesh @rock vertices [
 
 - A data file is found by its path from the file that names it. It is not a datablock file: a `.noll` file whose one node is `array` is read only through the line that names it. Null's checker matches a data file to its line by the `array` node's owner and array name, and reports a line whose file is missing and a data file no line names (1d-06b); that the path names that file is Cosmósis's to check, since it knows the files' paths.
 - Its values are written as inline ones are. Sau writes lengths in the project's display unit when they read back exactly, as everywhere (S21), so a moved vertex changes one line.
-- `sau convert --inline` writes every array inline whatever its size.
 
-**Binary only as a cache, or by choice.** Sau keeps a binary copy of each large array in `.sau/` as a cache, rebuilt when its text changes, never the source (1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
+**Binary only as a cache, or by choice.** Sau keeps a snapshot of the applied scene in `.sau/`, used only while nothing it was made from has changed, never the source (Sau's decision S92, task 1d-06e). Very large scanned data may opt into a binary data file (`file="scan.vertices.bin"`); its documented, versioned format becomes part of this spec when a project first needs it.
 
 Shape keys, curves, point clouds and Grease Pencil drawings take the same forms for their own arrays (1d-06f).
 
@@ -791,7 +790,6 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
       - A key moved or changed in Sau rewrites its own line in the key file, and nothing else, unless the move changes the first or last frame, which also rewrites `frames=`.
       - A key added or removed adds or removes its line, and rewrites `count=` and, where it changes, `frames=`.
       - A curve that grows past 2,000 keys moves its keys into a file, and one that shrinks to 2,000 or fewer moves them back inline. Either is a change of the f-curve's own lines, the only time both files change for one edit.
-    - `sau convert --inline` writes every f-curve's keys inline, whatever their number, as it does for arrays.
 A key file, beside `actions/hop.noll` (its 1,200 lines shortened here to three; fenced as text until the checker reads key files, so the spec's numbered examples keep their numbers):
 
 ```text
@@ -986,7 +984,7 @@ A file is written atomically, beside itself and then renamed over it, so an edit
 
 Undo and redo in Sau rewrite the files too (S41, task 1a-14b). Undo puts back each file's text from before the steps it crosses, byte for byte, where the file still holds exactly what Sau wrote; redo does the same forwards. A file edited outside Sau since then keeps the editor's text.
 
-Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. The slice writes back transforms only.
+Later, in phase 3 of Sau's roadmap (two-way editing with VS Code), edit mode and sculpt mode will write their data when the mode is left and, while inside, after a short pause. Write-back covers the values and the forms Sau applies, not transforms alone as in phase 1a's slice; the forms it does not write back yet are on Sau's task board.
 
 ### Short forms
 
