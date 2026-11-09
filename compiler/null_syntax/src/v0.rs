@@ -2,7 +2,7 @@
 //! is in Null, by its name and where it stands, as the spec's sections say. The syntax is Scowr's
 //! (S15) and carries no meaning; this outline is the first reading of it, before the schema:
 //! datablocks and their attributes, sub-objects, node trees with their nodes, zones, links and
-//! `layout` (section 10), actions with their keys, drivers (section 11), level 0 data files and
+//! `layout` (section 10), actions with their keys and key files, drivers (section 11), level 0 data files and
 //! their references (section 9), components, placements, patterns, conditions and overrides
 //! (section 8), and `raw` blocks (section 19).
 //!
@@ -167,6 +167,8 @@ fn classify(node: Node<'_>, place: Place) -> (&'static str, Place) {
         (Place::Top, "project") => ("project", Place::Datablock),
         (Place::Top, "component") => ("component", Place::Component),
         (Place::Top, "array") => ("data file", Place::Datablock),
+        // A key file (section 11, S86): its keys read as an f-curve's.
+        (Place::Top, "keys") => ("key file", Place::Curve),
         (Place::Top, "scene" | "collection") => ("datablock", Place::Members),
         (Place::Top, _) => ("datablock", Place::Datablock),
         (Place::Layout, _) => ("position", Place::Layout),

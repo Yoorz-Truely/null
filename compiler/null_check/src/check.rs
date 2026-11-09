@@ -53,6 +53,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         groups: HashMap::new(),
         actions: HashMap::new(),
         refs: Vec::new(),
+        key_refs: Vec::new(),
         components: HashMap::new(),
         placements: HashMap::new(),
         cycles: HashSet::new(),
@@ -99,7 +100,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
     cx.find_cycles();
     for (file, parse) in files {
         for node in parse.document().nodes() {
-            if node.name() != "array" {
+            if node.name() != "array" && node.name() != anim::KEYS {
                 cx.top(*file, node);
             }
         }
@@ -114,6 +115,15 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
     }
     cx.unmatched_refs();
     cx.reference_cycles();
+    // Key files, each against the f-curve line that names it (section 11, S86, task 1d-07t).
+    for (file, parse) in files {
+        for node in parse.document().nodes() {
+            if node.name() == anim::KEYS {
+                cx.key_file(*file, node);
+            }
+        }
+    }
+    cx.unmatched_key_refs();
     let mut out = cx.out;
     // Sub-object handles are unique within their owner, whatever their kinds (section 7).
     out.extend(crate::paths::Index::build(files).duplicates());
@@ -163,6 +173,8 @@ struct Checker<'s> {
     actions: HashMap<String, anim::Slots>,
     /// The lines that name a level 0 data file, until the file is read (task 1d-06b).
     refs: Vec<level0::ArrayRef>,
+    /// The f-curve lines that name a key file, until the file is read (S86, task 1d-07t).
+    key_refs: Vec<anim::KeyRef>,
     /// Every component, by handle (task 1d-03b).
     components: HashMap<String, Component>,
     /// Every placement in a scene or a collection, by its handle (task 1d-03b).

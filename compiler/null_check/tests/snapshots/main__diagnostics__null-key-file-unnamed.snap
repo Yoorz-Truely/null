@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- action @a "A" {\n  slot @s object "S"\n}\nkeys @a @s location index=1 {\n  key 1 0m\n}\n
+case.noll:4:1 error[null-key-file-unnamed]: no f-curve names this key file: @a's slot @s has no `fcurve location index=1` with a `keys file=…` line

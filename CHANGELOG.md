@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- November 9, 2026: the checker reads key files (RFC 0004, S86; task 1d-07t): an f-curve's `keys file="…" count=N frames=[first last]` line and the file's `keys @action @slot <path> index=N { key … }` node, matched by the action, the slot, the path and the index; each key in the file is checked as an inline key is, at its own line. Section 18 gains four codes, each its own (Sau's decision S97): `null-key-file-summary`, `null-key-file-missing`, `null-key-file-unnamed` and `null-key-file-inline`. Section 11's key-file example is now a checked example, a capture's f-curve and its file. No file changes meaning.
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
 - November 9, 2026 (Sau's task 0-35): wording fixes that change no meaning, so the spec says what is built. Section 4's and section 6's example paths name files from the project's root, as section 12 says (S83), not with `//`. Section 9's cache note is the snapshot of Sau's decision S92. Section 17 no longer says write-back covers transforms only. `sau convert --inline`, named in sections 9 and 11 but never built, is dropped: Sau prints an array or an f-curve's keys past 2,000 in a data file of its own (sections 9 and 11), so an all-inline conversion is not the form Sau prints and writes back, and no task has needed it. A file may still write any array inline.
