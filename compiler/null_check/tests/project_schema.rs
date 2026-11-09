@@ -715,13 +715,14 @@ texture @plain \"Plain\" {
         assert!(text.contains(from), "{from}");
         errors(&schema, &[&text.replacen(from, to, 1)])
     };
-    for ty in ["wood", "clouds"] {
+    // Its own type again: a warning (S101), so v0's text still checks; another type: an error.
+    for (ty, code) in [("wood", codes::TYPE_LINE), ("clouds", codes::REPEATED)] {
         let found = broken(
             "  noise-scale 0.5\n",
             &format!("  noise-scale 0.5\n  type {ty}\n"),
         );
         assert_eq!(found.len(), 1, "{found:#?}");
-        assert_eq!(found[0].code, codes::REPEATED, "{found:#?}");
+        assert_eq!(found[0].code, code, "{found:#?}");
         assert!(
             found[0].message.contains("its kind"),
             "{}",
@@ -729,6 +730,8 @@ texture @plain \"Plain\" {
         );
         assert_eq!(found[0].fixes[0].edits[0].replacement, "");
     }
+    let found = broken("  noise-depth 4\n", "  noise-depth 4\n  type clouds\n");
+    assert_eq!(found[0].code, codes::TYPE_LINE, "{found:#?}");
     // A `texture` has no type's settings.
     let found = broken("  intensity 0.9\n", "  noise-scale 0.5\n");
     assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
