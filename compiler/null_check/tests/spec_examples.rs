@@ -249,7 +249,7 @@ fn each_form_catches_its_mistakes() {
         (
             "width=300 height=200",
             "width=300 depth=200",
-            "a layout line takes `width=`, and `height=` for a frame, not `depth=`",
+            "a layout line takes `width=`, `height=` for a frame, and `hide-inputs=` and `hide-outputs=`, not `depth=`",
         ),
         (
             "@loop [-300 0] [400 0]",

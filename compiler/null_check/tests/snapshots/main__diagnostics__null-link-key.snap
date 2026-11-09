@@ -1,0 +1,6 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- material @m "M" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac colour=red }\n  }\n}\n
+case.noll:4:55 warning[null-link-key]: an input line takes `mute=` and `value=` after a link, not `colour=`; it is ignored (S95)

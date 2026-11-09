@@ -75,6 +75,12 @@ pub mod codes {
     /// A masked `raw` line that contradicts the state its enum's line sets those bits to: a
     /// warning (Sau's decision S97, task 1b-03n).
     pub const RAW_STATE_CONFLICT: &str = "null-raw-state-conflict";
+    /// A key after a link other than `mute=` and `value=`, which v0 ignored: a warning (Sau's
+    /// decisions S95 and S97, RFC 0009).
+    pub const LINK_KEY: &str = "null-link-key";
+    /// A hidden socket a layout line cannot hide: one the node does not have, or a linked input
+    /// (S95, S97, RFC 0009).
+    pub const HIDDEN_SOCKET: &str = "null-hidden-socket";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -83,7 +89,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 15] = [
+    pub const ALL: [&str; 17] = [
         SYNTAX,
         NAME,
         KIND,
@@ -99,5 +105,7 @@ pub mod codes {
         HANDLE_PLACED,
         RAW_OLD_PATH,
         RAW_STATE_CONFLICT,
+        LINK_KEY,
+        HIDDEN_SOCKET,
     ];
 }

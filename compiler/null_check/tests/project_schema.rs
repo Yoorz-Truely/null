@@ -802,6 +802,78 @@ fn a_shape_keys_arrays_are_lists() {
 }
 
 #[test]
+fn muted_links_values_under_links_and_hidden_sockets_check() {
+    // RFC 0009 (S95, task 1d-07l): `mute=` and `value=` after a link, `hide-inputs=` and
+    // `hide-outputs=` on a layout line; any other key on an input line a warning, as v0 took it.
+    let project = Schema::from_json(PROJECT).unwrap();
+    let material = |nodes: &str, layout: &str| {
+        format!(
+            "material @m \"M\" {{\n  nodes {{\n    node @noise tex-noise\n{nodes}\n    node @out output-material {{ surface @bsdf.bsdf }}\n  }}\n  layout {{ {layout} }}\n}}\n"
+        )
+    };
+    let clean = material(
+        "    node @bsdf bsdf-principled {\n      base-color @noise.color mute=on value=[0.8 0.1 0.1 1]\n      roughness @noise.fac value=0.6\n    }",
+        "@bsdf [0 0] hide-inputs=[metallic] hide-outputs=[]",
+    );
+    let found = errors(&project, &[&clean]);
+    assert!(found.is_empty(), "{found:?}");
+    let messages = |text: &str| -> Vec<(bool, String)> {
+        errors(&project, &[text])
+            .into_iter()
+            .map(|d| (d.is_error(), d.message.clone()))
+            .collect()
+    };
+    for (nodes, layout, error, says) in [
+        (
+            "    node @bsdf bsdf-principled { base-color @noise.color mute=yes }",
+            "@bsdf [0 0]",
+            true,
+            "takes `on` or `off`",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac value=red }",
+            "@bsdf [0 0]",
+            true,
+            "roughness",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness 0.5 mute=on }",
+            "@bsdf [0 0]",
+            true,
+            "takes no properties",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac colour=red }",
+            "@bsdf [0 0]",
+            false,
+            "not `colour=`",
+        ),
+        (
+            "    node @bsdf bsdf-principled { roughness @noise.fac }",
+            "@bsdf [0 0] hide-inputs=[roughness]",
+            true,
+            "is linked",
+        ),
+        (
+            "    node @bsdf bsdf-principled",
+            "@bsdf [0 0] hide-inputs=[rougness]",
+            true,
+            "none of this node's inputs",
+        ),
+    ] {
+        let text = material(nodes, layout);
+        let found = messages(&text);
+        assert!(
+            found.iter().any(|(e, m)| *e == error && m.contains(says)),
+            "{says}: {found:?}\n{text}"
+        );
+        if !error {
+            assert!(found.iter().all(|(e, _)| !e), "a warning alone: {found:?}");
+        }
+    }
+}
+
+#[test]
 fn a_field_written_under_two_names_is_refused() {
     // Sau's task 1b-03m: the schema step classes an alias of another property's DNA field
     // derived and names the property it reads (`alias-of`); a block that writes both sets the
