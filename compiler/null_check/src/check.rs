@@ -488,6 +488,26 @@ impl<'s> Checker<'s> {
         if kind == "action" {
             return self.action_body(file, node, &props);
         }
+        // A texture of a type (`wood`) is written as that type's kind, which gives its `type`
+        // (section 8, task 1d-07s): a `type` line gives it again (S70: one spelling).
+        if kind != "texture"
+            && self
+                .schema
+                .struct_by_rna(rna)
+                .is_some_and(|s| s.base.as_deref() == Some("Texture"))
+        {
+            for a in attrs(node).iter().filter(|a| a.name == "type") {
+                let message = format!(
+                    "a `{kind}` texture's type is its kind, so `type` gives it again; a texture of another type is written as that type's kind, such as `clouds @sky`"
+                );
+                let d = Diagnostic::error(codes::REPEATED, file, a.span, message);
+                let d = match removal(a) {
+                    Some(span) => d.with_fix_replace("remove the line", span, String::new()),
+                    None => d,
+                };
+                self.out.push(d);
+            }
+        }
         self.attributes(file, node, kind, &props, &[]);
     }
 
