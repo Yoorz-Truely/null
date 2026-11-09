@@ -38,5 +38,5 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | [0002](0002-zone-names.md) | What a zone's name and block say about its two nodes | accepted (S82) |
 | [0003](0003-media-paths.md) | How a media datablock's file is written | accepted (S83) |
 | [0004](0004-dense-keys.md) | Dense keys in a Null text file of their own | accepted (S86) |
-| [0007](0007-tile-sets-and-sequences.md) | Tiled images and image sequences in `media/` | proposed (task 1d-05m) |
+| [0007](0007-tile-sets-and-sequences.md) | Tiled images and image sequences in `media/` | accepted (S96) |
 | [0005](0005-bones-shape-keys-markers.md) | An armature's bones, shape keys and timeline markers | accepted (S88) |

@@ -1,8 +1,8 @@
 # 0007: Tiled images and image sequences in `media/`
 
-- Status: proposed
+- Status: accepted
 - Date: November 9, 2026
-- Decided by: (the user, or the lead under S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S96
 - Affects: forms over RNA, diagnostics
 - Null format: unchanged
 
@@ -101,4 +101,4 @@ A cost of this design: changing one tile renames the folder. Git sees every othe
 
 ## Decision
 
-Filled in when decided.
+Accepted as drafted on November 9, 2026, by the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S96. No file of the corpus or the slice holds a tiled image or a sequence, so no file changes meaning and the Null format is unchanged. The wording goes into section 12 and Cosmósis's section 2 with task 1d-05m, which also builds convert, apply, print and the `cosmosis-media-set` checks.
