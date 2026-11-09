@@ -641,6 +641,24 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
+            // Two names of one field (Sau's task 1b-03m): an alias written beside the property
+            // it reads the field of sets the field twice.
+            if let Some(of) = props
+                .iter()
+                .find(|p| p.name == a.name)
+                .and_then(|p| p.alias_of.as_deref())
+                && all.iter().any(|b| b.name == of)
+            {
+                self.out(file).error(
+                    codes::REPEATED,
+                    a.name_span,
+                    format!(
+                        "`{}` is `{of}`'s field again (the same DNA field, under another name), which `{of}` already sets; write `{of}` alone",
+                        a.name
+                    ),
+                );
+                continue;
+            }
             match (kind, a.name.as_str()) {
                 // Placements and overrides (task 1d-03b).
                 ("scene" | "collection", "use") => self.placement(file, a.node.unwrap(), None),
