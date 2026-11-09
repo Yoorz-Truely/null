@@ -255,9 +255,12 @@ Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA
 - **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers, action slots and the rest are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine-002`. The rules are under "Sub-object handles" below.
 - **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
 - **Renaming a handle** (Sau's decision S17, task 1b-01h). `null_check::rename` gives the edits that rename a datablock's handle in every file of the project, as an editor renames a symbol, and Cosmósis's `sau rename @old @new` makes them. The datablock keeps its persistent ID, so the map `.sau/ids.noll` is updated to hold that ID under the new handle.
-  - **What changes:** the definition, and each word that names the datablock: `@old`, a path from it (`@old/@bevel`) and a pattern's copy (`@old.7`).
+  - **What changes:** the definition, and each word that names the datablock: `@old` and a path from it (`@old/@bevel`).
   - **What does not change:**
-    - a word that names something else: a sub-object's own line, and inside a datablock that has a sub-object `@old`, every word, since there the sub-object shadows it;
+    - a word that names something else: a sub-object's own line, and inside a datablock that has its own sub-object `@old`, every word, since there a handle names the owner's own sub-object first (Sau's decision S81). Its own sub-objects are the sub-object lines right in its block and its tree's nodes and zones; a sub-object's own (a pose bone's constraint) is reached by a path from it, so it shadows nothing;
+    - a pattern's copy (`@old.7`), which is its placement's handle and never names the datablock `@old` (section 8);
+    - a placement: the second word of `use @component @old`, and the path an `override` starts at a placement (`@old.2/@spine`). These change with their placement, never with a datablock;
+    - inside a component's block, the handle of a datablock the component defines (`object @old` in its block), since there the component's own handles shadow the project's (section 8);
     - inside a node tree: a node's or zone's line, a link to a node's output (`@old.color`), a frame named by `parent`, and the `layout` block;
     - the slot an `action` line names with `slot=`;
     - a package's datablock (`@package:old`);

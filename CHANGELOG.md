@@ -4,6 +4,8 @@
 
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
+- November 9, 2026: section 7's rename list is brought in line with section 8, a wording fix that changes no meaning (Sau's decision S81, task 1d-01d): a pattern's copy `@old.7` is its placement's handle and is not renamed with the datablock `@old`; a placement (`use @component @old`) and an override path that starts at one change with their placement; inside a component's block, its own datablocks shadow the project's; and inside a datablock, only its own sub-objects (the sub-object lines right in its block and its tree's nodes and zones) shadow a datablock of the same handle. No file changes meaning.
+
 ## v0, November 8, 2026
 
 Null v0 is frozen: the specification `docs/spec/null-v0.md` as of the local tag `v0` (Sau's task 1d-01c). It covers the slice and every v0 construct: values and units with exact conversion, identity and references with sub-object handles, every datablock type through the generated schema with Null's own forms, geometry as source at every level, components, node trees (shader, geometry, compositor and texture, with zones, group interfaces and an absolute `layout` with sizes), modifiers, constraints, animation, drivers in Null's expression syntax, the `raw` block, the canonical form and the diagnostics. From here, a change to what a file means goes through an RFC (`docs/rfcs/README.md`). The entries below are v0's history, oldest first.
