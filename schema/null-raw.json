@@ -168,11 +168,6 @@
         "dims": []
       },
       {
-        "path": "totcol",
-        "type": "short",
-        "dims": []
-      },
-      {
         "path": "actnu",
         "type": "int",
         "dims": []
@@ -213,11 +208,6 @@
         "dims": []
       },
       {
-        "path": "totbox",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "curinfo.mat_nr",
         "type": "short",
         "dims": []
@@ -229,55 +219,6 @@
       }
     ],
     "Curves": [
-      {
-        "path": "geometry.attribute_storage.dna_attributes_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.point_data.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "geometry.point_data.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.point_data.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.point_data.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.curve_data_legacy.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "geometry.curve_data_legacy.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.curve_data_legacy.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "geometry.curve_data_legacy.totsize",
-        "type": "int",
-        "dims": []
-      },
       {
         "path": "geometry.point_num",
         "type": "int",
@@ -299,18 +240,8 @@
         "dims": []
       },
       {
-        "path": "geometry.custom_knot_num",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "attributes_active_index_legacy",
         "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totcol",
-        "type": "short",
         "dims": []
       }
     ],
@@ -334,33 +265,6 @@
     "GreasePencil": [
       {
         "path": "drawing_array_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "layers_data_legacy.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "layers_data_legacy.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "layers_data_legacy.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "layers_data_legacy.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "attribute_storage.dna_attributes_num",
         "type": "int",
         "dims": []
       },
@@ -431,11 +335,6 @@
       },
       {
         "path": "elemsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totkey",
         "type": "int",
         "dims": []
       },
@@ -620,11 +519,6 @@
         "dims": []
       },
       {
-        "path": "tot_slots",
-        "type": "short",
-        "dims": []
-      },
-      {
         "path": "blend_shadow",
         "type": "char",
         "dims": []
@@ -632,130 +526,12 @@
     ],
     "Mesh": [
       {
-        "path": "verts_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "edges_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "faces_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "corners_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "attribute_storage.dna_attributes_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "vert_data.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "vert_data.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "vert_data.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "vert_data.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "edge_data.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "edge_data.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "edge_data.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "edge_data.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "face_data.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "face_data.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "face_data.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "face_data.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "corner_data.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "corner_data.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "corner_data.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "corner_data.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "vertex_group_active_index",
         "type": "int",
         "dims": []
       },
       {
         "path": "attributes_active_index",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totselect",
         "type": "int",
         "dims": []
       },
@@ -772,11 +548,6 @@
       {
         "path": "face_sets_color_default",
         "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totcol",
-        "type": "short",
         "dims": []
       },
       {
@@ -798,44 +569,12 @@
         "path": "subsurftype",
         "type": "char",
         "dims": []
-      },
-      {
-        "path": "fdata_legacy.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "fdata_legacy.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "fdata_legacy.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "fdata_legacy.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totface_legacy",
-        "type": "int",
-        "dims": []
       }
     ],
     "MetaBall": [
       {
         "path": "flag2",
         "type": "char",
-        "dims": []
-      },
-      {
-        "path": "totcol",
-        "type": "short",
         "dims": []
       },
       {
@@ -885,21 +624,6 @@
         "dims": []
       },
       {
-        "path": "tracking.stabilization.tot_track",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "tracking.stabilization.tot_rot_track",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "tracking.tot_object",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "tracking.dopesheet.ok",
         "type": "int",
         "dims": []
@@ -942,11 +666,6 @@
       },
       {
         "path": "restore_mode",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totcol",
         "type": "int",
         "dims": []
       },
@@ -1036,11 +755,6 @@
       }
     ],
     "PaintCurve": [
-      {
-        "path": "tot_points",
-        "type": "int",
-        "dims": []
-      },
       {
         "path": "add_index",
         "type": "int",
@@ -1148,45 +862,8 @@
         "dims": []
       },
       {
-        "path": "totpoint",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "attribute_storage.dna_attributes_num",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "pdata_legacy.typemap",
-        "type": "int",
-        "dims": [
-          53
-        ]
-      },
-      {
-        "path": "pdata_legacy.totlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "pdata_legacy.maxlayer",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "pdata_legacy.totsize",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "attributes_active_index",
         "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totcol",
-        "type": "short",
         "dims": []
       }
     ],
@@ -1324,11 +1001,6 @@
       {
         "path": "r.mblur_shutter_curve.changed_timestamp",
         "type": "int",
-        "dims": []
-      },
-      {
-        "path": "r.mblur_shutter_curve.cm.totpoint",
-        "type": "short",
         "dims": []
       },
       {
@@ -1622,11 +1294,6 @@
         "path": "active_grid",
         "type": "int",
         "dims": []
-      },
-      {
-        "path": "totcol",
-        "type": "short",
-        "dims": []
       }
     ],
     "WorkSpace": [
@@ -1690,27 +1357,12 @@
     ],
     "bAction": [
       {
-        "path": "layer_array_num",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "layer_active_index",
         "type": "int",
         "dims": []
       },
       {
-        "path": "slot_array_num",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "last_slot_handle",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "strip_keyframe_data_array_num",
         "type": "int",
         "dims": []
       },
@@ -1734,11 +1386,6 @@
       {
         "path": "pathflag",
         "type": "short",
-        "dims": []
-      },
-      {
-        "path": "collection_array_num",
-        "type": "int",
         "dims": []
       },
       {
@@ -1840,31 +1487,6 @@
         "dims": []
       },
       {
-        "path": "totcol",
-        "type": "short",
-        "dims": []
-      },
-      {
-        "path": "totlayer",
-        "type": "short",
-        "dims": []
-      },
-      {
-        "path": "totframe",
-        "type": "short",
-        "dims": []
-      },
-      {
-        "path": "totstroke",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "totpoint",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "draw_mode",
         "type": "short",
         "dims": []
@@ -1950,22 +1572,12 @@
         "dims": []
       },
       {
-        "path": "tree_interface.root_panel.items_num",
-        "type": "int",
-        "dims": []
-      },
-      {
         "path": "tree_interface.next_uid",
         "type": "int",
         "dims": []
       },
       {
         "path": "active_viewer_key.value",
-        "type": "int",
-        "dims": []
-      },
-      {
-        "path": "nested_node_refs_num",
         "type": "int",
         "dims": []
       }
