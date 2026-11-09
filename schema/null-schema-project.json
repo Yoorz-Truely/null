@@ -49883,7 +49883,8 @@
       ]
      },
      "default": 0.0,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     },
     {
      "name": "tint-color",
@@ -50285,7 +50286,8 @@
        "value": 7
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "new": "none"
     },
     {
      "name": "children",

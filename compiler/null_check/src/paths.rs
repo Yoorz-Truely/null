@@ -37,6 +37,7 @@ pub const SUB_KINDS: &[&str] = &[
     "track",
     "marker",
     "layer-group",
+    "drawing",
     "input",
     "output",
     "panel",
