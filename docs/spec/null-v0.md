@@ -993,6 +993,23 @@ image @shot "shot" {
 
 The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, and a sequence's frame range, which is on the image user (`frame-start`, `frame-duration`, `frame-offset`).
 
+**A text's body** (RFC 0011, Sau's decision S103). A `text` datablock's content (a Python script, an OSL shader, notes) is a file of its own, named by its `body` line:
+
+```null
+text @shader-py "shader.py" {
+  body "scripts/shader.py"
+  use-module on
+}
+```
+
+- **The path** is written from the project's root, by the same rules as a media datablock's: `/` separators, no `.` or `..` parts, and no part leaving the root. Unlike a media file, it is not named by its bytes. A text is source someone edits, so its file keeps a readable name. Cosmósis's layout puts it in `scripts/`, named from the text's name (Cosmósis spec, section 2).
+- **The file** is the text's whole content, byte for byte: Blender's lines, each but the last ended by a line feed. No `body` line is an empty text.
+- **`body` is Null's own form over RNA** (section 8), standing for `Text.lines`, which RNA only reads. The text's stored settings are ordinary lines (`use-module`, `indentation`, and `filepath` for a text Blender keeps linked to a file of its own).
+- **Bytes Blender would change.** Blender keeps a text as UTF-8 lines with no control character but the tab. A file holding a carriage return, another control character or bytes that are not UTF-8 is applied as Blender reads it, compared that way, and warned of.
+- **Write-back.** A text edited in Sau writes its body file again, whole.
+
+`sau check` reports, at each `body` line, `cosmosis-body-path` (an error: not a path from the root), `cosmosis-body-missing` (an error: no file is there) and `cosmosis-body-bytes` (a warning: the file holds bytes Blender would change).
+
 ## 13. Generators (optional)
 
 Phase 5 of Sau's roadmap; not part of v0's implementation. A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.

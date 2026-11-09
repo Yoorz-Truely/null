@@ -38,8 +38,9 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | [0002](0002-zone-names.md) | What a zone's name and block say about its two nodes | accepted (S82) |
 | [0003](0003-media-paths.md) | How a media datablock's file is written | accepted (S83) |
 | [0004](0004-dense-keys.md) | Dense keys in a Null text file of their own | accepted (S86) |
-| [0007](0007-tile-sets-and-sequences.md) | Tiled images and image sequences in `media/` | accepted (S96) |
 | [0005](0005-bones-shape-keys-markers.md) | An armature's bones, shape keys and timeline markers | accepted (S88) |
 | [0006](0006-curves-point-clouds-grease-pencil.md) | Level 0 arrays for curves, point clouds and Grease Pencil drawings | accepted (S91) |
+| [0007](0007-tile-sets-and-sequences.md) | Tiled images and image sequences in `media/` | accepted (S96) |
 | [0008](0008-grease-pencil-drawing-references.md) | A Grease Pencil drawing that shows another Grease Pencil datablock | accepted (S98) |
 | [0009](0009-node-link-and-socket-state.md) | Muted links, hidden sockets and the value under a link | accepted (S95) |
+| [0011](0011-text-bodies.md) | A text datablock's content in a file of its own | accepted (S103) |

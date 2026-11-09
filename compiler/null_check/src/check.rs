@@ -357,6 +357,20 @@ impl<'s> Checker<'s> {
             .map(|((k, _), at)| (k.clone(), *at))
     }
 
+    /// A text's `body` line (RFC 0011, S103): one string, the path of the file holding the text's
+    /// content, from the project's root. Whether the path is a path from the root and the file is
+    /// there is Cosmósis's to say (`cosmosis-body-path`, `cosmosis-body-missing`).
+    fn text_body(&mut self, file: FileId, a: &Attr<'_>) {
+        let one_string = matches!(a.args.as_slice(), [v] if v.as_string().is_some());
+        if !one_string || !a.props.is_empty() || a.node.is_some_and(|n| n.block().is_some()) {
+            self.out(file).error(
+                codes::TYPE,
+                a.span,
+                "`body` takes one string, the path of the text's file from the project's root, such as `body \"scripts/shader.py\"`",
+            );
+        }
+    }
+
     fn collect(&mut self, file: FileId, node: Node<'_>, top: bool) {
         let kind = node.name().into_owned();
         let defining =
@@ -687,6 +701,8 @@ impl<'s> Checker<'s> {
             "pose-bone" => vec!["constraint"],
             // A tiled image's tiles' own settings (RFC 0007, S96, task 1d-05m).
             "image" => vec!["tile"],
+            // A text's content, in a file of its own (RFC 0011, S103).
+            "text" => vec!["body"],
             _ => vec![],
         };
         if let Some((_, group)) = tree_kind {
@@ -835,6 +851,7 @@ impl<'s> Checker<'s> {
                 }
                 ("scene", "marker") => self.marker(file, a),
                 ("image", "tile") => self.udim_tile(file, a, &mut tiles),
+                ("text", "body") => self.text_body(file, a),
                 // After the loop, against each other (RFC 0006, S91, task 1d-06f).
                 ("point-cloud", "points" | "attribute")
                 | ("curves", "points" | "curves" | "attribute") => {}
