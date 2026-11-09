@@ -883,6 +883,23 @@ light @dial-lamp "Dial Lamp" {
 
 Task 1d-05f builds this section; the slice references no media. Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
 
+**A media datablock's file** (`image`, `sound`, `vector-font`, `movie-clip`, `cache-file`, `volume`) is its `filepath`. It is written in one of two ways:
+- **A path from the project's root**, such as `filepath "media/3f2a….png"`. It has `/` separators, no `.` or `..` parts, and no part that leaves the root through a link.
+- **An absolute path** to a source outside the project, such as `filepath "/Volumes/Library/hdri/dusk.exr"`.
+
+Blender's `//`, relative to a `.blend` file, is never written: a project has no `.blend` file (Sau's decision S83, RFC 0003). Sau gives Blender the path joined to the project's root, and writes a path under the root back from the root.
+
+**Packed files are never written.** `packed-file` has no line. A file packed in a `.blend` becomes a file in `media/` when the `.blend` is converted, named by the SHA-256 of its bytes and its extension (`media/<sha256>.<ext>`). An external file is copied there the same way, so the project holds every byte it needs. Referencing a file in place is still written by hand as an absolute path.
+
+**`sau check`** reports, at each `filepath` line:
+- `cosmosis-media-path`, an error: a path that is neither form (`//`, `\`, a `.` or `..` part, or one that resolves outside the root through a link);
+- `cosmosis-media-missing`, an error: a path from the root that names no file;
+- `cosmosis-media-outside`, a warning: any absolute path, missing or not, since it is not portable and a shared project should show it.
+
+**A missing file at apply.** Sau reports it and still makes the datablock, so references to it resolve. A sound, a font and a movie clip are made from their file when it exists. When it does not, they are made empty, with the path set, as Blender keeps a datablock whose file has gone: a sound that plays nothing, a font with no glyphs, a clip with no frames. They load once the file is there. An image, a cache file and a volume are made from their name, with the path set, as now.
+
+The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, a sequence's frame range on the image user. Image sequences, UDIM tiles and movie frames are not yet copied one file per frame; converting a `.blend` reports them.
+
 ## 13. Generators (optional)
 
 Phase 5 of Sau's roadmap; not part of v0's implementation. A Python script in `scripts/` may generate part of a project: a scattered forest, a staircase from a formula. It runs with Blender's Python API in a sandbox that may create data but not touch files or the network, gives the same output every time, and its output is plain Null text. A generated part can be frozen into the project as ordinary text and edited by hand. Geometry nodes and drivers are preferred over generators wherever they can do the job, because they stay live data.
