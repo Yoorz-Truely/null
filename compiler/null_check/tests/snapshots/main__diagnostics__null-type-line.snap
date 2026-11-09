@@ -1,0 +1,8 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- wood @grain "Grain" {\n  type wood\n  noise-scale 0.5\n}\n
+case.noll:2:3 warning[null-type-line]: a `wood` texture's type is its kind, so `type wood` says nothing more
+  fix: remove the line
+  `remove the line` gives: wood @grain "Grain" {\n  noise-scale 0.5\n}\n

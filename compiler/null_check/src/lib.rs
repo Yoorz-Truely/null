@@ -81,6 +81,9 @@ pub mod codes {
     /// A hidden socket a layout line cannot hide: one the node does not have, or a linked input
     /// (S95, S97, RFC 0009).
     pub const HIDDEN_SOCKET: &str = "null-hidden-socket";
+    /// A `type` line inside a texture of a type that names the kind's own type, which says nothing
+    /// more: a warning (Sau's decision S101).
+    pub const TYPE_LINE: &str = "null-type-line";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -89,7 +92,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 17] = [
+    pub const ALL: [&str; 18] = [
         SYNTAX,
         NAME,
         KIND,
@@ -107,5 +110,6 @@ pub mod codes {
         RAW_STATE_CONFLICT,
         LINK_KEY,
         HIDDEN_SOCKET,
+        TYPE_LINE,
     ];
 }

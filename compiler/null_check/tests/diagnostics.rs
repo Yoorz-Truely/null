@@ -151,6 +151,13 @@ const CASES: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        codes::TYPE_LINE,
+        &[
+            // A typed texture's `type` line naming its own type, which its kind gives (S101).
+            "wood @grain \"Grain\" {\n  type wood\n  noise-scale 0.5\n}\n",
+        ],
+    ),
+    (
         codes::PYTHON,
         &[
             "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.data.objects['D'].location.z * 100\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",
