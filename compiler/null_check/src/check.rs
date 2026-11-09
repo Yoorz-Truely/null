@@ -57,6 +57,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         cycles: HashSet::new(),
         scope: None,
         expanded,
+        owner: None,
         outside_place: crate::driver::Place::default(),
         scene_places: HashMap::new(),
         scene_place: None,
@@ -169,12 +170,23 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
+    /// The datablock whose block is being checked, and its own sub-objects, (kind, handle):
+    /// inside it a handle names one of them first (section 7; task 1b-01q).
+    owner: Option<Own>,
     /// Where drivers are read (task 1d-07f): outside every scene, and inside each scene node, by
     /// its file and place, as `driver::place` gives them to the checker and to Sau alike.
     outside_place: crate::driver::Place,
     scene_places: HashMap<(u32, usize), crate::driver::Place>,
     /// The place of the scene whose block is being checked.
     scene_place: Option<crate::driver::Place>,
+}
+
+/// A datablock being checked, with its own sub-objects.
+#[derive(Clone, Debug, Default)]
+struct Own {
+    kind: String,
+    handle: String,
+    subs: Vec<(String, String)>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -372,6 +384,19 @@ impl<'s> Checker<'s> {
         };
         let rna = s.rna.clone();
         self.header_check(file, node, &kind, Some(&rna));
+        // Inside its block, its own sub-objects come first (section 7, task 1b-01q).
+        let h = header(node);
+        let handle = h.handle.map(|(h, _)| h).or_else(|| {
+            h.name
+                .as_deref()
+                .and_then(to_kebab_case)
+                .map(|k| format!("@{k}"))
+        });
+        self.owner = handle.map(|handle| Own {
+            kind: kind.clone(),
+            handle,
+            subs: crate::paths::own_sub_objects(node),
+        });
         if kind == "scene" {
             let mut rate = frame_rate(node);
             self.scale = Units::of(node)
@@ -386,6 +411,7 @@ impl<'s> Checker<'s> {
             "light" => self.light(file, node),
             _ => self.body(file, node, &kind, &rna),
         }
+        self.owner = None;
         self.scene = None;
         self.scene_place = None;
         self.scale = self.outside.scale();
@@ -1148,6 +1174,17 @@ impl<'s> Checker<'s> {
                 ),
             );
         };
+        // Inside its owner's block, a handle names the owner's own sub-object first, so a
+        // datablock elsewhere never shadows it (section 7): one of a datablock's kind is a clash.
+        if let Some(own) = &self.owner
+            && let Some((sub, _)) = own.subs.iter().find(|(_, h)| h == word)
+        {
+            let message = format!(
+                "inside {} `{}`, `{word}` names its {sub} `{word}` (a handle names its owner's own sub-object first, section 7), and `{what}` takes a {kind}; give the {sub} or the {kind} another handle",
+                own.kind, own.handle
+            );
+            return self.out(file).error(codes::HANDLE, v.span(), message);
+        }
         if !(self.expanded && is_copy_handle(word))
             && !kebab_handle(word, v.span(), &mut self.out(file))
         {

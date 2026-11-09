@@ -20,6 +20,8 @@ mod flags;
 mod frames;
 #[path = "level0.rs"]
 mod level0;
+#[path = "migrate.rs"]
+mod migrate;
 #[path = "output.rs"]
 mod output;
 #[path = "paths.rs"]
@@ -45,6 +47,7 @@ const MODULES: &[&str] = &[
     "flags.rs",
     "frames.rs",
     "level0.rs",
+    "migrate.rs",
     "output.rs",
     "paths.rs",
     "project_schema.rs",

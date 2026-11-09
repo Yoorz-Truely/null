@@ -8,7 +8,8 @@
 //! else, which the place says:
 //! - a sub-object's own line (`modifier @old bevel`), and a word or path that starts at one of the
 //!   enclosing datablock's own sub-objects (section 7: inside its owner's block, a path starts
-//!   at the owner's sub-objects first);
+//!   at the owner's sub-objects first), by the checker's own lookup (S81): the sub-object lines
+//!   right in its block and its tree's nodes, not a sub-object's own (a pose bone's constraint);
 //! - inside a node tree: a node's or a zone's line, a link to a node's output (`@old.color`), a
 //!   frame named by `parent`, and the `layout` block's lines;
 //! - the slot an `action` line names with `slot=`, which is the action's;
@@ -225,27 +226,15 @@ fn component_defines(node: Node<'_>, old: &str) -> bool {
     })
 }
 
-/// The handles a datablock's own sub-objects have: its sub-object lines, at any depth (a pose
-/// bone's constraints, a panel's sockets), and its tree's nodes and zones.
+/// The handles of a datablock's own sub-objects, by the checker's lookup (section 7, S81, task
+/// 1b-01q): its sub-object lines right in its block and its tree's nodes and zones. A sub-object's
+/// own sub-objects (a pose bone's constraints, a panel's sockets) are reached by a path from it,
+/// so a bare handle inside the datablock never names them, and does not shadow the datablock.
 fn sub_objects(node: Node<'_>) -> HashSet<String> {
-    let mut out = HashSet::new();
-    fn walk(n: Node<'_>, in_tree: bool, out: &mut HashSet<String>) {
-        for c in n.children() {
-            let name = c.name();
-            let first = c
-                .args()
-                .next()
-                .and_then(|v| v.as_word().map(str::to_string));
-            let is_sub = SUB_KINDS.contains(&name.as_ref())
-                || (in_tree && (name == "node" || name == "zone" || name.ends_with("-item")));
-            if is_sub && let Some(h) = first.filter(|h| h.starts_with('@')) {
-                out.insert(h);
-            }
-            walk(c, in_tree || name == "nodes", out);
-        }
-    }
-    walk(node, false, &mut out);
-    out
+    crate::paths::own_sub_objects(node)
+        .into_iter()
+        .map(|(_, handle)| handle)
+        .collect()
 }
 
 #[derive(Clone, Copy, PartialEq)]

@@ -255,9 +255,12 @@ Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA
 - **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers, action slots and the rest are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine-002`. The rules are under "Sub-object handles" below.
 - **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
 - **Renaming a handle** (Sau's decision S17, task 1b-01h). `null_check::rename` gives the edits that rename a datablock's handle in every file of the project, as an editor renames a symbol, and Cosmósis's `sau rename @old @new` makes them. The datablock keeps its persistent ID, so the map `.sau/ids.noll` is updated to hold that ID under the new handle.
-  - **What changes:** the definition, and each word that names the datablock: `@old`, a path from it (`@old/@bevel`) and a pattern's copy (`@old.7`).
+  - **What changes:** the definition, and each word that names the datablock: `@old` and a path from it (`@old/@bevel`).
   - **What does not change:**
-    - a word that names something else: a sub-object's own line, and inside a datablock that has a sub-object `@old`, every word, since there the sub-object shadows it;
+    - a word that names something else: a sub-object's own line, and inside a datablock that has its own sub-object `@old`, every word, since there a handle names the owner's own sub-object first (Sau's decision S81). Its own sub-objects are the sub-object lines right in its block and its tree's nodes and zones; a sub-object's own (a pose bone's constraint) is reached by a path from it, so it shadows nothing;
+    - a pattern's copy (`@old.7`), which is its placement's handle and never names the datablock `@old` (section 8);
+    - a placement: the second word of `use @component @old`, and the path an `override` starts at a placement (`@old.2/@spine`). These change with their placement, never with a datablock;
+    - inside a component's block, the handle of a datablock the component defines (`object @old` in its block), since there the component's own handles shadow the project's (section 8);
     - inside a node tree: a node's or zone's line, a link to a node's output (`@old.color`), a frame named by `parent`, and the `layout` block;
     - the slot an `action` line names with `slot=`;
     - a package's datablock (`@package:old`);
@@ -661,14 +664,14 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
   - `panel @h "Name" { default-closed; <input and output lines> }`.
   - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
 - **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
-- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). Its name N names both nodes: the input node is `N Input` and the output node `N Output`, as Blender names a zone it makes, so `zone @repeat repeat "Repeat"` is Blender's own. A pair named otherwise, and a zone node's own width, frame, label, mute and colour, have no form in v0 (Sau's decisions S80 and S82, RFC 0002): a printer reports them rather than writing them. The nodes inside a zone's block are those Blender counts as inside it from the links; writing a node inside or outside the block does not move it, and a printer writes each node in the block of the innermost zone holding it. The block holds:
   - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
   - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
   - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
   - the nodes inside the zone.
 
-  Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
-- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+  Inside the zone's block, at any depth, a zone nested in it included, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
+- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's, each at its node kind's default width. A node with no layout line is placed by Sau.
   - **A position is absolute** on the canvas, not relative to the node's frame: DNA's `location`, which RNA calls `location_absolute` (Sau's decision S79). So a line means the same whatever the node's `parent`, and moving a frame in the editor rewrites its nodes' lines with its own.
   - **A size** follows the position where it is not the node kind's default, which the schema gives each kind: `width=`, and for a frame, the one node whose height is its own rather than its sockets', `height=` (S79): `@box [-120 60] width=300 height=200`. Both are plain numbers in the editor's units, as positions are.
 
@@ -893,6 +896,23 @@ light @dial-lamp "Dial Lamp" {
 ## 12. Media and caches
 
 Task 1d-05f builds this section; the slice references no media. Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
+
+**A media datablock's file** (`image`, `sound`, `vector-font`, `movie-clip`, `cache-file`, `volume`) is its `filepath`. It is written in one of two ways:
+- **A path from the project's root**, such as `filepath "media/3f2a….png"`. It has `/` separators, no `.` or `..` parts, and no part that leaves the root through a link.
+- **An absolute path** to a source outside the project, such as `filepath "/Volumes/Library/hdri/dusk.exr"`.
+
+Blender's `//`, relative to a `.blend` file, is never written: a project has no `.blend` file (Sau's decision S83, RFC 0003). Sau gives Blender the path joined to the project's root, and writes a path under the root back from the root.
+
+**Packed files are never written.** `packed-file` has no line. A file packed in a `.blend` becomes a file in `media/` when the `.blend` is converted, named by the SHA-256 of its bytes and its extension (`media/<sha256>.<ext>`). An external file is copied there the same way, so the project holds every byte it needs. Referencing a file in place is still written by hand as an absolute path.
+
+**`sau check`** reports, at each `filepath` line:
+- `cosmosis-media-path`, an error: a path that is neither form (`//`, `\`, a `.` or `..` part, or one that resolves outside the root through a link);
+- `cosmosis-media-missing`, an error: a path from the root that names no file;
+- `cosmosis-media-outside`, a warning: any absolute path, missing or not, since it is not portable and a shared project should show it.
+
+**A missing file at apply.** Sau reports it and still makes the datablock, so references to it resolve. A sound, a font and a movie clip are made from their file when it exists. When it does not, they are made empty, with the path set, as Blender keeps a datablock whose file has gone: a sound that plays nothing, a font with no glyphs, a clip with no frames. They load once the file is there. An image, a cache file and a volume are made from their name, with the path set, as now.
+
+The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, a sequence's frame range on the image user. Image sequences, UDIM tiles and movie frames are not yet copied one file per frame; converting a `.blend` reports them.
 
 ## 13. Generators (optional)
 

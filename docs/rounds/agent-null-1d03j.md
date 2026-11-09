@@ -34,3 +34,26 @@ These are the 1d-03d review's points, as the lead set them after S77:
 - **In `null_check/tests/paths.rs`:** a tree's links and frames written from their datablock check clean, and one from another datablock is a `null-handle` error.
 
 **Checks:** `cargo test --workspace` and clippy `-D warnings` are clean, Null's lint-only `just check` passes, and the `format` fuzz target, now calling `full_form`, builds and ran 60 seconds clean.
+
+## Review
+
+### 1d-03j, `a1f3eb2`, by agent/cosmosis-a, November 8, 2026: approved; one gap for the lead, two notes
+
+I read `short.rs`, the `Tree::local` and `Order::key` changes, the tests and sections 8 and 17. The workspace's tests pass. I also merged `a1f3eb2` into 1d-08a's Null and ran the v0 corpus through it (below).
+
+**What holds.**
+- **Form 8 in full.** `Tree::local` takes `@owner/` off only when a `/` and an `@` follow, so `@clay-2/@x` in `@clay` is no path of `@clay`. In an expanded copy the owner is the copy's path, and 1d-03c's expansion maps `@clay/@noise.fac` through the copy's handles to `@p.2/@clay/@noise.fac`. So the two compose, as `short_forms_inside_a_component_then_its_copies` shows.
+- **A component's block read as a file's top.** Forms 1 and 3 apply to its datablocks, and its `if` and `else` blocks keep their place. A parameter's line is no datablock, so it takes neither form, and form 4 by the owner's struct leaves `{ countdown }` alone.
+- **The order (S77).** Short forms in full first, then components, is now in sections 8 and 17, and `full_form` is a better name.
+- **A group's interface before its `nodes`.** Looking up `last` before the RNA names is the minimal fix, and the corpus confirms it. Re-formatted with this Null, the node-trees project's groups now write `is-modifier`, `input`, `panel` and `output` above `nodes`, as section 10 writes them, and nothing else moved.
+
+**A gap, for the lead.** A placement's block and an override's are left as written, on the ground that "their lines are parameters or the root's". But the root's lines can be short forms:
+- `override @gate.2 { hide-render }`, a bare boolean;
+- `use @post @x { modifier @ring array count=7 }`, settings on the line;
+- `override @a.2 { object "B" }`, which cannot occur, so only the first two matter.
+
+The component expansion lays these lines on the copy's root as written, so the flat project Sau applies still holds short forms, though section 17 says apply reads the full form. The checker reads both, so nothing fails today. But Sau's apply (1d-03e) would have to read short forms too, or they would be misread. **The fix:** write a placement's and an override's non-parameter lines in full with the component's root object as their owner (form 4 by `Object`, form 3 on its modifier and constraint lines). It needs the component's parameter names, which `full_form` can read from the project as it does an action's slots. Either here or in a row of its own.
+
+**Notes (none blocks):**
+1. **Form 8's reach narrowed.** It now covers a tree's links and frames; 1d-03d's row said any path in its owner's block. I found no other place where a line names its own datablock's sub-objects by a short path. A driver target and an f-curve's sub-object path name other datablocks. So the narrower row is right, but section 7's general statement of short paths should say it is the tree's case that has a full form.
+2. **`Order::key`** now puts `last` first for every struct. Only node trees have both a `nodes` RNA property and a `layout` form today, so nothing else moves, but a comment there could say so.
