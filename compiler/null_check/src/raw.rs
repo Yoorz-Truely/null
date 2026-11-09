@@ -67,6 +67,32 @@ impl RawTable {
     pub fn field(&self, name: &str, path: &str) -> Option<&RawField> {
         self.fields(name).iter().find(|f| f.path == path)
     }
+
+    /// Field `path` of struct `name`, as a `raw` line names it: the table's own path, or one that
+    /// leaves out an embedded struct array's index, which a v0 file may hold and which reads as
+    /// element 0 of each array it passes (Sau's decision S94, task 1d-05i). With whether the
+    /// index was left out.
+    pub fn resolve(&self, name: &str, path: &str) -> Option<(&RawField, bool)> {
+        if let Some(f) = self.field(name, path) {
+            return Some((f, false));
+        }
+        let is_index = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit());
+        self.fields(name)
+            .iter()
+            .find(|f| {
+                let steps: Vec<&str> = f.path.split('.').collect();
+                steps.iter().any(|s| is_index(s))
+                    && steps.iter().all(|s| !is_index(s) || *s == "0")
+                    && steps
+                        .iter()
+                        .filter(|s| !is_index(s))
+                        .copied()
+                        .collect::<Vec<_>>()
+                        .join(".")
+                        == path
+            })
+            .map(|f| (f, true))
+    }
 }
 
 /// A DNA scalar type, as a raw block reads it.

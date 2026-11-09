@@ -976,55 +976,214 @@
         "dims": []
       },
       {
-        "path": "r.mblur_shutter_curve.cm.flag",
+        "path": "r.mblur_shutter_curve.cm.0.flag",
         "type": "short",
         "dims": []
       },
       {
-        "path": "r.mblur_shutter_curve.cm.range",
+        "path": "r.mblur_shutter_curve.cm.0.range",
         "type": "float",
         "dims": []
       },
       {
-        "path": "r.mblur_shutter_curve.cm.mintable",
+        "path": "r.mblur_shutter_curve.cm.0.mintable",
         "type": "float",
         "dims": []
       },
       {
-        "path": "r.mblur_shutter_curve.cm.maxtable",
+        "path": "r.mblur_shutter_curve.cm.0.maxtable",
         "type": "float",
         "dims": []
       },
       {
-        "path": "r.mblur_shutter_curve.cm.ext_in",
+        "path": "r.mblur_shutter_curve.cm.0.ext_in",
         "type": "float",
         "dims": [
           2
         ]
       },
       {
-        "path": "r.mblur_shutter_curve.cm.ext_out",
+        "path": "r.mblur_shutter_curve.cm.0.ext_out",
         "type": "float",
         "dims": [
           2
         ]
       },
       {
-        "path": "r.mblur_shutter_curve.cm.premul_ext_in",
+        "path": "r.mblur_shutter_curve.cm.0.premul_ext_in",
         "type": "float",
         "dims": [
           2
         ]
       },
       {
-        "path": "r.mblur_shutter_curve.cm.premul_ext_out",
+        "path": "r.mblur_shutter_curve.cm.0.premul_ext_out",
         "type": "float",
         "dims": [
           2
         ]
       },
       {
-        "path": "r.mblur_shutter_curve.cm.default_handle_type",
+        "path": "r.mblur_shutter_curve.cm.0.default_handle_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.range",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.mintable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.maxtable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.premul_ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.premul_ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.1.default_handle_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.range",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.mintable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.maxtable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.premul_ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.premul_ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.2.default_handle_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.range",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.mintable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.maxtable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.premul_ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.premul_ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.3.default_handle_type",
         "type": "short",
         "dims": []
       },
@@ -1053,7 +1212,22 @@
         "dims": []
       },
       {
-        "path": "orientation_slots.index_custom",
+        "path": "orientation_slots.0.index_custom",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "orientation_slots.1.index_custom",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "orientation_slots.2.index_custom",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "orientation_slots.3.index_custom",
         "type": "int",
         "dims": []
       },

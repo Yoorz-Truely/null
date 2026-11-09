@@ -806,7 +806,9 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            if !seen.insert(line.name.clone()) {
+            let resolved = table.resolve(&owner, &line.name);
+            let path = resolved.map_or(line.name.clone(), |(f, _)| f.path.clone());
+            if !seen.insert(path.clone()) {
                 self.out(file).error(
                     codes::REPEATED,
                     line.name_span,
@@ -814,7 +816,19 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            let Some(field) = table.field(&owner, &line.name) else {
+            // A v0 path without an embedded struct array's index reads as element 0 (S94).
+            if let Some((_, true)) = resolved {
+                self.out(file).warning_fix(
+                    codes::RAW_OLD_PATH,
+                    line.name_span,
+                    format!(
+                        "`{}` leaves out the index of the element it names, and reads as element 0: write `{path}`",
+                        line.name
+                    ),
+                    (format!("write `{path}`"), line.name_span, path.clone()),
+                );
+            }
+            let Some((field, _)) = resolved else {
                 let paths = fields.iter().map(|f| f.path.as_str());
                 let suggestion = closest(&line.name, paths);
                 let message = match (fields.is_empty(), suggestion) {
