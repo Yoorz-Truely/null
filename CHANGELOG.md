@@ -5,6 +5,7 @@
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
 - November 9, 2026: RFC 0004, accepted as Sau's decision S86 (task 1d-07o): section 11 says an f-curve of more than 2,000 keys writes them in a Null text file of its own beside the action's file, one key per line, named by the f-curve's `keys file=… count=… frames=[…]` line, which the checker holds the file to; the file's name is the printer's choice and carries no meaning; a moved key is one line's edit. No file changes meaning; the Null format is unchanged.
+- November 9, 2026: section 11's layered example writes its key at frame 24 with `handle-left-type=free handle-right-type=free` beside its handles, a wording fix (Sau's decision S87, task 1d-07o): as first written, its handles sat beside the new key's automatic types, which Blender places again, so the example could never round-trip. Written handles keep the meaning v0 gives them and do not make a key's handles free. No file changes meaning.
 
 ## v0, November 8, 2026
 
