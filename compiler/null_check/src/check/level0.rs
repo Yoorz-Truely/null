@@ -499,6 +499,9 @@ impl Checker<'_> {
         let Some(line) = attrs(node).into_iter().find(|b| b.name == "positions") else {
             return;
         };
+        if !self.array_or_file(file, &line, "positions [[0m 0m 0m] …]") {
+            return;
+        }
         let expected = counts.point.map(|n| (n, "vertex"));
         self.array_line(file, &line, owner, handle, Elements::Positions, expected);
     }

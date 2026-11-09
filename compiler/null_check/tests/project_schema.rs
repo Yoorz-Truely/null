@@ -615,3 +615,24 @@ fn a_curve_and_a_lattice_take_shape_keys_as_a_mesh_does() {
         "{found:?}"
     );
 }
+
+#[test]
+fn a_shape_keys_arrays_are_lists() {
+    // 1d-07q's review, fixed in 1d-07r: `tilts 0.5` and `positions [0m 0m 0m]`'s like, a value
+    // where a list of one per point is written, are errors, a mesh's, a curve's and a lattice's.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    for text in [
+        "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { tilts 0.5 }\n}\n",
+        "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { radii 1 }\n}\n",
+        "lattice @cage \"Cage\" {\n  shape-key @squash \"Squash\" { positions 0m }\n}\n",
+        "mesh @m \"M\" {\n  vertices [[0m 0m 0m]]\n  shape-key @up \"Up\" { positions 0m }\n}\n",
+    ] {
+        let found = errors(&schema, &[text]);
+        assert!(
+            found
+                .iter()
+                .any(|d| d.code == codes::TYPE && d.message.contains("is a list, one per point")),
+            "{text}\n{found:?}"
+        );
+    }
+}
