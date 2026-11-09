@@ -37,6 +37,11 @@ pub struct RawField {
     /// Its array dimensions, outermost first; none for a single value.
     #[serde(default)]
     pub dims: Vec<usize>,
+    /// The bytes a new datablock holds in it, from DNA's defaults structs in the build that wrote
+    /// the table (Sau's task 1d-05g), as lowercase hexadecimal in the machine's byte order;
+    /// none in a table from a build that did not write them.
+    #[serde(default)]
+    pub default: Option<String>,
 }
 
 /// The raw table: the fields each DNA struct's `raw` block may write.
@@ -148,6 +153,25 @@ impl RawField {
     /// Its size in bytes.
     pub fn size(&self) -> Option<usize> {
         Some(self.scalar()?.size() * self.dims.iter().product::<usize>())
+    }
+
+    /// The bytes a new datablock holds in the field (see [`RawField::default`]); `None` when the
+    /// table carries none for it, or what it carries is not hexadecimal of the field's size.
+    pub fn default_bytes(&self) -> Option<Vec<u8>> {
+        let hex = self.default.as_deref()?;
+        if hex.len() != 2 * self.size()? || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return None;
+        }
+        (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).ok())
+            .collect()
+    }
+
+    /// Whether `bytes` are the value a new datablock holds in the field, bit for bit: a field
+    /// a `raw` block leaves out (Sau's task 1d-05g). False when the table carries no default.
+    pub fn is_default(&self, bytes: &[u8]) -> bool {
+        self.default_bytes().is_some_and(|d| d == bytes)
     }
 
     /// How it is written, for a message: `a short`, `a list of 3 floats`.
@@ -425,6 +449,7 @@ mod tests {
             path: "f".into(),
             ty: ty.into(),
             dims: dims.to_vec(),
+            default: None,
         }
     }
 
@@ -531,5 +556,36 @@ mod tests {
         assert!(t.fields("Mesh").is_empty());
         let empty = RawTable::from_json(r#"{"format": 1}"#).unwrap();
         assert!(empty.structs.is_empty());
+    }
+
+    #[test]
+    fn a_field_s_default_is_its_bytes_from_the_table() {
+        // Task 1d-05g: a table from a build that wrote DNA's defaults carries each field's bytes.
+        let t = RawTable::from_json(
+            r#"{"format": 1, "structs": {"Object": [
+              {"path": "dsize", "type": "float", "dims": [3], "default": "0000803f0000803f0000803f"},
+              {"path": "col_mask", "type": "short", "dims": [], "default": "ffff"},
+              {"path": "restore_mode", "type": "int", "dims": []},
+              {"path": "bad", "type": "short", "dims": [], "default": "ff"}
+            ]}}"#,
+        )
+        .unwrap();
+        let dsize = t.field("Object", "dsize").unwrap();
+        let ones: Vec<u8> = [1.0f32; 3].iter().flat_map(|f| f.to_le_bytes()).collect();
+        assert_eq!(dsize.default_bytes().unwrap(), ones);
+        assert!(dsize.is_default(&ones));
+        // A zero in a field whose default is not zero is not its default.
+        assert!(!dsize.is_default(&[0; 12]));
+        assert!(
+            t.field("Object", "col_mask")
+                .unwrap()
+                .is_default(&[0xff, 0xff])
+        );
+        // A table from an older build carries none: nothing is the default, so all prints.
+        let none = t.field("Object", "restore_mode").unwrap();
+        assert_eq!(none.default_bytes(), None);
+        assert!(!none.is_default(&[0; 4]));
+        // Hexadecimal of another size is no default.
+        assert_eq!(t.field("Object", "bad").unwrap().default_bytes(), None);
     }
 }
