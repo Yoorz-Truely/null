@@ -1,8 +1,8 @@
 # 0008: A Grease Pencil drawing that shows another Grease Pencil datablock
 
-- Status: proposed
+- Status: accepted (Sau's decision S98)
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), as S98, November 9, 2026
 - Affects: forms over RNA, identity, diagnostics
 - Null format: unchanged
 
@@ -75,4 +75,6 @@ None.
 
 ## Decision
 
-Filled in when decided.
+Accepted as Sau's decision S98, November 9, 2026, by the lead. The form stands as proposed: `drawing @h { reference @other }`, its identity its index (S91), no `points`, `curves` or `attribute` beside it (`null-type`), and a cycle refused under its own code, `null-reference-cycle` (S97).
+
+For the index bug, option 1 in its fallback form: the `Sau:` hook in `remove_drawings_with_no_users` counts **every** reference as used, so compaction frees none and only Sau's apply, following the text's drawing order, frees one. No DNA flag bit is added, since a `.blend` Sau saves stays in Blender's format, and `remove_layer` stays Blender's own (S90), so not option 2.

@@ -62,6 +62,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         outside_place: crate::driver::Place::default(),
         scene_places: HashMap::new(),
         scene_place: None,
+        gp_references: Vec::new(),
     };
     let parses = files.iter().map(|(_, p)| *p);
     cx.project = units::project(parses.clone()).unwrap_or_default();
@@ -112,6 +113,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         }
     }
     cx.unmatched_refs();
+    cx.reference_cycles();
     let mut out = cx.out;
     // Sub-object handles are unique within their owner, whatever their kinds (section 7).
     out.extend(crate::paths::Index::build(files).duplicates());
@@ -180,6 +182,8 @@ struct Checker<'s> {
     scene_places: HashMap<(u32, usize), crate::driver::Place>,
     /// The place of the scene whose block is being checked.
     scene_place: Option<crate::driver::Place>,
+    /// Every drawing that is a reference to another Grease Pencil (RFC 0008, task 1d-06h).
+    gp_references: Vec<geometry::GpReference>,
 }
 
 /// A datablock being checked, with its own sub-objects.

@@ -1,0 +1,9 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- grease-pencil @g "G" {\n  drawing @d { reference @g }\n}\n
+case.noll:2:26 error[null-reference-cycle]: drawing `@d` of `@g` is a reference to `@g` itself; Blender refuses a reference that reaches its own Grease Pencil
+--- grease-pencil @a "A" {\n  drawing @to-b { reference @b }\n}\ngrease-pencil @b "B" {\n  drawing @to-a { reference @a }\n}\n
+case.noll:2:29 error[null-reference-cycle]: drawing `@to-b` of `@a` is a reference to `@b`, which reaches `@a` again (@a → @b → @a); Blender refuses a reference that reaches its own Grease Pencil
+case.noll:5:29 error[null-reference-cycle]: drawing `@to-a` of `@b` is a reference to `@a`, which reaches `@b` again (@b → @a → @b); Blender refuses a reference that reaches its own Grease Pencil
