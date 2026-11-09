@@ -1,8 +1,8 @@
 # 0004: Dense keys in a Null text file of their own
 
-- Status: proposed
+- Status: accepted
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59), with Sau's decision number
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S86
 - Affects: forms over RNA, write-back, diagnostics
 - Null format: unchanged
 
@@ -36,7 +36,7 @@ Section 11's "Keys" paragraph gains the following, after the key's settings:
 >   - `frames=` is the first and the last key's frame, as Blender sorts them.
 >   - A summary that disagrees with the file is an error, at the line that names it, as section 9's is.
 >   - An f-curve writes its keys inline or names a file, never both.
-> - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. It is named after the action's file, the slot, the property and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A name another f-curve's file already takes gets `-2`, `-3`.
+> - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. Its name is the printer's choice and carries no meaning, since the line names the file. The printer names it after the action's file, the slot, the property's path and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle where it has one: `rig.arm.pose-bones.forearm.rotation-quaternion-1.keys.noll`. A name another f-curve's file already takes gets `-2`, `-3`.
 > - **The file** holds one node: `keys`, the action's handle, the slot's, the property, `index=` for an array's item, and a block of `key` lines exactly as an inline f-curve's (frame, value in the property's unit, settings as `name=value`), in frame order:
 >
 >   ```null
@@ -77,4 +77,4 @@ None.
 
 ## Decision
 
-Filled in when decided.
+Accepted on November 9, 2026, by the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S86, with one amendment written into the design above: a key file's name is the printer's choice and carries no meaning, since the line names it, and a nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle. No file changes meaning. The wording is in section 11 (task 1d-07o).

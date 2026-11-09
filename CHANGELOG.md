@@ -4,6 +4,8 @@
 
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
+- November 9, 2026: RFC 0004, accepted as Sau's decision S86 (task 1d-07o): section 11 says an f-curve of more than 2,000 keys writes them in a Null text file of its own beside the action's file, one key per line, named by the f-curve's `keys file=… count=… frames=[…]` line, which the checker holds the file to; the file's name is the printer's choice and carries no meaning; a moved key is one line's edit. No file changes meaning; the Null format is unchanged.
+
 ## v0, November 8, 2026
 
 Null v0 is frozen: the specification `docs/spec/null-v0.md` as of the local tag `v0` (Sau's task 1d-01c). It covers the slice and every v0 construct: values and units with exact conversion, identity and references with sub-object handles, every datablock type through the generated schema with Null's own forms, geometry as source at every level, components, node trees (shader, geometry, compositor and texture, with zones, group interfaces and an absolute `layout` with sizes), modifiers, constraints, animation, drivers in Null's expression syntax, the `raw` block, the canonical form and the diagnostics. From here, a change to what a file means goes through an RFC (`docs/rfcs/README.md`). The entries below are v0's history, oldest first.

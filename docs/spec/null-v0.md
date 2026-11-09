@@ -686,6 +686,32 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
 - **Keys** are `key <frame> <value>`, then the key's settings as `name=value`: `interpolation`, `easing`, `type`, `handle-left-type`, `handle-right-type`, `back`, `amplitude`, `period`, and `handle-left` and `handle-right` as `[frame value]`.
   - A frame is a number of frames, exact as Blender stores it (float32, so sub-frames are allowed and print exactly). An action is outside every scene, so a frame is never written in seconds (section 6).
   - The value is written as the property's own: `800W` for a light's energy, `1.5m` for a location.
+  - **Dense keys in a file of their own** (Sau's decisions S54 and S86, RFC 0004). An f-curve of up to 2,000 keys writes them inline, as above. One with more writes them in a Null text file of its own, beside the file that holds the action, one key per line. The file is not named by its content's hash, so an edit is a readable diff of the keys it changed.
+    - The f-curve's block names the file and gives its summary, which the checker holds the file to: `keys file="hop.ball.location-2.keys.noll" count=1200 frames=[1 1200]`.
+      - `count=` is the number of keys.
+      - `frames=` is the first and the last key's frame, as Blender sorts them.
+      - A summary that disagrees with the file is an error, at the line that names it, as section 9's is.
+      - An f-curve writes its keys inline or names a file, never both.
+    - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. Its name is the printer's choice and carries no meaning, since the line names the file. The printer names it after the action's file, the slot, the property's path and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle where it has one: `rig.arm.pose-bones.forearm.rotation-quaternion-1.keys.noll`. A name another f-curve's file already takes gets `-2`, `-3`.
+    - **The file** holds one node: `keys`, the action's handle, the slot's, the property, `index=` for an array's item, and a block of `key` lines exactly as an inline f-curve's (frame, value in the property's unit, settings as `name=value`), in frame order, as in the file below.
+
+    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
+    - **Write-back** follows section 17's smallest edit:
+      - A key moved or changed in Sau rewrites its own line in the key file, and nothing else, unless the move changes the first or last frame, which also rewrites `frames=`.
+      - A key added or removed adds or removes its line, and rewrites `count=` and, where it changes, `frames=`.
+      - A curve that grows past 2,000 keys moves its keys into a file, and one that shrinks to 2,000 or fewer moves them back inline. Either is a change of the f-curve's own lines, the only time both files change for one edit.
+    - `sau convert --inline` writes every f-curve's keys inline, whatever their number, as it does for arrays.
+A key file, beside `actions/hop.noll` (its 1,200 lines shortened here to three; fenced as text until the checker reads key files, so the spec's numbered examples keep their numbers):
+
+```text
+// actions/hop.ball.location-2.keys.noll
+keys @hop @ball location index=2 {
+  key 1 0m
+  key 2 0.0123m
+  key 3 0.049m
+}
+```
+
 - **An f-curve's modifiers** are `modifier @h <kind> "Name" { … }` lines in its block, of the f-curve modifier kinds (`noise`, `cycles`, `generator`, `limits`, `stepped`, …).
 - **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first; S71). Its full form writes them under layers instead, and never both:
   - `layer @h "Name" { strip @h keyframe { channels @slot { fcurve … } } }`;
