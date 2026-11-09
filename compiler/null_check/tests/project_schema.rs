@@ -841,3 +841,36 @@ fn a_field_written_under_two_names_is_refused() {
         assert_eq!(errors(&schema, &[one]), vec![], "{one}");
     }
 }
+
+#[test]
+fn a_text_names_its_body_file() {
+    // RFC 0011 (S103, Sau task 1d-09e): `body` is one string, the path of the text's content
+    // from the project's root; anything else is a type error; a text with no `body` is empty.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "text @shader-py \"shader.py\" {\n  body \"scripts/shader.py\"\n  use-module on\n}\n\ntext @notes \"Notes\"\n";
+    assert_eq!(errors(&schema, &[text]), vec![]);
+    for wrong in [
+        "  body scripts\n",
+        "  body \"a.py\" \"b.py\"\n",
+        "  body \"a.py\" file=\"b.py\"\n",
+        "  body\n",
+    ] {
+        let found = errors(
+            &schema,
+            &[&text.replace("  body \"scripts/shader.py\"\n", wrong)],
+        );
+        assert_eq!(found.len(), 1, "{wrong}: {found:#?}");
+        assert_eq!(found[0].code, codes::TYPE, "{wrong}: {found:#?}");
+    }
+    let twice = text.replace(
+        "  body \"scripts/shader.py\"\n",
+        "  body \"scripts/shader.py\"\n  body \"scripts/other.py\"\n",
+    );
+    assert_eq!(errors(&schema, &[&twice])[0].code, codes::REPEATED);
+    // Only a text has a body.
+    let found = errors(
+        &schema,
+        &["material @oak \"Oak\" {\n  body \"scripts/a.py\"\n}\n"],
+    );
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+}

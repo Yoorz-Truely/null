@@ -3,6 +3,7 @@
 ## Unreleased
 
 - November 9, 2026: the checker reads key files (RFC 0004, S86; task 1d-07t): an f-curve's `keys file="…" count=N frames=[first last]` line and the file's `keys @action @slot <path> index=N { key … }` node, matched by the action, the slot, the path and the index; each key in the file is checked as an inline key is, at its own line. Section 18 gains four codes, each its own (Sau's decision S97): `null-key-file-summary`, `null-key-file-missing`, `null-key-file-unnamed` and `null-key-file-inline`. Section 11's key-file example is now a checked example, a capture's f-curve and its file. No file changes meaning.
+- November 9, 2026: RFC 0011, accepted as Sau's decision S103 (task 1d-09e): section 12 gives a text datablock's content a file of its own, named by a `body "…"` line with a path from the project's root by the media path rules, the file holding the text byte for byte; no `body` line is an empty text. The checker takes `body` on a `text` only, one string. Cosmósis reports `cosmosis-body-path`, `cosmosis-body-missing` and `cosmosis-body-bytes`. No file changes meaning: the form is new. The Null format is unchanged.
 Changes after v0, each through an RFC (`docs/rfcs/`).
 
 - November 9, 2026: section 9's two notes on Sau's cache in `.sau/` say it is a snapshot of the applied scene, opened in place of the text only when nothing it was made from has changed and never the source, not a binary copy of each large array, a wording fix (Sau's decision S92, task 1d-06e): they describe Sau, not what a file means.

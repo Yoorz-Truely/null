@@ -2,15 +2,6 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  1 datablock: scene @harbour "Harbour"
-  2   attribute: units metric scale=1 length=m rotation=deg
-  3   attribute: object @buoy
-  5 datablock: object "Buoy"
-  6   attribute: hide-render
-  7   sub-object: modifier @round bevel width=4mm segments=3
-  8   attribute: action @bob
- 10 datablock: action @bob "Bob"
- 11   sub-object: slot @buoy object "Buoy"
- 12     f-curve: fcurve location index=2
- 13       key: key 1 0m
- 14       key: key 24 0.2m interpolation=sine
+  1 datablock: text @shader-py "shader.py"
+  2   attribute: body "scripts/shader.py"
+  3   attribute: use-module on
