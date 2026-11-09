@@ -199,8 +199,19 @@ fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
         .collect()
 }
 
+/// A datablock's own sub-objects as (kind, handle): the sub-object lines right in `node`'s block
+/// and its tree's nodes and zones. Inside the datablock's block a handle names one of these
+/// first (section 7, Sau's decision S81), as the checker, rename and Sau's apply read it (task
+/// 1b-01q).
+pub fn own_sub_objects(node: Node<'_>) -> Vec<(String, String)> {
+    subs_of(FileId(0), node)
+        .into_iter()
+        .map(|s| (s.kind, s.handle))
+        .collect()
+}
+
 /// The sub-object lines inside `node`'s block, with theirs.
-fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
+pub(crate) fn subs_of(file: FileId, node: Node<'_>) -> Vec<SubObject> {
     let mut out = Vec::new();
     for child in node.children() {
         let name = child.name();

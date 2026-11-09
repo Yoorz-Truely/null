@@ -2,8 +2,9 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  2 datablock: collection @pier "Pier"
-  3   pattern: use @plank @plank count=20
-  4     attribute: location [0m n*25cm 0.35m]
-  6   override: override @plank.7
-  6     attribute: state liquid
+  1 datablock: object @close-up "Close-up"
+  3 datablock: scene @titles "Titles"
+  4   sub-object: marker @intro "Intro" frame=1
+  5   sub-object: marker @cut "Cut" frame=48
+  5     attribute: camera @close-up
+  6   sub-object: marker @f96 frame=96

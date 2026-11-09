@@ -21,6 +21,7 @@ mod anim;
 pub(crate) mod components;
 pub(crate) mod expr;
 mod level0;
+mod rig;
 mod subs;
 mod trees;
 
@@ -56,6 +57,7 @@ fn run(schema: &Schema, files: &[(FileId, &Parse)], expanded: bool) -> Vec<Diagn
         cycles: HashSet::new(),
         scope: None,
         expanded,
+        owner: None,
         outside_place: crate::driver::Place::default(),
         scene_places: HashMap::new(),
         scene_place: None,
@@ -168,12 +170,23 @@ struct Checker<'s> {
     scope: Option<Scope>,
     /// The files are expanded (task 1d-03c): copy handles are plain handles.
     expanded: bool,
+    /// The datablock whose block is being checked, and its own sub-objects, (kind, handle):
+    /// inside it a handle names one of them first (section 7; task 1b-01q).
+    owner: Option<Own>,
     /// Where drivers are read (task 1d-07f): outside every scene, and inside each scene node, by
     /// its file and place, as `driver::place` gives them to the checker and to Sau alike.
     outside_place: crate::driver::Place,
     scene_places: HashMap<(u32, usize), crate::driver::Place>,
     /// The place of the scene whose block is being checked.
     scene_place: Option<crate::driver::Place>,
+}
+
+/// A datablock being checked, with its own sub-objects.
+#[derive(Clone, Debug, Default)]
+struct Own {
+    kind: String,
+    handle: String,
+    subs: Vec<(String, String)>,
 }
 
 fn args_of(node: Node<'_>) -> Vec<Value<'_>> {
@@ -371,6 +384,19 @@ impl<'s> Checker<'s> {
         };
         let rna = s.rna.clone();
         self.header_check(file, node, &kind, Some(&rna));
+        // Inside its block, its own sub-objects come first (section 7, task 1b-01q).
+        let h = header(node);
+        let handle = h.handle.map(|(h, _)| h).or_else(|| {
+            h.name
+                .as_deref()
+                .and_then(to_kebab_case)
+                .map(|k| format!("@{k}"))
+        });
+        self.owner = handle.map(|handle| Own {
+            kind: kind.clone(),
+            handle,
+            subs: crate::paths::own_sub_objects(node),
+        });
         if kind == "scene" {
             let mut rate = frame_rate(node);
             self.scale = Units::of(node)
@@ -385,6 +411,7 @@ impl<'s> Checker<'s> {
             "light" => self.light(file, node),
             _ => self.body(file, node, &kind, &rna),
         }
+        self.owner = None;
         self.scene = None;
         self.scene_place = None;
         self.scale = self.outside.scale();
@@ -529,9 +556,11 @@ impl<'s> Checker<'s> {
                 "fps-base",
                 "use",
                 "override",
+                "marker",
             ],
             "collection" => vec!["object", "collection", "use", "override"],
             "object" => vec!["data", "material", "modifier", "constraint", "bone"],
+            "armature" => vec!["bone", "bone-collection"],
             "mesh" => vec![
                 "primitive",
                 "vertices",
@@ -540,7 +569,11 @@ impl<'s> Checker<'s> {
                 "attribute",
                 "uv-map",
                 "vertex-group",
+                "shape-key",
+                "shape-keys",
             ],
+            // A curve's, a surface's and a lattice's shape keys too (RFC 0005, S88).
+            "curve" | "surface" | "lattice" => vec!["shape-key", "shape-keys"],
             "pose-bone" => vec!["constraint"],
             _ => vec![],
         };
@@ -557,6 +590,11 @@ impl<'s> Checker<'s> {
         }
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
         names.extend(forms.iter().copied());
+        // `shape-keys` is the read-only pointer of every curve kind; where the block form is not
+        // taken (a text curve), it is no name to suggest for `shape-key` (1d-07q's review).
+        if !forms.contains(&"shape-keys") {
+            names.retain(|n| *n != "shape-keys");
+        }
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
         let all = attrs(node);
@@ -585,7 +623,13 @@ impl<'s> Checker<'s> {
                 ) | (_, "if" | "else")
                     | ("object", "material" | "modifier" | "constraint" | "bone")
                     | ("pose-bone", "constraint")
-                    | ("mesh", "attribute" | "uv-map" | "vertex-group")
+                    | (
+                        "mesh",
+                        "attribute" | "uv-map" | "vertex-group" | "shape-key"
+                    )
+                    | ("curve" | "surface" | "lattice", "shape-key")
+                    | ("armature", "bone" | "bone-collection")
+                    | ("scene", "marker")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -642,6 +686,17 @@ impl<'s> Checker<'s> {
                 ("object", "modifier") => self.family_member(file, a, "Modifier"),
                 ("object" | "pose-bone", "constraint") => self.family_member(file, a, "Constraint"),
                 ("object", "bone") => self.pose_bone(file, a),
+                // RFC 0005 (S88, task 1d-07q).
+                ("armature", "bone") => self.armature_bone(file, a, &all),
+                ("armature", "bone-collection") => self.bone_collection(file, a, &all),
+                ("mesh" | "curve" | "surface" | "lattice", "shape-key") => {
+                    let owner = header(node).handle.map(|(h, _)| (kind.to_string(), h));
+                    self.shape_key(file, a, &all, kind, owner)
+                }
+                ("mesh" | "curve" | "surface" | "lattice", "shape-keys") => {
+                    self.shape_keys(file, a)
+                }
+                ("scene", "marker") => self.marker(file, a),
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
@@ -1119,6 +1174,17 @@ impl<'s> Checker<'s> {
                 ),
             );
         };
+        // Inside its owner's block, a handle names the owner's own sub-object first, so a
+        // datablock elsewhere never shadows it (section 7): one of a datablock's kind is a clash.
+        if let Some(own) = &self.owner
+            && let Some((sub, _)) = own.subs.iter().find(|(_, h)| h == word)
+        {
+            let message = format!(
+                "inside {} `{}`, `{word}` names its {sub} `{word}` (a handle names its owner's own sub-object first, section 7), and `{what}` takes a {kind}; give the {sub} or the {kind} another handle",
+                own.kind, own.handle
+            );
+            return self.out(file).error(codes::HANDLE, v.span(), message);
+        }
         if !(self.expanded && is_copy_handle(word))
             && !kebab_handle(word, v.span(), &mut self.out(file))
         {

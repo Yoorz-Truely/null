@@ -255,9 +255,12 @@ Every unit kind in Blender's RNA (`PropertyUnit`, `PROP_UNIT_*` in `makesrna/RNA
 - **Sub-object handles.** Modifiers, constraints, nodes, sockets, bones, shape keys, vertex groups, UV maps, attributes, view layers, action slots and the rest are named inside their owner and addressed by path: `@pier/@bevel`, `@weathered-oak/@bsdf.roughness`, `@rig/@spine-002`. The rules are under "Sub-object handles" below.
 - **Across files.** A handle is visible in the whole project, so `material @weathered-oak` in an object file finds the material's file through the project index. Packages are addressed with their name: `@cosmosis-materials:oak`.
 - **Renaming a handle** (Sau's decision S17, task 1b-01h). `null_check::rename` gives the edits that rename a datablock's handle in every file of the project, as an editor renames a symbol, and Cosmósis's `sau rename @old @new` makes them. The datablock keeps its persistent ID, so the map `.sau/ids.noll` is updated to hold that ID under the new handle.
-  - **What changes:** the definition, and each word that names the datablock: `@old`, a path from it (`@old/@bevel`) and a pattern's copy (`@old.7`).
+  - **What changes:** the definition, and each word that names the datablock: `@old` and a path from it (`@old/@bevel`).
   - **What does not change:**
-    - a word that names something else: a sub-object's own line, and inside a datablock that has a sub-object `@old`, every word, since there the sub-object shadows it;
+    - a word that names something else: a sub-object's own line, and inside a datablock that has its own sub-object `@old`, every word, since there a handle names the owner's own sub-object first (Sau's decision S81). Its own sub-objects are the sub-object lines right in its block and its tree's nodes and zones; a sub-object's own (a pose bone's constraint) is reached by a path from it, so it shadows nothing;
+    - a pattern's copy (`@old.7`), which is its placement's handle and never names the datablock `@old` (section 8);
+    - a placement: the second word of `use @component @old`, and the path an `override` starts at a placement (`@old.2/@spine`). These change with their placement, never with a datablock;
+    - inside a component's block, the handle of a datablock the component defines (`object @old` in its block), since there the component's own handles shadow the project's (section 8);
     - inside a node tree: a node's or zone's line, a link to a node's output (`@old.color`), a frame named by `parent`, and the `layout` block;
     - the slot an `action` line names with `slot=`;
     - a package's datablock (`@package:old`);
@@ -361,7 +364,7 @@ Task 1d-07a. An object's modifiers, constraints and pose bones are sub-objects (
 
 - `modifier @h <kind> "Name" { … }` is one modifier, in stack order. Its kind is a modifier's (S67: `bevel`, `array`, `subsurf`, `nodes`), and its block holds that kind's properties and those every modifier has (`show-viewport`, `show-render`). A geometry nodes modifier (`nodes`) names its group with `node-group`, and its group's inputs are its lines by their handles (section 10).
 - `constraint @h <kind> "Name" { … }` is one constraint, in stack order, of a constraint kind (`damped-track`, `copy-location`, `kinematic` for inverse kinematics).
-- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (1d-07h).
+- `bone @h "Name" { … }` is the pose of the armature's bone of that name: `PoseBone`'s properties (`rotation-mode`, `location`, the locks and the IK limits) and its own `constraint` lines. An armature's bones themselves are its data's (below).
 
 The quoted name is Blender's and may be left out, the handle then standing for it.
 
@@ -392,7 +395,59 @@ object @rig "Rig" {
   }
 }
 
-armature @rig-bones "Rig"
+armature @rig-bones "Rig" {
+  bone @spine "Spine" {
+    head [0m 0m 0m]
+    tail [0m 0m 1m]
+  }
+}
+```
+
+### An armature's bones
+
+RFC 0005, Sau's decision S88 (task 1d-07q). `bone @h "Name" { … }` in an `armature`'s block is one bone of its rest pose, in the armature's order (Blender's: each bone after its parent). It holds:
+- `head [x y z]`, `tail [x y z]` and `roll`: the rest pose as Blender's edit bones hold it, in the armature's space, lengths as `location` is written and the roll an angle (section 6). These are the values a user types into an edit bone's fields.
+- `parent @h`, another bone of the armature, and `use-connect` when its head is its parent's tail.
+- `Bone`'s other settings by their Null names: `use-deform`, `inherit-scale`, `use-inherit-rotation`, `use-local-location`, `use-relative-parent`, the envelope's (`envelope-distance`, `envelope-weight`, `head-radius`, `tail-radius`), the B-Bone's (`bbone-segments`, `bbone-x`, `bbone-z`, …), `hide` and the rest.
+- `collections [@h …]`, the bone collections it belongs to.
+
+`bone-collection @h "Name" { … }` is one of the armature's bone collections, in Blender's order, with `BoneCollection`'s settings (`is-visible`, `is-solo`) and `parent @h` for a nested one. A bone names its collections, rather than a collection its bones, so a bone's line holds everything about it.
+
+An object's `bone @h` lines (above) pose the bones of its armature by the same name. An armature's bone and a posed bone are different lines in different blocks, as Blender keeps `Bone` and `bPoseChannel` apart. The checker holds `parent` and `collections` to the armature's own lines, and says so when a bone's parents lead back to it.
+
+```null
+armature @arm-bones "Arm" {
+  bone-collection @limbs "Limbs"
+  bone @upper "Upper" {
+    head [0m 0m 0m]
+    tail [0m 0m 1m]
+    collections [@limbs]
+  }
+  bone @fore "Fore" {
+    parent @upper
+    use-connect
+    head [0m 0m 1m]
+    tail [0m 0.1m 1.8m]
+    roll 5deg
+    collections [@limbs]
+  }
+}
+```
+
+How Sau writes them, an implementation note that adds no meaning: Blender's bone head, tail and roll are read-only outside edit mode, its stored values (relative to the parent, in armature space, and the matrices) derived from the edit bones when edit mode is left. Sau makes the armature's edit bones from its bones, sets each one's head, tail, roll, parent and connection from its line, and writes them back, which derives the stored values as leaving edit mode does; the object never enters edit mode. The printer reads them back through edit bones made the same way.
+
+### Timeline markers
+
+RFC 0005, Sau's decision S88 (task 1d-07q). `marker @h "Name" frame=N { … }` in a scene's or an action's block is one timeline marker, its frame an integer, bare, as Blender stores it, with `TimelineMarker`'s settings in its block: `camera @h`, the camera object a scene's marker switches to, and `select`. A marker's name may be empty or shared; such a marker's handle is made from its frame (`@f96`, section 7), and its quoted name is left out when it is empty. Markers are written in frame order.
+
+```null
+object @close-up "Close-up"
+
+scene @titles "Titles" {
+  marker @intro "Intro" frame=1
+  marker @cut "Cut" frame=48 { camera @close-up }
+  marker @f96 frame=96
+}
 ```
 
 ### Components, parameters and patterns
@@ -520,7 +575,41 @@ Task 1d-06a, November 8, 2026 (Sau's decisions S23, S35 and S71). Null's checker
   - Blender's internal attributes (`.edge_verts`, `.corner_vert` and the others whose names start with `.`) are never written: `edges` and `polygons` are they.
 - **`uv-map @h "Name" [[u v] …]`**: a UV map, one `[u v]` per corner, with its settings in a block (`active-render`).
 - **`vertex-group @h "Name" { weights [[index weight] …] }`**: a vertex group, a sub-object of the mesh as Blender 5.3 keeps it (section 7), with its weights: only the vertices in the group, by index, in increasing order.
+- **`shape-key @h "Name" { … }`**: one shape key of the mesh's `Key`, in Blender's order (RFC 0005, Sau's decision S88, task 1d-07q). A curve's, a surface's and a lattice's are written the same, in their blocks. It holds:
+  - `positions [[x y z] …]`: one position per vertex, as `vertices` are written, and in a data file of its own past 2,000, as any array (`positions file="face.smile.noll" count=… bounds=…`, the file's `array mesh @face @smile [ … ]`). A lattice's are one per point, and a curve's one per control point, a Bézier point's with its handles as `handles-left [[x y z] …]` and `handles-right [[x y z] …]`, one each per point, and every point's tilt and radius as `tilts [n …]` and `radii [n …]`, one number each per point, as the shape key stores them beside its positions; the checker holds a mesh's to its vertex count, and a curve's and a lattice's are Blender's to hold to its points;
+  - `relative-key @h`, the shape key it is relative to (the basis when left out), and `vertex-group @h`, the vertex group that weighs it: both handles, of the mesh's own shape keys and vertex groups;
+  - `ShapeKey`'s other settings: `value`, `slider-min`, `slider-max`, `interpolation`, `mute`, `lock-shape`.
+
+  The first shape key is the basis (Blender's reference key). Its `positions` are left out when they equal the mesh's `vertices`, as Blender keeps them, and written when they differ (a script that edits `key_blocks[0].data` can make them differ), so no data is lost; a basis with no `positions` takes the mesh's `vertices`. `shape-keys { … }` in the same block holds the `Key`'s own settings (`use-relative`, `eval-time`) and what plays on the `Key`: `action @a slot=@s` and NLA `track` lines (section 11), whose slot is of kind `key`. A shape key's animated value is an f-curve of that slot by the shape key's handle: `fcurve @smile value`.
 - **Colours, creases, bevel weights, sharp edges and faces, seams and custom normals** are attributes like any other, by Blender's names: `crease_vert`, `crease_edge`, `bevel_weight_vert`, `bevel_weight_edge`, `sharp_edge`, `sharp_face`, `custom_normal`, and a colour attribute of type `float-color` or `byte-color` on `point` or `corner`.
+
+A mesh with two shape keys, the second weighted by a vertex group:
+
+```null
+mesh @face "Face" {
+  vertices [[0m 0m 0m] [1m 0m 0m] [0m 1m 0m]]
+  polygons [[0 1 2]]
+  vertex-group @mouth "Mouth" { weights [[1 1] [2 0.5]] }
+  shape-key @basis "Basis"
+  shape-key @smile "Smile" {
+    positions [[0m 0m 0m] [1m 0m 0.2m] [0m 1m 0.1m]]
+    vertex-group @mouth
+    value 0.3
+  }
+  shape-keys { eval-time 10 }
+}
+```
+
+A lattice's shape key, its eight points moved:
+
+```null
+lattice @cage "Cage" {
+  shape-key @basis "Basis"
+  shape-key @squash "Squash" {
+    positions [[-0.5m -0.5m -0.25m] [0.5m -0.5m -0.25m] [-0.5m 0.5m -0.25m] [0.5m 0.5m -0.25m] [-0.5m -0.5m 0.25m] [0.5m -0.5m 0.25m] [-0.5m 0.5m 0.25m] [0.5m 0.5m 0.25m]]
+  }
+}
+```
 
 **Inline up to 2,000 elements.** An array of up to 2,000 elements (vertices, edges, polygons, corners, weights, or an attribute's values) is written inline, as above. A list may span lines, and the formatter puts one element on each line once it does not fit on one.
 
@@ -575,14 +664,14 @@ Shader, geometry, compositor and texture node trees are written as their nodes a
   - `panel @h "Name" { default-closed; <input and output lines> }`.
   - The handles are the sockets' names: they name the inputs and outputs of a group node using the group, the outputs of the group's own `group-input` node and the inputs of its `group-output` node. Like every sub-object's, they are unique within the group, across inputs, outputs and panels.
 - **Group nodes.** `node @stack group { node-tree @stack-up; count 6 }`: a group node's `node-tree` names a group of its tree's kind, and its inputs and outputs are that group's interface.
-- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). The block holds:
+- **Zones.** A zone is a pair of nodes Blender keeps together, and is written as one block (Sau's decision S71), `zone @h <kind> "Name" { … }`. Its kind is the pair's (`repeat`, `simulation`, `foreach-geometry-element`, `closure`, as the tree takes them). Its name N names both nodes: the input node is `N Input` and the output node `N Output`, as Blender names a zone it makes, so `zone @repeat repeat "Repeat"` is Blender's own. A pair named otherwise, and a zone node's own width, frame, label, mute and colour, have no form in v0 (Sau's decisions S80 and S82, RFC 0002): a printer reports them rather than writing them. The nodes inside a zone's block are those Blender counts as inside it from the links; writing a node inside or outside the block does not move it, and a printer writes each node in the block of the innermost zone holding it. The block holds:
   - its items, each line named after the output node's item collection less its final `s`: `repeat-item @geometry geometry "Geometry"`, `state-item`, `input-item`, `main-item`, `generation-item`, `output-item`. Each item is a handle, a socket type and the item's name, with its settings in a block;
   - the input node's inputs and settings (`iterations 4`), and each item's value as it enters the zone;
   - `output { … }`, the output node's inputs: each item's value at the end of an iteration;
   - the nodes inside the zone.
 
-  Inside the zone's block, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
-- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's. A node with no layout line is placed by Sau.
+  Inside the zone's block, at any depth, a zone nested in it included, `@loop.geometry` is the item as it comes into an iteration (the input node's output). Anywhere else it is the item as it leaves the zone (the output node's).
+- **Layout is kept apart** (S45). Node positions live in the tree's trailing `layout` block, `@h [x y]`, so dragging a node in the editor changes only that block, and reading the tree's meaning never needs the layout. A zone's line holds two positions, its input node's and then its output node's, each at its node kind's default width. A node with no layout line is placed by Sau.
   - **A position is absolute** on the canvas, not relative to the node's frame: DNA's `location`, which RNA calls `location_absolute` (Sau's decision S79). So a line means the same whatever the node's `parent`, and moving a frame in the editor rewrites its nodes' lines with its own.
   - **A size** follows the position where it is not the node kind's default, which the schema gives each kind: `width=`, and for a frame, the one node whose height is its own rather than its sockets', `height=` (S79): `@box [-120 60] width=300 height=200`. Both are plain numbers in the editor's units, as positions are.
 
@@ -686,6 +775,34 @@ Task 1d-07a. Actions follow Blender's slotted, layered model, and everything tha
 - **Keys** are `key <frame> <value>`, then the key's settings as `name=value`: `interpolation`, `easing`, `type`, `handle-left-type`, `handle-right-type`, `back`, `amplitude`, `period`, and `handle-left` and `handle-right` as `[frame value]`.
   - A frame is a number of frames, exact as Blender stores it (float32, so sub-frames are allowed and print exactly). An action is outside every scene, so a frame is never written in seconds (section 6).
   - The value is written as the property's own: `800W` for a light's energy, `1.5m` for a location.
+  - A setting left out is a new key's (`bezier`, `auto` easing, `keyframe`, `auto-clamped` handles), and an f-curve's setting left out is the schema's default, never the user's preferences, so a file means the same on every machine (S87).
+  - A handle is kept as written beside a `free` handle type. Beside `aligned`, Blender keeps the pair in line, turning the other handle of a pair that is not. Written beside an automatic type (`auto`, `auto-clamped`, `vector`, or the type left out), Blender places the handle again, so the checker warns (`null-handle-placed`, with the fix `handle-left-type=free`). Written handles do not make a key's handles free (S87).
+  - **Dense keys in a file of their own** (Sau's decisions S54 and S86, RFC 0004). An f-curve of up to 2,000 keys writes them inline, as above. One with more writes them in a Null text file of its own, beside the file that holds the action, one key per line. The file is not named by its content's hash, so an edit is a readable diff of the keys it changed.
+    - The f-curve's block names the file and gives its summary, which the checker holds the file to: `keys file="hop.ball.location-2.keys.noll" count=1200 frames=[1 1200]`.
+      - `count=` is the number of keys.
+      - `frames=` is the first and the last key's frame, as Blender sorts them.
+      - A summary that disagrees with the file is an error, at the line that names it, as section 9's is.
+      - An f-curve writes its keys inline or names a file, never both.
+    - **Naming.** The file's path is from the folder of the file that holds the action, as section 9's data files are, and is usually beside it. Its name is the printer's choice and carries no meaning, since the line names the file. The printer names it after the action's file, the slot, the property's path and its index: `hop.ball.location-2.keys.noll` for `@hop`'s `@ball` slot's `location` at index 2, and `flicker.lamp.energy.keys.noll` for a property that is no array. A nested RNA path is named by its segments in kebab case, joined by `.`, a sub-object by its handle where it has one: `rig.arm.pose-bones.forearm.rotation-quaternion-1.keys.noll`. A name another f-curve's file already takes gets `-2`, `-3`.
+    - **The file** holds one node: `keys`, the action's handle, the slot's, the property, `index=` for an array's item, and a block of `key` lines exactly as an inline f-curve's (frame, value in the property's unit, settings as `name=value`), in frame order, as in the file below.
+
+    - **Checking.** The checker reads the file through the line that names it, checks each key as an inline key is checked, and reports a key's mistake at its own line in the file. A key file is never read as a datablock file. Cosmósis's layout check counts it among the data files that `file=` lines name (C-10), and `sau check` reports a missing or misplaced one as it reports a mesh's.
+    - **Write-back** follows section 17's smallest edit:
+      - A key moved or changed in Sau rewrites its own line in the key file, and nothing else, unless the move changes the first or last frame, which also rewrites `frames=`.
+      - A key added or removed adds or removes its line, and rewrites `count=` and, where it changes, `frames=`.
+      - A curve that grows past 2,000 keys moves its keys into a file, and one that shrinks to 2,000 or fewer moves them back inline. Either is a change of the f-curve's own lines, the only time both files change for one edit.
+    - `sau convert --inline` writes every f-curve's keys inline, whatever their number, as it does for arrays.
+A key file, beside `actions/hop.noll` (its 1,200 lines shortened here to three; fenced as text until the checker reads key files, so the spec's numbered examples keep their numbers):
+
+```text
+// actions/hop.ball.location-2.keys.noll
+keys @hop @ball location index=2 {
+  key 1 0m
+  key 2 0.0123m
+  key 3 0.049m
+}
+```
+
 - **An f-curve's modifiers** are `modifier @h <kind> "Name" { … }` lines in its block, of the f-curve modifier kinds (`noise`, `cycles`, `generator`, `limits`, `stepped`, …).
 - **Layers and strips.** An action with one layer and one keyframe strip, the usual case, writes its f-curves in its slots' blocks (S35: the short form first; S71). Its full form writes them under layers instead, and never both:
   - `layer @h "Name" { strip @h keyframe { channels @slot { fcurve … } } }`;
@@ -742,7 +859,7 @@ action @hop "Hop" {
           extrapolation linear
           key 1 0m
           key 12 1.5m interpolation=sine easing=ease-out
-          key 24 0m handle-left=[20 0.4] handle-right=[28 0.4]
+          key 24 0m handle-left-type=free handle-right-type=free handle-left=[20 0.4] handle-right=[28 0.4]
         }
       }
     }
@@ -779,6 +896,23 @@ light @dial-lamp "Dial Lamp" {
 ## 12. Media and caches
 
 Task 1d-05f builds this section; the slice references no media. Images, videos, sounds, fonts, HDRIs, OpenVDB volumes, Alembic and USD caches and simulation bakes live in `media/`, named by content hash, and are referenced from Null with their colour space, frame range and other settings. Packed files in a `.blend` are unpacked into `media/` on conversion. Sources outside the project are referenced by path and reported by `sau check` if missing.
+
+**A media datablock's file** (`image`, `sound`, `vector-font`, `movie-clip`, `cache-file`, `volume`) is its `filepath`. It is written in one of two ways:
+- **A path from the project's root**, such as `filepath "media/3f2a….png"`. It has `/` separators, no `.` or `..` parts, and no part that leaves the root through a link.
+- **An absolute path** to a source outside the project, such as `filepath "/Volumes/Library/hdri/dusk.exr"`.
+
+Blender's `//`, relative to a `.blend` file, is never written: a project has no `.blend` file (Sau's decision S83, RFC 0003). Sau gives Blender the path joined to the project's root, and writes a path under the root back from the root.
+
+**Packed files are never written.** `packed-file` has no line. A file packed in a `.blend` becomes a file in `media/` when the `.blend` is converted, named by the SHA-256 of its bytes and its extension (`media/<sha256>.<ext>`). An external file is copied there the same way, so the project holds every byte it needs. Referencing a file in place is still written by hand as an absolute path.
+
+**`sau check`** reports, at each `filepath` line:
+- `cosmosis-media-path`, an error: a path that is neither form (`//`, `\`, a `.` or `..` part, or one that resolves outside the root through a link);
+- `cosmosis-media-missing`, an error: a path from the root that names no file;
+- `cosmosis-media-outside`, a warning: any absolute path, missing or not, since it is not portable and a shared project should show it.
+
+**A missing file at apply.** Sau reports it and still makes the datablock, so references to it resolve. A sound, a font and a movie clip are made from their file when it exists. When it does not, they are made empty, with the path set, as Blender keeps a datablock whose file has gone: a sound that plays nothing, a font with no glyphs, a clip with no frames. They load once the file is there. An image, a cache file and a volume are made from their name, with the path set, as now.
+
+The other settings are RNA's: an image's `source`, its `colorspace-settings` and `alpha-mode`, a sequence's frame range on the image user. Image sequences, UDIM tiles and movie frames are not yet copied one file per frame; converting a `.blend` reports them.
 
 ## 13. Generators (optional)
 
@@ -900,7 +1034,7 @@ action @bob "Bob" {
 
 ## 18. Diagnostics
 
-Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated` and `null-python` (a driver's expression that is Python: a note). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
+Every message names the file, line and column, says what was expected, and where possible offers a fix: an unknown property suggests the nearest RNA name, a wrong unit says which units fit, a handle that resolves to nothing lists the near matches. Codes are stable, so tools and AI can act on them: `null-syntax` (the text does not fit the syntax), `null-name` (a name, handle or enum value that is not kebab-case), `null-kind` (a datablock, node or primitive kind the schema does not know), `null-unknown-property`, `null-type` (a value of the wrong type or shape), `null-unit`, `null-range` (outside the hard range: a note where it is a number's, since Blender clamps it; an error for a string too long for Blender's field, which is never cut), `null-enum`, `null-handle` (resolves to nothing, to the wrong kind, or is defined twice), `null-readonly`, `null-repeated`, `null-python` (a driver's expression that is Python: a note) and `null-handle-placed` (a key's handle written beside an automatic handle type, which Blender places again: a warning, S87). The codes are listed once, as `null_check::codes::ALL` in this order, and each has its cases, messages and fixes as a snapshot in `null_check`'s `diagnostics` test (task 1d-02c); a code without a case, or a list here that differs from `ALL`, fails it.
 
 How the messages are worded (task 1d-02e):
 - **A list of choices puts the nearest first.** Where a wrong word has more than twelve choices, the message names the twelve nearest it by edit distance, then a count. `bsdf-principle` lists `bsdf-principled`, `bsdf-hair-principled`, `bsdf-diffuse` and so on, not the schema's first twelve. Twelve or fewer are listed in the schema's order.

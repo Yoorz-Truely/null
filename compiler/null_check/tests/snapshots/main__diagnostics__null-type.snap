@@ -8,6 +8,10 @@ case.noll:1:28 error[null-type]: `pass-index` takes a whole number, not `"three"
 case.noll:1:26 error[null-type]: `location` takes 3 lengths, as a list such as [0m 0m 0m]; this list has 2
 --- object @o "O" { hide-render maybe }\n
 case.noll:1:29 error[null-type]: `hide-render` is on or off: write it bare for on, or `on` or `off`, not `maybe`
+--- scene @s "S" {\n  marker @m "M"\n}\n
+case.noll:2:3 error[null-type]: a marker gives its frame on its line, such as `marker @cut "Cut" frame=48`
+--- mesh @m "M" {\n  vertices [[0m 0m 0m] [1m 0m 0m]]\n  shape-key @basis "Basis"\n  shape-key @up "Up" { positions [[0m 0m 1m]] }\n}\n
+case.noll:4:34 error[null-type]: `@up` has one value per vertex: 2, not 1
 --- object @d "D"\nlight @l "L" {\n  type point\n  energy driver="spn * 100W" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n
 case.noll:4:18 error[null-type]: this driver has no variable `spn`
   fix: write `spin`

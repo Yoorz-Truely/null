@@ -110,6 +110,7 @@ impl Checker<'_> {
                 "attribute" => self.attribute_line(file, a, &owner, &counts),
                 "uv-map" => self.uv_map(file, a, &owner, &counts),
                 "vertex-group" => self.vertex_group(file, a, &counts),
+                "shape-key" => self.shape_key_positions(file, a, &owner, &counts),
                 _ => {}
             }
         }
@@ -117,7 +118,7 @@ impl Checker<'_> {
 
     /// One array line, its list inline or named in a data file (`file=`, `count=`, `bounds=`).
     /// Returns its element count where known.
-    fn array_line(
+    pub(super) fn array_line(
         &mut self,
         file: FileId,
         a: &Attr<'_>,
@@ -476,6 +477,32 @@ impl Checker<'_> {
     }
 
     /// `vertex-group @h "Name" { weights [[index weight] …] }`: by increasing index.
+    /// A shape key's `positions` (RFC 0005, Sau's decision S88): one position per vertex, as
+    /// `vertices` are written, inline or in a data file named by the shape key's handle. Left out,
+    /// they are the basis's, the mesh's `vertices`.
+    fn shape_key_positions(
+        &mut self,
+        file: FileId,
+        a: &Attr<'_>,
+        owner: &(String, String),
+        counts: &Counts,
+    ) {
+        let Some(handle) = a
+            .args
+            .first()
+            .and_then(|v| v.as_word())
+            .filter(|w| w.starts_with('@'))
+        else {
+            return;
+        };
+        let Some(node) = a.node else { return };
+        let Some(line) = attrs(node).into_iter().find(|b| b.name == "positions") else {
+            return;
+        };
+        let expected = counts.point.map(|n| (n, "vertex"));
+        self.array_line(file, &line, owner, handle, Elements::Positions, expected);
+    }
+
     fn vertex_group(&mut self, file: FileId, a: &Attr<'_>, counts: &Counts) {
         let Some(node) = a.node else { return };
         for w in node.children().filter(|c| c.name() == "weights") {

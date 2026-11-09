@@ -372,3 +372,52 @@ component @fence \"Fence\" {
     );
     assert_eq!(out[1], woods.replace("use @branch", "use @bough"));
 }
+
+#[test]
+fn only_a_datablocks_own_sub_objects_shadow_it_as_the_checker_reads_them() {
+    // S81, task 1b-01q: rename reads a handle inside a datablock as the checker does. Its own
+    // sub-object lines (the modifier) shadow the datablock of that handle; a sub-object's own
+    // (the bone's constraint) are reached by a path from it, so a bare `@aim` at the object's
+    // level names the datablock and is renamed with it.
+    let text = "\
+object @rig \"Rig\" {
+  data armature @skeleton
+  modifier @aim armature \"Aim\" { object @aim }
+  bone @spine {
+    constraint @goal damped-track { target @goal }
+  }
+  constraint @track track-to { target @goal }
+}
+
+object @goal \"Goal\"
+
+object @aim \"Aim\"
+";
+    let (out, kind, refs) = renamed(&[text], "@goal", "@target").unwrap();
+    assert_eq!(kind, "object");
+    // The object-level constraint's target names the datablock; the bone's constraint line keeps
+    // its own handle. Inside the bone's constraint, as the checker reads it, `@goal` is the
+    // datablock too: the bone's constraint is not one of the object's own sub-objects.
+    assert!(
+        out[0].contains("constraint @track track-to { target @target }"),
+        "{}",
+        out[0]
+    );
+    assert!(
+        out[0].contains("constraint @goal damped-track { target @target }"),
+        "{}",
+        out[0]
+    );
+    assert!(out[0].contains("object @target \"Goal\""), "{}", out[0]);
+    assert_eq!(refs, 2);
+    // The modifier `@aim` is the object's own: inside the object, `@aim` names it, not the
+    // datablock, which keeps its references there.
+    let (out, _, refs) = renamed(&[text], "@aim", "@pointer").unwrap();
+    assert_eq!(refs, 0);
+    assert!(
+        out[0].contains("modifier @aim armature \"Aim\" { object @aim }"),
+        "{}",
+        out[0]
+    );
+    assert!(out[0].contains("object @pointer \"Aim\""), "{}", out[0]);
+}

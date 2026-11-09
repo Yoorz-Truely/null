@@ -11,3 +11,8 @@ case.noll:1:27 error[null-handle]: no mesh is called `@nothing`
 --- object @o "O"\nobject @o "Again"\n
 case.noll:2:8 error[null-handle]: `@o` is defined twice as an object; a handle is unique within its kind
   case.noll:1:8: first defined here
+--- armature @a "A" {\n  bone @x "X" { parent @y }\n  bone @y "Y" { parent @x }\n}\n
+case.noll:2:24 error[null-handle]: @x's parents lead back to it
+case.noll:3:24 error[null-handle]: @y's parents lead back to it
+--- armature @a "A" {\n  bone-collection @limbs "Limbs"\n  bone @x "X" { collections [@limb] }\n}\n
+case.noll:3:30 error[null-handle]: @limb is none of the armature's bone collections

@@ -27,6 +27,7 @@ pub mod driver;
 pub mod expand;
 pub mod forms;
 pub mod level0;
+pub mod migrate;
 pub mod names;
 pub mod paths;
 pub mod raw;
@@ -65,6 +66,9 @@ pub mod codes {
     /// A driver's expression that is Python, outside Blender's simple expressions: kept, and
     /// said in a note, since it runs only where Blender may run Python (Sau's decision S54).
     pub const PYTHON: &str = "null-python";
+    /// A key's handle written beside an automatic handle type, which Blender places again: a
+    /// warning (Sau's decision S87).
+    pub const HANDLE_PLACED: &str = "null-handle-placed";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -73,7 +77,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 12] = [
+    pub const ALL: [&str; 13] = [
         SYNTAX,
         NAME,
         KIND,
@@ -86,5 +90,6 @@ pub mod codes {
         READONLY,
         REPEATED,
         PYTHON,
+        HANDLE_PLACED,
     ];
 }

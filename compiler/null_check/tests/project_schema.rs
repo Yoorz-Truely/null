@@ -526,6 +526,37 @@ fn an_enums_free_text_item_is_a_string_and_its_fix_is_quoted() {
 }
 
 #[test]
+fn a_handle_inside_an_object_names_its_own_sub_object_first() {
+    // Section 7 and S81 (task 1b-01q): inside the object, `@settle` is its modifier, not the
+    // geometry group of that handle, so `node-group` is given a modifier.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let clash = "object @tower-base \"Tower Base\" {\n  modifier @settle nodes \"Settle\" { node-group @settle }\n}\n\ngeometry @settle \"Settle\" { is-modifier }\n";
+    let found = errors(&schema, &[clash]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let d = &found[0];
+    assert_eq!(d.code, codes::HANDLE);
+    assert!(
+        d.message.contains("names its modifier `@settle`")
+            && d.message.contains("`node-group` takes a node-tree"),
+        "{}",
+        d.message
+    );
+    let at = clash.find("node-group @settle").unwrap() + "node-group ".len();
+    assert_eq!(
+        (d.primary.span.start, d.primary.span.end),
+        (at, at + "@settle".len())
+    );
+    // With the modifier's handle another, the line names the group.
+    let apart = clash.replace("modifier @settle", "modifier @settling");
+    assert!(errors(&schema, &[&apart]).is_empty());
+    // Outside the object, the handle is the group's.
+    let elsewhere = format!(
+        "{apart}\nobject @other \"Other\" {{\n  modifier @m nodes \"M\" {{ node-group @settle }}\n}}\n"
+    );
+    assert!(errors(&schema, &[&elsewhere]).is_empty());
+}
+
+#[test]
 fn none_empties_a_pointer_blender_lets_be_empty() {
     // Sau's task 1c-02j: `none` empties a pointer (section 6), as write-back writes one, where the
     // schema does not mark the pointer `never-none`; where it does, `none` is an error.
@@ -562,4 +593,56 @@ fn none_empties_a_pointer_blender_lets_be_empty() {
         &["object @lamp \"Lamp\" {\n  parent nothing\n}\n"],
     );
     assert!(found[0].message.contains("takes a handle"), "{found:#?}");
+}
+
+#[test]
+fn a_curve_and_a_lattice_take_shape_keys_as_a_mesh_does() {
+    // RFC 0005 (S88, 1d-07q's review): `shape-key` and `shape-keys` in a curve's and a lattice's
+    // blocks, a curve's Bézier handles too; a text curve, which has no shape keys, refuses them.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let clean = [
+        "curve @path \"Path\" {\n  shape-key @basis \"Basis\"\n  shape-key @bent \"Bent\" {\n    positions [[0m 0m 0m] [1m 0m 1m]]\n    handles-left [[-0.5m 0m 0m] [0.5m 0m 1m]]\n    handles-right [[0.5m 0m 0m] [1.5m 0m 1m]]\n    tilts [0 0.5]\n    radii [1 2]\n    relative-key @basis\n    value 0.5\n  }\n  shape-keys { use-relative }\n}\n",
+        "lattice @cage \"Cage\" {\n  shape-key @basis \"Basis\"\n  shape-key @squash \"Squash\" { positions [[0m 0m 0m]] }\n}\n",
+    ];
+    for text in clean {
+        let found = errors(&schema, &[text]);
+        assert!(found.is_empty(), "{text}\n{found:?}");
+    }
+    // A lattice has no Bézier handles; a shape key's relative key is the owner's own.
+    let found = errors(
+        &schema,
+        &[
+            "lattice @cage \"Cage\" {\n  shape-key @squash \"Squash\" { handles-left [[0m 0m 0m]]; relative-key @nope }\n}\n",
+        ],
+    );
+    assert_eq!(found.len(), 2, "{found:?}");
+    assert!(
+        found.iter().any(|d| d.code == codes::UNKNOWN_PROPERTY),
+        "{found:?}"
+    );
+    assert!(
+        found
+            .iter()
+            .any(|d| d.code == codes::HANDLE && d.message.contains("a lattice's shape keys")),
+        "{found:?}"
+    );
+    // A lattice's points have no tilt; a curve's tilts are numbers.
+    let found = errors(
+        &schema,
+        &[
+            "lattice @cage \"Cage\" {\n  shape-key @squash \"Squash\" { tilts [0] }\n}\n",
+            "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { radii [1m] }\n}\n",
+        ],
+    );
+    assert_eq!(found.len(), 2, "{found:?}");
+    // A text curve takes no shape keys, and suggests no `shape-keys` for `shape-key`.
+    let found = errors(
+        &schema,
+        &["text-curve @t \"T\" {\n  shape-key @k \"K\"\n}\n"],
+    );
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(
+        found[0].fixes.is_empty() && !found[0].message.contains("shape-keys"),
+        "{found:?}"
+    );
 }

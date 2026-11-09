@@ -2,18 +2,16 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  2 component: component @plank "Plank"
-  3   parameter: param length 2.4m
-  4   parameter: param state solid
-  4     attribute: one-of [solid liquid]
-  5   datablock: object @plank "Plank"
-  6     attribute: data mesh @plank-mesh
-  7     condition: if "state == solid"
-  7       attribute: material @weathered-oak
-  8     otherwise: else
-  9       attribute: material @water
- 10       sub-object: modifier @fluid fluid
- 10         attribute: fluid-type flow
- 13   datablock: mesh @plank-mesh "Plank"
- 14     attribute: primitive cube size=1m scale=[length/1m 0.2 0.04]
- 19 datablock: material @water "Water"
+  1 datablock: armature @arm-bones "Arm"
+  2   sub-object: bone-collection @limbs "Limbs"
+  3   sub-object: bone @upper "Upper"
+  4     attribute: head [0m 0m 0m]
+  5     attribute: tail [0m 0m 1m]
+  6     attribute: collections [@limbs]
+  8   sub-object: bone @fore "Fore"
+  9     attribute: parent @upper
+ 10     attribute: use-connect
+ 11     attribute: head [0m 0m 1m]
+ 12     attribute: tail [0m 0.1m 1.8m]
+ 13     attribute: roll 5deg
+ 14     attribute: collections [@limbs]
