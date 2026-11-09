@@ -685,6 +685,8 @@ impl<'s> Checker<'s> {
             "curves" => vec!["points", "curves", "attribute"],
             "grease-pencil" => vec!["drawing", "layer", "layer-group", "attribute"],
             "pose-bone" => vec!["constraint"],
+            // A tiled image's tiles' own settings (RFC 0007, S96, task 1d-05m).
+            "image" => vec!["tile"],
             _ => vec![],
         };
         if let Some((_, group)) = tree_kind {
@@ -707,6 +709,7 @@ impl<'s> Checker<'s> {
         }
         let mut seen: HashSet<String> = HashSet::new();
         let mut vertex_count = None;
+        let mut tiles: Vec<i64> = Vec::new();
         let all = attrs(node);
         // Node handles first, so layout and links may name nodes defined later.
         let tree = tree_kind.map(|(rna, group)| {
@@ -745,6 +748,7 @@ impl<'s> Checker<'s> {
                         "drawing" | "layer" | "layer-group" | "attribute"
                     )
                     | ("scene", "marker")
+                    | ("image", "tile")
             ) || (tree.is_some()
                 && matches!(a.name.as_str(), "input" | "output" | "panel"))
                 || (animated && a.name == "track");
@@ -830,6 +834,7 @@ impl<'s> Checker<'s> {
                     self.shape_keys(file, a)
                 }
                 ("scene", "marker") => self.marker(file, a),
+                ("image", "tile") => self.udim_tile(file, a, &mut tiles),
                 // After the loop, against each other (RFC 0006, S91, task 1d-06f).
                 ("point-cloud", "points" | "attribute")
                 | ("curves", "points" | "curves" | "attribute") => {}

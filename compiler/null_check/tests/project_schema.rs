@@ -1065,3 +1065,23 @@ texture @plain \"Plain\" {
         found[0].message
     );
 }
+
+#[test]
+fn an_images_tile_lines_are_udim_tiles_settings() {
+    // Null section 12, RFC 0007 (Sau's decision S96, task 1d-05m): `tile <number> { … }` in an
+    // image, `UDIMTile`'s settings, its number from 1001 to 2000 and once.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let ok = "image @wood \"wood\" {\n  filepath \"media/x.tiles/<UDIM>.png\"\n  source tiled\n  tile 1002 { label \"Back\" }\n  tile 1003 { generated-type color-grid }\n}\n";
+    assert_eq!(errors(&schema, &[ok]), vec![]);
+    let bad = "image @wood \"wood\" {\n  tile 1002 { labl \"Back\" }\n  tile 1002\n  tile 999\n  tile front\n}\n";
+    let codes_found: Vec<&str> = errors(&schema, &[bad]).iter().map(|d| d.code).collect();
+    assert_eq!(
+        codes_found,
+        [
+            codes::UNKNOWN_PROPERTY,
+            codes::REPEATED,
+            codes::RANGE,
+            codes::TYPE
+        ]
+    );
+}
