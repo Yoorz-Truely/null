@@ -56036,7 +56036,7 @@
      "rna": "sau_persistent_id",
      "type": "string",
      "default": "",
-     "max-length": 16,
+     "max-length": 33,
      "readonly": true,
      "class": "stored"
     },
