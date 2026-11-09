@@ -718,3 +718,44 @@ fn muted_links_values_under_links_and_hidden_sockets_check() {
         }
     }
 }
+
+#[test]
+fn a_field_written_under_two_names_is_refused() {
+    // Sau's task 1b-03m: the schema step classes an alias of another property's DNA field
+    // derived and names the property it reads (`alias-of`); a block that writes both sets the
+    // field twice. Image.filepath-raw marked so here, in a copy of the project's schema, as the
+    // step marks it.
+    let mut json: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    for s in json["structs"].as_array_mut().unwrap() {
+        if s["rna"] == "Image" {
+            for p in s["properties"].as_array_mut().unwrap() {
+                if p["name"] == "filepath-raw" {
+                    p["class"] = serde_json::Value::from("derived");
+                    p["alias-of"] = serde_json::Value::from("filepath");
+                }
+            }
+        }
+    }
+    let schema = Schema::from_json(&json.to_string()).unwrap();
+    let both =
+        "image @grain \"Grain\" {\n  filepath \"//grain.png\"\n  filepath-raw \"//grain.png\"\n}\n";
+    let found = errors(&schema, &[both]);
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert_eq!(found[0].code, codes::REPEATED);
+    assert!(
+        found[0]
+            .message
+            .contains("`filepath-raw` is `filepath`'s field again"),
+        "{}",
+        found[0].message
+    );
+    let at = both.find("filepath-raw").unwrap();
+    assert_eq!(found[0].primary.span.start, at);
+    // Either name alone sets the field once.
+    for one in [
+        "image @grain \"Grain\" {\n  filepath \"//grain.png\"\n}\n",
+        "image @grain \"Grain\" {\n  filepath-raw \"//grain.png\"\n}\n",
+    ] {
+        assert_eq!(errors(&schema, &[one]), vec![], "{one}");
+    }
+}
