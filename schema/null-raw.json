@@ -306,13 +306,6 @@
         "dims": []
       },
       {
-        "path": "colorspace_settings.name",
-        "type": "char",
-        "dims": [
-          64
-        ]
-      },
-      {
         "path": "colorspace_settings.interop_id",
         "type": "char",
         "dims": [
@@ -634,13 +627,6 @@
         "dims": []
       },
       {
-        "path": "colorspace_settings.name",
-        "type": "char",
-        "dims": [
-          64
-        ]
-      },
-      {
         "path": "colorspace_settings.interop_id",
         "type": "char",
         "dims": [
@@ -891,13 +877,6 @@
         "dims": []
       },
       {
-        "path": "r.im_format.linear_colorspace_settings.name",
-        "type": "char",
-        "dims": [
-          64
-        ]
-      },
-      {
         "path": "r.im_format.linear_colorspace_settings.interop_id",
         "type": "char",
         "dims": [
@@ -973,13 +952,6 @@
         "path": "r.bake_margin_type",
         "type": "short",
         "dims": []
-      },
-      {
-        "path": "r.bake.im_format.linear_colorspace_settings.name",
-        "type": "char",
-        "dims": [
-          64
-        ]
       },
       {
         "path": "r.bake.im_format.linear_colorspace_settings.interop_id",
@@ -1313,13 +1285,6 @@
         "path": "customdata_mask_modal.lmask",
         "type": "uint64_t",
         "dims": []
-      },
-      {
-        "path": "sequencer_colorspace_settings.name",
-        "type": "char",
-        "dims": [
-          64
-        ]
       },
       {
         "path": "sequencer_colorspace_settings.interop_id",
