@@ -25577,7 +25577,7 @@
      "name": "hide",
      "rna": "hide",
      "type": "bool",
-     "default": true,
+     "default": false,
      "class": "stored"
     },
     {

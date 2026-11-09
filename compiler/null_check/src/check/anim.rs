@@ -473,6 +473,41 @@ impl Checker<'_> {
                 _ => check_float(v, &p.name, null_value::Dimension::None, p, &mut out),
             }
         }
+        // A handle beside an automatic handle type, the type left out (`auto-clamped`, a new
+        // key's) or written as `auto`, `auto-clamped` or `vector`, is placed again by Blender,
+        // so it does not hold. Written handles do not make a key's handles free (S87).
+        for (side, ty) in [
+            ("handle-left", "handle-left-type"),
+            ("handle-right", "handle-right-type"),
+        ] {
+            let Some((k, _)) = a.props.iter().find(|(k, _)| k.text == side) else {
+                continue;
+            };
+            let written = a.props.iter().find(|(k, _)| k.text == ty);
+            let word = match written {
+                Some((_, v)) => v.as_word(),
+                None => Some("auto-clamped"),
+            };
+            let Some(word @ ("auto" | "auto-clamped" | "vector")) = word else {
+                continue;
+            };
+            let fix = match written {
+                Some((_, v)) => (format!("write `{ty}=free`"), v.span(), "free".to_string()),
+                None => (
+                    format!("write `{ty}=free`"),
+                    Span::new(k.span.start, k.span.start),
+                    format!("{ty}=free "),
+                ),
+            };
+            out.warning_fix(
+                codes::READONLY,
+                k.span,
+                format!(
+                    "Blender places a key's `{side}` itself while its `{ty}` is `{word}`, so the one written here does not hold; make the type `free` (or `aligned`) to keep it"
+                ),
+                fix,
+            );
+        }
     }
 
     /// `action @a slot=@s`: what plays on a datablock of `kind`, its slot one of the action's

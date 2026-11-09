@@ -98,6 +98,9 @@ const CASES: &[(&str, &[&str])] = &[
         &[
             "object @o \"O\" { mode edit }\n",
             "object @o \"O\" {\n  mode edit\n  pass-index 1\n}\n",
+            // A key's handle beside an automatic handle type, which Blender places again: a
+            // warning (S87), its type left out, then written.
+            "action @a \"A\" {\n  slot @s object \"S\" {\n    fcurve location index=2 {\n      key 1 0m handle-left=[0 0]\n      key 9 1m handle-right-type=vector handle-right=[10 1]\n    }\n  }\n}\n",
         ],
     ),
     (
