@@ -1,0 +1,8 @@
+---
+source: compiler/null_check/tests/diagnostics.rs
+expression: out
+---
+--- scene @s "S" {\n  raw {\n    orientation_slots.index_custom 2\n  }\n}\n
+case.noll:3:5 warning[null-raw-old-path]: `orientation_slots.index_custom` leaves out the index of the element it names, and reads as element 0: write `orientation_slots.0.index_custom`
+  fix: write `orientation_slots.0.index_custom`
+  `write `orientation_slots.0.index_custom`` gives: scene @s "S" {\n  raw {\n    orientation_slots.0.index_custom 2\n  }\n}\n
