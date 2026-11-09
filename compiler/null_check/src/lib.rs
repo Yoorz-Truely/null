@@ -72,6 +72,9 @@ pub mod codes {
     /// A `raw` path written in v0's old form, without the index of the embedded struct array's
     /// element it names: read as element 0, a warning (Sau's decision S94).
     pub const RAW_OLD_PATH: &str = "null-raw-old-path";
+    /// A masked `raw` line that contradicts the state its enum's line sets those bits to: a
+    /// warning (Sau's decision S97, task 1b-03n).
+    pub const RAW_STATE_CONFLICT: &str = "null-raw-state-conflict";
     /// A handle or enum value that is not kebab-case (the syntax checks names, `null_syntax`).
     pub const NAME: &str = "null-name";
     /// Text that does not fit the node syntax (`null_syntax`'s).
@@ -80,7 +83,7 @@ pub mod codes {
     /// Every code of Null's diagnostics, the one list of them (spec, section 18; task 1d-02c), in
     /// the spec's order. A test fails when the spec's list and this one differ, and when a code
     /// has no snapshot test.
-    pub const ALL: [&str; 14] = [
+    pub const ALL: [&str; 15] = [
         SYNTAX,
         NAME,
         KIND,
@@ -95,5 +98,6 @@ pub mod codes {
         PYTHON,
         HANDLE_PLACED,
         RAW_OLD_PATH,
+        RAW_STATE_CONFLICT,
     ];
 }

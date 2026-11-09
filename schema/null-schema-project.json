@@ -124151,7 +124151,18 @@
        "value": 2
       }
      ],
-     "class": "stored"
+     "class": "stored",
+     "hides": [
+      {
+       "struct": "Scene",
+       "path": "flag",
+       "mask": 8,
+       "states": {
+        "none": 0,
+        "frame-drop": 8
+       }
+      }
+     ]
     },
     {
      "name": "playback-loop-mode",

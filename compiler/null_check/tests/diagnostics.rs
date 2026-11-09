@@ -128,6 +128,13 @@ const CASES: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        codes::RAW_STATE_CONFLICT,
+        &[
+            // A masked raw line against its enum's state (S97, task 1b-03n): a warning.
+            "scene @s \"S\" {\n  sync-mode frame-drop\n  raw {\n    flag 0\n  }\n}\n",
+        ],
+    ),
+    (
         codes::PYTHON,
         &[
             "object @d \"D\"\nlight @l \"L\" {\n  type point\n  energy driver=\"bpy.data.objects['D'].location.z * 100\" {\n    var spin transforms { target @d transform-type=rot-z }\n  }\n}\n",

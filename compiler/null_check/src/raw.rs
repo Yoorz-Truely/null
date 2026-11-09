@@ -37,6 +37,12 @@ pub struct RawField {
     /// Its array dimensions, outermost first; none for a single value.
     #[serde(default)]
     pub dims: Vec<usize>,
+    /// For a whole number RNA reads in part, the bits a `raw` line carries, as an unsigned
+    /// number: those an enum over its bits cannot name (`Scene.flag`'s `SCE_FRAME_DROP` under
+    /// `sync-mode`'s `audio-sync`, Sau's task 1b-03n). The line holds those bits alone, and
+    /// setting it leaves the field's others as they are; none for a field written whole.
+    #[serde(default)]
+    pub mask: Option<u64>,
 }
 
 /// The raw table: the fields each DNA struct's `raw` block may write.
@@ -176,6 +182,55 @@ impl RawField {
         Some(self.scalar()?.size() * self.dims.iter().product::<usize>())
     }
 
+    /// `bytes` of this field (a single whole number) as an unsigned number, in the machine's
+    /// order.
+    fn bits(bytes: &[u8]) -> u64 {
+        let mut wide = [0u8; 8];
+        if cfg!(target_endian = "little") {
+            wide[..bytes.len().min(8)].copy_from_slice(&bytes[..bytes.len().min(8)]);
+        } else {
+            let n = bytes.len().min(8);
+            wide[8 - n..].copy_from_slice(&bytes[bytes.len() - n..]);
+        }
+        u64::from_ne_bytes(wide)
+    }
+
+    /// `bits` as this field's bytes, in the machine's order.
+    fn to_bytes(&self, bits: u64, size: usize) -> Vec<u8> {
+        let wide = bits.to_ne_bytes();
+        if cfg!(target_endian = "little") {
+            wide[..size].to_vec()
+        } else {
+            wide[8 - size..].to_vec()
+        }
+    }
+
+    /// The value of `bytes` as an unsigned number, masked to the field's mask where it has one.
+    pub fn carried_bits(&self, bytes: &[u8]) -> u64 {
+        Self::bits(bytes) & self.mask.unwrap_or(u64::MAX)
+    }
+
+    /// The bits of `bytes` a `raw` line carries: all of them, or, for a masked field, those of
+    /// its mask (the others zero).
+    pub fn carried(&self, bytes: &[u8]) -> Vec<u8> {
+        match self.mask {
+            Some(m) => self.to_bytes(Self::bits(bytes) & m, bytes.len()),
+            None => bytes.to_vec(),
+        }
+    }
+
+    /// The field's bytes `now`, with a line's `written` set: all of them, or, for a masked
+    /// field, the mask's bits from `written` and the others from `now`.
+    pub fn merged(&self, now: &[u8], written: &[u8]) -> Vec<u8> {
+        match self.mask {
+            Some(m) if now.len() == written.len() => self.to_bytes(
+                (Self::bits(now) & !m) | (Self::bits(written) & m),
+                now.len(),
+            ),
+            _ => written.to_vec(),
+        }
+    }
+
     /// How it is written, for a message: `a short`, `a list of 3 floats`.
     pub fn describe(&self) -> String {
         match self.dims.as_slice() {
@@ -220,6 +275,25 @@ pub fn read_value(value: &Value<'_>, field: &RawField) -> Result<Vec<u8>, RawErr
     })?;
     let mut out = Vec::with_capacity(field.size().unwrap_or(0));
     read_into(value, &field.dims, scalar, field, &mut out)?;
+    if let Some(m) = field.mask {
+        let size = scalar.size();
+        let set = RawField::bits(&out) & (u64::MAX >> (64 - 8 * size as u32));
+        if !field.dims.is_empty() || scalar.range().is_none() {
+            return Err(format!(
+                "`{}` is masked, which only a single whole number is",
+                field.path
+            )
+            .into());
+        }
+        if set & !m != 0 {
+            return Err(format!(
+                "`{}` carries only the bits {m} here, which RNA cannot name; `{}` sets others",
+                field.path,
+                value.text()
+            )
+            .into());
+        }
+    }
     Ok(out)
 }
 
@@ -451,6 +525,7 @@ mod tests {
             path: "f".into(),
             ty: ty.into(),
             dims: dims.to_vec(),
+            mask: None,
         }
     }
 
@@ -544,6 +619,35 @@ mod tests {
         let (span, word) = err.fix.unwrap();
         assert_eq!(word, "1");
         assert_eq!(&text[span.start..span.end], "0x3f800000");
+    }
+
+    #[test]
+    fn a_masked_field_carries_its_masks_bits_alone() {
+        // Sau's task 1b-03n: `Scene.flag`, which RNA reads in part, carries `SCE_FRAME_DROP`
+        // (8), which `sync-mode` cannot name under `audio-sync`.
+        let t = RawTable::from_json(
+            r#"{"format": 1, "structs": {"Scene": [{"path": "flag", "type": "short", "mask": 8}]}}"#,
+        )
+        .unwrap();
+        let f = t.field("Scene", "flag").unwrap().clone();
+        assert_eq!(f.mask, Some(8));
+        let (bytes, back) = round("8", &f).unwrap();
+        assert_eq!(back, "8");
+        assert_eq!(bytes, 8i16.to_ne_bytes());
+        assert!(round("0", &f).is_ok());
+        for wrong in ["9", "-1", "16"] {
+            let err = round(wrong, &f).unwrap_err();
+            assert!(err.contains("carries only the bits 8"), "{wrong}: {err}");
+        }
+        // Read, the mask's bits alone; set, the field's other bits kept.
+        let now = 0x0103i16.to_ne_bytes();
+        assert_eq!(f.carried(&(0x010bi16).to_ne_bytes()), 8i16.to_ne_bytes());
+        assert_eq!(f.merged(&now, &8i16.to_ne_bytes()), 0x010bi16.to_ne_bytes());
+        assert_eq!(f.merged(&0x010bi16.to_ne_bytes(), &[0, 0]), now);
+        // A field written whole is unchanged by either.
+        let whole = field("short", &[]);
+        assert_eq!(whole.carried(&now), now);
+        assert_eq!(whole.merged(&now, &[1, 0]), [1, 0]);
     }
 
     #[test]

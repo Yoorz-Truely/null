@@ -720,7 +720,7 @@ impl<'s> Checker<'s> {
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
                     self.interface_line(file, a)
                 }
-                (_, "raw") => self.raw_block(file, a, kind),
+                (_, "raw") => self.raw_block(file, a, kind, &all, props),
                 (_, "action") if animated => self.plays(file, a, kind),
                 (_, "track") if animated => self.track(file, a, kind),
                 _ => match props.iter().find(|p| p.name == a.name) {
@@ -773,7 +773,14 @@ impl<'s> Checker<'s> {
     /// A `raw` block (section 19, Sau's task 1d-05b): DNA fields RNA does not reach, each a flat
     /// path of DNA's own names with a value of its DNA type, as the raw table lists them. Without
     /// a raw table its lines are not checked against DNA.
-    fn raw_block(&mut self, file: FileId, a: &Attr<'_>, kind: &str) {
+    fn raw_block(
+        &mut self,
+        file: FileId,
+        a: &Attr<'_>,
+        kind: &str,
+        all: &[Attr<'_>],
+        props: &[&Property],
+    ) {
         let Some(block) = a.node.filter(|n| n.block().is_some()) else {
             return self.out(file).error(
                 codes::TYPE,
@@ -851,18 +858,69 @@ impl<'s> Checker<'s> {
                 continue;
             };
             match (line.args.as_slice(), line.props.is_empty()) {
-                ([v], true) => {
-                    if let Err(e) = crate::raw::read_value(v, field) {
+                ([v], true) => match crate::raw::read_value(v, field) {
+                    Err(e) => {
                         let at = e.fix.as_ref().map_or(v.span(), |(s, _)| *s);
                         let fix = e.fix.map(|(s, w)| (format!("write `{w}`"), s, w));
                         self.out(file).error_fix(codes::TYPE, at, e.message, fix);
                     }
-                }
+                    Ok(bytes) if field.mask.is_some() => {
+                        self.masked_against_enum(file, v, &bytes, field, &owner, all, props)
+                    }
+                    Ok(_) => {}
+                },
                 _ => self.out(file).error(
                     codes::TYPE,
                     line.span,
                     format!("`{}` takes one value, {}", line.name, field.describe()),
                 ),
+            }
+        }
+    }
+
+    /// A masked raw line against the enum whose bits it carries (Sau's task 1b-03n): where the
+    /// block writes the enum in a state that fixes those bits (`sync-mode frame-drop` sets
+    /// SCE_FRAME_DROP), a line that holds other bits contradicts it, which Blender's setter
+    /// overrides or the line does, by order: a warning.
+    #[allow(clippy::too_many_arguments)]
+    fn masked_against_enum(
+        &mut self,
+        file: FileId,
+        v: &Value<'_>,
+        bytes: &[u8],
+        field: &crate::raw::RawField,
+        owner: &str,
+        all: &[Attr<'_>],
+        props: &[&Property],
+    ) {
+        let carried = field.carried_bits(bytes);
+        for p in props {
+            for h in p
+                .hides
+                .iter()
+                .filter(|h| h.owner == owner && h.path == field.path)
+            {
+                let Some(line) = all.iter().find(|a| a.name == p.name) else {
+                    continue;
+                };
+                let Some(state) = line.args.first().and_then(|w| w.as_word()) else {
+                    continue;
+                };
+                if let Some(want) = h.states.get(state)
+                    && carried & h.mask != *want
+                {
+                    self.out(file).warning(
+                        codes::RAW_STATE_CONFLICT,
+                        v.span(),
+                        format!(
+                            "`{} {state}` sets `{}`'s bits {} to {want}, so `{}` here contradicts it",
+                            p.name,
+                            field.path,
+                            h.mask,
+                            v.text()
+                        ),
+                    );
+                }
             }
         }
     }

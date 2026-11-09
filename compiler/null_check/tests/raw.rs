@@ -206,3 +206,52 @@ fn a_v0_raw_path_without_an_elements_index_reads_as_element_0_with_a_warning() {
     );
     assert!(found.iter().any(|d| d.code == codes::REPEATED), "{found:?}");
 }
+
+#[test]
+fn a_masked_raw_field_takes_only_its_masks_bits() {
+    // Sau's task 1b-03n: the committed raw table carries Scene's `flag` masked to SCE_FRAME_DROP
+    // (8), which `sync-mode` cannot name under `audio-sync`.
+    let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
+        .unwrap()
+        .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
+    let scene = |raw: &str| format!("scene @s \"S\" {{\n  raw {{\n{raw}\n  }}\n}}\n");
+    let found = errors(&project, &scene("    flag 8"));
+    assert!(found.is_empty(), "{found:?}");
+    let found = errors(&project, &scene("    flag 9"));
+    assert!(
+        found
+            .iter()
+            .any(|d| d.is_error() && d.message.contains("carries only the bits 8")),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn a_masked_raw_line_that_contradicts_its_enums_state_is_a_warning() {
+    // Sau's task 1b-03n, round 2: `sync-mode frame-drop` sets SCE_FRAME_DROP, so a raw `flag 0`
+    // beside it contradicts it; under `audio-sync` the bit is free.
+    let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
+        .unwrap()
+        .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
+    let scene = |mode: &str, flag: &str| {
+        format!("scene @s \"S\" {{\n  sync-mode {mode}\n  raw {{\n    flag {flag}\n  }}\n}}\n")
+    };
+    let found = errors(&project, &scene("frame-drop", "0"));
+    assert!(
+        found.iter().any(|d| !d.is_error()
+            && d.message
+                .contains("`sync-mode frame-drop` sets `flag`'s bits 8 to 8")),
+        "{found:?}"
+    );
+    for (mode, flag) in [
+        ("frame-drop", "8"),
+        ("audio-sync", "0"),
+        ("audio-sync", "8"),
+        ("none", "0"),
+    ] {
+        let found = errors(&project, &scene(mode, flag));
+        assert!(found.is_empty(), "{mode} {flag}: {found:?}");
+    }
+    let found = errors(&project, &scene("none", "8"));
+    assert!(found.iter().any(|d| !d.is_error()), "{found:?}");
+}
