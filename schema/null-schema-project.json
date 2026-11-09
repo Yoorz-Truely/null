@@ -6448,7 +6448,18 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      1.0,
+      0.0
+     ]
     },
     {
      "name": "matrix-local",
@@ -6488,7 +6499,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "tail",
@@ -6515,7 +6544,12 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "tail-local",
@@ -6542,7 +6576,12 @@
       0.0
      ],
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": [
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "head",
@@ -6616,7 +6655,8 @@
      },
      "default": 0.0,
      "readonly": true,
-     "class": "stored"
+     "class": "stored",
+     "new": 1.0
     }
    ]
   },
@@ -49959,7 +49999,8 @@
      "rna": "use_lights",
      "type": "bool",
      "default": false,
-     "class": "stored"
+     "class": "stored",
+     "new": true
     },
     {
      "name": "pass-index",
@@ -50174,7 +50215,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     },
     {
      "name": "matrix-parent-inverse",
@@ -50214,7 +50273,25 @@
       0.0
      ],
      "readonly": true,
-     "class": "derived"
+     "class": "derived",
+     "new": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
     }
    ]
   },
