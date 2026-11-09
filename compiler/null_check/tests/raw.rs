@@ -142,3 +142,29 @@ fn a_floats_bits_that_are_not_a_nans_are_refused_with_the_decimal_as_the_fix() {
     let quiet = errors(&schema(true), &object("    loc_legacy [0 0 0x7fc00000]"));
     assert_eq!(quiet[0].fixes[0].edits[0].replacement, "nan");
 }
+
+#[test]
+fn an_embedded_struct_arrays_element_is_a_step_of_its_index() {
+    // Sau's task 1d-05i: the committed raw table names each element of `Scene.orientation_slots[4]`
+    // by its index, a step of the path, so every slot's field is written; slot 0 is no default
+    // for a path without one.
+    let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
+        .unwrap()
+        .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
+    let scene = |raw: &str| format!("scene @s \"S\" {{\n  raw {{\n{raw}\n  }}\n}}\n");
+    let clean = scene(
+        "    orientation_slots.0.index_custom -1\n    orientation_slots.3.index_custom 2\n    r.mblur_shutter_curve.cm.2.maxtable 1",
+    );
+    let found = errors(&project, &clean);
+    assert!(found.is_empty(), "{found:?}");
+    for wrong in [
+        "    orientation_slots.index_custom 2",
+        "    orientation_slots.4.index_custom 2",
+    ] {
+        let found = errors(&project, &scene(wrong));
+        assert!(
+            found.iter().any(|d| d.code == codes::UNKNOWN_PROPERTY),
+            "{wrong}: {found:?}"
+        );
+    }
+}
