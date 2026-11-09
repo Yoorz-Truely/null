@@ -2,8 +2,9 @@
 //! decision S17, task 1b-01h): the edits that turn `@old` into `@new` where, and only where, it
 //! names that datablock.
 //!
-//! A word names the datablock when it is `@old`, a path from it (`@old/@bevel`, `@old/@bsdf.base-
-//! color`) or a pattern's copy of it (`@old.7`). It does not when the same word names something
+//! A word names the datablock when it is `@old` or a path from it (`@old/@bevel`, `@old/@bsdf.base-
+//! color`). A pattern's copy (`@old.7`) does not: it takes its placement's handle (section 8),
+//! never a datablock's. Nor does a word where the same handle names something
 //! else, which the place says:
 //! - a sub-object's own line (`modifier @old bevel`), and a word or path that starts at one of the
 //!   enclosing datablock's own sub-objects (section 7: inside its owner's block, a path starts
@@ -343,12 +344,9 @@ impl Walker<'_> {
                 let Some(rest) = word.strip_prefix(self.old) else {
                     return;
                 };
-                // `@old`, `@old/…` and `@old.7` name it; `@older` and `@old.color` do not.
-                let names_it = rest.is_empty()
-                    || rest.starts_with('/')
-                    || rest
-                        .strip_prefix('.')
-                        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
+                // `@old` and `@old/…` name it; `@older`, `@old.color` and `@old.7` do not: a
+                // pattern's copy takes its placement's handle (section 8), never a datablock's.
+                let names_it = rest.is_empty() || rest.starts_with('/');
                 if !names_it {
                     return;
                 }

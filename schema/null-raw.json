@@ -1,5 +1,1736 @@
 {
   "format": 1,
-  "generator": "sau/tools/coverage-audit.py write (Sau's task 1d-05b); a placeholder until a build's `just schema-sync` writes the table",
-  "structs": {}
+  "generator": "sau/tools/coverage-audit.py (Sau's task 1d-05b), written by `just schema-sync`",
+  "structs": {
+    "Brush": [
+      {
+        "path": "mtex.g",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "mtex.b",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "mtex.k",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "mask_mtex.g",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "mask_mtex.b",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "mask_mtex.k",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "rgb",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "secondary_rgb",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "automasking_flags",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "automasking_boundary_edges_propagation_steps",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "automasking_start_normal_limit",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "automasking_start_normal_falloff",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "automasking_view_normal_limit",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "automasking_view_normal_falloff",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "automasking_cavity_blur_steps",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "automasking_cavity_factor",
+        "type": "float",
+        "dims": []
+      }
+    ],
+    "CacheFile": [
+      {
+        "path": "flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "type",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "handle_filepath",
+        "type": "char",
+        "dims": [
+          1024
+        ]
+      }
+    ],
+    "Camera": [
+      {
+        "path": "dof_distance",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.focus_distance",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.fstop",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.focal_length",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.sensor",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.rotation",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.ratio",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.num_blades",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "gpu_dof.high_quality",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Collection": [
+      {
+        "path": "layer",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Curve": [
+      {
+        "path": "ob_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "actnu",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "actvert",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "linewidth",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pos",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "selstart",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "selend",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "len_char32",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "len",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "curinfo.mat_nr",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "edit_data_from_original",
+        "type": "char",
+        "dims": []
+      }
+    ],
+    "Curves": [
+      {
+        "path": "geometry.point_num",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "geometry.curve_num",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "geometry.vertex_group_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "geometry.attributes_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "attributes_active_index_legacy",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "FreestyleLineStyle": [
+      {
+        "path": "g",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "b",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pr_texture",
+        "type": "short",
+        "dims": []
+      }
+    ],
+    "GreasePencil": [
+      {
+        "path": "drawing_array_num",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "attributes_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "material_array_num",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "vertex_group_active_index",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Image": [
+      {
+        "path": "last_render_slot",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "lastframe",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "gen_depth",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "aspy",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "colorspace_settings.name",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "colorspace_settings.interop_id",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "eye",
+        "type": "char",
+        "dims": []
+      }
+    ],
+    "Key": [
+      {
+        "path": "elemstr",
+        "type": "char",
+        "dims": [
+          32
+        ]
+      },
+      {
+        "path": "elemsize",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "uidgen",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Lattice": [
+      {
+        "path": "opntsu",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "opntsv",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "opntsw",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "actbp",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "fu",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "fv",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "fw",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "du",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "dv",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "dw",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "vertex_group_active_index",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Library": [
+      {
+        "path": "undo_runtime_tag",
+        "type": "ushort",
+        "dims": []
+      }
+    ],
+    "Light": [
+      {
+        "path": "flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "g",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "b",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "area_sizez",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pr_texture",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "clipend_deprecated",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "energy_deprecated",
+        "type": "float",
+        "dims": []
+      }
+    ],
+    "Mask": [
+      {
+        "path": "masklay_tot",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "flag",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Material": [
+      {
+        "path": "flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "g",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "b",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "a",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "specg",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "specb",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "alpha",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "ray_mirror",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "gloss_mir",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pr_texture",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "vcol_alpha",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "blend_shadow",
+        "type": "char",
+        "dims": []
+      }
+    ],
+    "Mesh": [
+      {
+        "path": "vertex_group_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "attributes_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "smoothresh_legacy",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "face_sets_color_seed",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "face_sets_color_default",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "cd_flag",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "subdiv",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "subdivr",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "subsurftype",
+        "type": "char",
+        "dims": []
+      }
+    ],
+    "MetaBall": [
+      {
+        "path": "flag2",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "needs_flush_to_id",
+        "type": "char",
+        "dims": []
+      }
+    ],
+    "MovieClip": [
+      {
+        "path": "lastsize",
+        "type": "int",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "aspy",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "tracking.settings.keyframe1_legacy",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tracking.settings.keyframe2_legacy",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tracking.camera.principal_legacy",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "tracking.reconstruction_legacy.last_camera",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tracking.reconstruction_legacy.camnr",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tracking.dopesheet.ok",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tracking.dopesheet.tot_channel",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "colorspace_settings.name",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "colorspace_settings.interop_id",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      }
+    ],
+    "Object": [
+      {
+        "path": "par2",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "par3",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "avs.recalc",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "restore_mode",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "dsize",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "rotAxis",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "drotAxis",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "rotAngle",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "drotAngle",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "constinv",
+        "type": "float",
+        "dims": [
+          4,
+          4
+        ]
+      },
+      {
+        "path": "lay",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "colbits",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "nlaflag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "base_local_view_bits",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "col_group",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "col_mask",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "collision_boundtype",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "actdef",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "softflag",
+        "type": "short",
+        "dims": []
+      }
+    ],
+    "PaintCurve": [
+      {
+        "path": "add_index",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Palette": [
+      {
+        "path": "active_color",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "ParticleSettings": [
+      {
+        "path": "interpolation",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "rotfrom",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "bb_align",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "bb_uv_split",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "bb_anim",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "bb_split_offset",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "bb_tilt",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "bb_rand_tilt",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "bb_offset",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "bb_size",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "bb_vel_head",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "bb_vel_tail",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "ps_offset",
+        "type": "float",
+        "dims": [
+          1
+        ]
+      },
+      {
+        "path": "acc",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "draw_line",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      }
+    ],
+    "PointCloud": [
+      {
+        "path": "flag",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "attributes_active_index",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Scene": [
+      {
+        "path": "cursor.rotation_axis",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "cursor.rotation_angle",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "lay",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "layact",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.im_format.linear_colorspace_settings.name",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "r.im_format.linear_colorspace_settings.interop_id",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "r.framelen",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.dimensionspreset",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.tilex",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.tiley",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.color_mode",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.imtype",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.subimtype",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.quality",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.actlay",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.color_mgt_flag",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.bake_mode",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.bake_flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.bake_margin",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.bake_margin_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.bake.im_format.linear_colorspace_settings.name",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "r.bake.im_format.linear_colorspace_settings.interop_id",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cur",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.preset",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.changed_timestamp",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.flag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.range",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.mintable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.maxtable",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.premul_ext_in",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.premul_ext_out",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.cm.default_handle_type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "r.mblur_shutter_curve.bwmul",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "r.mblur_shutter_curve.sample",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "audio.mixrate",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "audio.main",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "orientation_slots.index_custom",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "physics_settings.quick_cache_step",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask.vmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask.emask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask.fmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask.pmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask.lmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask_modal.vmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask_modal.emask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask_modal.fmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask_modal.pmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "customdata_mask_modal.lmask",
+        "type": "uint64_t",
+        "dims": []
+      },
+      {
+        "path": "sequencer_colorspace_settings.name",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "sequencer_colorspace_settings.interop_id",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "display.shading.prev_type",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "display.shading.prev_type_wire",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "display.shading.lookdev_light",
+        "type": "char",
+        "dims": [
+          256
+        ]
+      },
+      {
+        "path": "display.shading.matcap",
+        "type": "char",
+        "dims": [
+          256
+        ]
+      },
+      {
+        "path": "eevee.gtao_distance",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "eevee.gtao_thickness",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "eevee.motion_blur_samples",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "eevee.motion_blur_position_deprecated",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "eevee.motion_blur_shutter_deprecated",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "eevee.shadow_cube_size_deprecated",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "Script": [
+      {
+        "path": "flags",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "lastspace",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "scriptname",
+        "type": "char",
+        "dims": [
+          1024
+        ]
+      },
+      {
+        "path": "scriptarg",
+        "type": "char",
+        "dims": [
+          256
+        ]
+      }
+    ],
+    "Tex": [
+      {
+        "path": "len",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "frames",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "offset",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "sfra",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "iuser.multiview_eye",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "iuser.multi_index",
+        "type": "short",
+        "dims": []
+      }
+    ],
+    "Text": [
+      {
+        "path": "curc",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "selc",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "mtime",
+        "type": "double",
+        "dims": []
+      }
+    ],
+    "Volume": [
+      {
+        "path": "flag",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "active_grid",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "WorkSpace": [
+      {
+        "path": "order",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "asset_library_ref.type",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "asset_library_ref.custom_library_index",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "World": [
+      {
+        "path": "texact",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "horg",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "horb",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "exposure",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "exp",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "range",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pr_texture",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "last_update",
+        "type": "uint64_t",
+        "dims": []
+      }
+    ],
+    "bAction": [
+      {
+        "path": "layer_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "last_slot_handle",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "idroot",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "bArmature": [
+      {
+        "path": "needs_flush_to_id",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "deformflag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "pathflag",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "collection_root_count",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "layer_used",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "layer",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "layer_protected",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "bGPdata": [
+      {
+        "path": "flag",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "curve_edit_resolution",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "curve_edit_threshold",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "curve_edit_corner_angle",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pixfactor",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "line_color",
+        "type": "float",
+        "dims": [
+          4
+        ]
+      },
+      {
+        "path": "onion_factor",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "onion_mode",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "onion_flag",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "gstep",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "gstep_next",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "gcolor_prev",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "gcolor_next",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "zdepth_offset",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "draw_mode",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "onion_keytype",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "select_last_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "vertex_group_active_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "grid.color",
+        "type": "float",
+        "dims": [
+          3
+        ]
+      },
+      {
+        "path": "grid.scale",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "grid.offset",
+        "type": "float",
+        "dims": [
+          2
+        ]
+      },
+      {
+        "path": "grid.lines",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "bNodeTree": [
+      {
+        "path": "idname",
+        "type": "char",
+        "dims": [
+          64
+        ]
+      },
+      {
+        "path": "view_width",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "next_node_identifier_seed",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "cur_index",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "chunksize",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "execution_mode",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "precision",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "tree_interface.next_uid",
+        "type": "int",
+        "dims": []
+      },
+      {
+        "path": "active_viewer_key.value",
+        "type": "int",
+        "dims": []
+      }
+    ],
+    "bScreen": [
+      {
+        "path": "winid",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "state",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "do_draw",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "do_refresh",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "do_draw_gesture",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "do_draw_paintcursor",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "do_draw_drag",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "skip_handling",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "scrubbing",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "fullscreen_flag",
+        "type": "short",
+        "dims": []
+      }
+    ],
+    "bSound": [
+      {
+        "path": "offset_time",
+        "type": "double",
+        "dims": []
+      },
+      {
+        "path": "volume",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "attenuation",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "pitch",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "min_gain",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "max_gain",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "distance",
+        "type": "float",
+        "dims": []
+      },
+      {
+        "path": "stream_index",
+        "type": "short",
+        "dims": []
+      }
+    ],
+    "wmWindowManager": [
+      {
+        "path": "init_flag",
+        "type": "uchar",
+        "dims": []
+      },
+      {
+        "path": "file_saved",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "op_undo_depth",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "outliner_sync_select_dirty",
+        "type": "short",
+        "dims": []
+      },
+      {
+        "path": "autosave_scheduled",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "xr.session_settings.shading.prev_type",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "xr.session_settings.shading.prev_type_wire",
+        "type": "char",
+        "dims": []
+      },
+      {
+        "path": "xr.session_settings.shading.lookdev_light",
+        "type": "char",
+        "dims": [
+          256
+        ]
+      },
+      {
+        "path": "xr.session_settings.shading.matcap",
+        "type": "char",
+        "dims": [
+          256
+        ]
+      },
+      {
+        "path": "xr.session_settings.flag",
+        "type": "int",
+        "dims": []
+      }
+    ]
+  }
 }
