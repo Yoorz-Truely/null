@@ -146,8 +146,7 @@ fn a_floats_bits_that_are_not_a_nans_are_refused_with_the_decimal_as_the_fix() {
 #[test]
 fn an_embedded_struct_arrays_element_is_a_step_of_its_index() {
     // Sau's task 1d-05i: the committed raw table names each element of `Scene.orientation_slots[4]`
-    // by its index, a step of the path, so every slot's field is written; slot 0 is no default
-    // for a path without one.
+    // by its index, a step of the path, so every slot's field is written.
     let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
         .unwrap()
         .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
@@ -157,14 +156,48 @@ fn an_embedded_struct_arrays_element_is_a_step_of_its_index() {
     );
     let found = errors(&project, &clean);
     assert!(found.is_empty(), "{found:?}");
-    for wrong in [
-        "    orientation_slots.index_custom 2",
-        "    orientation_slots.4.index_custom 2",
-    ] {
-        let found = errors(&project, &scene(wrong));
-        assert!(
-            found.iter().any(|d| d.code == codes::UNKNOWN_PROPERTY),
-            "{wrong}: {found:?}"
-        );
-    }
+    let found = errors(&project, &scene("    orientation_slots.4.index_custom 2"));
+    assert!(
+        found
+            .iter()
+            .any(|d| d.code == codes::UNKNOWN_PROPERTY && d.is_error()),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn a_v0_raw_path_without_an_elements_index_reads_as_element_0_with_a_warning() {
+    // Sau's decision S94: a path that leaves out an embedded struct array's index, which a v0 file
+    // may hold, still reads, as element 0, with a warning whose fix is the new form; written
+    // beside element 0's own path it is the same field twice.
+    let project = Schema::from_json(include_str!("../../../schema/null-schema-project.json"))
+        .unwrap()
+        .with_raw(RawTable::from_json(include_str!("../../../schema/null-raw.json")).unwrap());
+    let scene = |raw: &str| format!("scene @s \"S\" {{\n  raw {{\n{raw}\n  }}\n}}\n");
+    let found = errors(
+        &project,
+        &scene("    orientation_slots.index_custom 2\n    r.mblur_shutter_curve.cm.maxtable 1"),
+    );
+    assert_eq!(found.len(), 2, "{found:?}");
+    assert!(found.iter().all(|d| !d.is_error()), "{found:?}");
+    assert!(
+        found[0]
+            .message
+            .contains("reads as element 0: write `orientation_slots.0.index_custom`"),
+        "{found:?}"
+    );
+    assert!(
+        found[1]
+            .message
+            .contains("write `r.mblur_shutter_curve.cm.0.maxtable`"),
+        "{found:?}"
+    );
+    // Its value is still held to the field's type.
+    let found = errors(&project, &scene("    orientation_slots.index_custom 1.5"));
+    assert!(found.iter().any(|d| d.is_error()), "{found:?}");
+    let found = errors(
+        &project,
+        &scene("    orientation_slots.index_custom 2\n    orientation_slots.0.index_custom 2"),
+    );
+    assert!(found.iter().any(|d| d.code == codes::REPEATED), "{found:?}");
 }
