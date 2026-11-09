@@ -40,3 +40,4 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | [0004](0004-dense-keys.md) | Dense keys in a Null text file of their own | accepted (S86) |
 | [0007](0007-tile-sets-and-sequences.md) | Tiled images and image sequences in `media/` | accepted (S96) |
 | [0005](0005-bones-shape-keys-markers.md) | An armature's bones, shape keys and timeline markers | accepted (S88) |
+| [0006](0006-curves-point-clouds-grease-pencil.md) | Level 0 arrays for curves, point clouds and Grease Pencil drawings | accepted (S91) |

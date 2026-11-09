@@ -2,47 +2,23 @@
 source: compiler/null_syntax/src/tests.rs
 expression: "v0::render(&items)"
 ---
-  1 datablock: geometry @stack-up "Stack Up"
-  2   attribute: is-modifier
-  3   interface socket: input @geometry geometry "Geometry"
-  4   interface socket: input @count int "Count"
-  5     attribute: default-value 4
-  6     attribute: min-value 1
-  8   sub-object: panel @spacing "Spacing"
-  9     interface socket: input @gap float-distance "Gap"
-  9       attribute: default-value 10cm
- 11   interface socket: output @stacked geometry "Geometry"
- 12   node tree: nodes
- 13     node: node @in group-input
- 14     zone: zone @loop repeat "Repeat"
- 15       zone item: repeat-item @geometry geometry "Geometry"
- 16       link: iterations @in.count
- 17       link: geometry @in.geometry
- 18       node: node @lift transform
- 19         link: geometry @loop.geometry
- 20         attribute: translation [0m 0m 1m]
- 22       node: node @join join-geometry
- 22         link: geometry [@loop.geometry @lift.geometry]
- 23       zone output: output
- 23         link: geometry @join.geometry
- 25     node: node @out group-output
- 25       link: stacked @loop.geometry
- 27   layout: layout
- 27     position: @in [-500 0]
- 27     position: @loop [-300 0] [400 0]
- 27     position: @lift [-100 -120]
- 27     position: @join [150 0]
- 27     position: @out [600 0]
- 30 datablock: geometry @tower "Tower"
- 31   attribute: is-modifier
- 32   interface socket: input @base geometry "Base"
- 33   interface socket: output @tower-out geometry "Tower"
- 34   node tree: nodes
- 35     node: node @in group-input
- 36     node: node @stack group "Stack Up"
- 37       attribute: node-tree @stack-up
- 38       link: geometry @in.base
- 39       attribute: count 6
- 40       attribute: gap 20cm
- 42     node: node @out group-output
- 42       link: tower-out @stack.stacked
+  1 datablock: material @clay "Clay"
+  2   node tree: nodes
+  3     node: node @noise tex-noise
+  3       attribute: scale 4
+  4     node: node @ramp val-to-rgb
+  4       link: fac @noise.fac
+  5     node: node @box frame "Surface"
+  5       attribute: label "Surface"
+  6     node: node @bsdf bsdf-principled "Skin"
+  7       attribute: parent @box
+  8       link: base-color @ramp.color
+  9       attribute: roughness 0.6
+ 11     node: node @out output-material
+ 11       link: surface @bsdf.bsdf
+ 13   layout: layout
+ 13     position: @noise [-600 0]
+ 13     position: @ramp [-350 0]
+ 13     position: @box [-120 60] width=300 height=200
+ 13     position: @bsdf [-100 0] width=240
+ 13     position: @out [200 0]

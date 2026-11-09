@@ -28,7 +28,15 @@ pub const ALIASES: [(&str, &str, &str); 3] = [
 ];
 
 /// The datablock kinds that can be an object's `data`.
-pub const OBJECT_DATA: [&str; 4] = ["mesh", "camera", "light", "armature"];
+pub const OBJECT_DATA: [&str; 7] = [
+    "mesh",
+    "camera",
+    "light",
+    "armature",
+    "point-cloud",
+    "curves",
+    "grease-pencil",
+];
 
 /// The light structs whose `energy` is a power in watts. RNA gives `energy` no unit;
 /// Blender shows it in watts for these. A sun's is an irradiance, written bare.

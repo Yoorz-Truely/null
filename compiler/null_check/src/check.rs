@@ -20,6 +20,7 @@ use crate::values::{
 mod anim;
 pub(crate) mod components;
 pub(crate) mod expr;
+mod geometry;
 mod level0;
 mod rig;
 mod subs;
@@ -574,6 +575,10 @@ impl<'s> Checker<'s> {
             ],
             // A curve's, a surface's and a lattice's shape keys too (RFC 0005, S88).
             "curve" | "surface" | "lattice" => vec!["shape-key", "shape-keys"],
+            // Level 0 beyond meshes (RFC 0006, S91).
+            "point-cloud" => vec!["points", "attribute"],
+            "curves" => vec!["points", "curves", "attribute"],
+            "grease-pencil" => vec!["drawing", "layer", "layer-group", "attribute"],
             "pose-bone" => vec!["constraint"],
             // A tiled image's tiles' own settings (RFC 0007, S96, task 1d-05m).
             "image" => vec!["tile"],
@@ -632,6 +637,11 @@ impl<'s> Checker<'s> {
                     )
                     | ("curve" | "surface" | "lattice", "shape-key")
                     | ("armature", "bone" | "bone-collection")
+                    | ("point-cloud" | "curves", "attribute")
+                    | (
+                        "grease-pencil",
+                        "drawing" | "layer" | "layer-group" | "attribute"
+                    )
                     | ("scene", "marker")
                     | ("image", "tile")
             ) || (tree.is_some()
@@ -720,12 +730,16 @@ impl<'s> Checker<'s> {
                 }
                 ("scene", "marker") => self.marker(file, a),
                 ("image", "tile") => self.udim_tile(file, a, &mut tiles),
+                // After the loop, against each other (RFC 0006, S91, task 1d-06f).
+                ("point-cloud", "points" | "attribute")
+                | ("curves", "points" | "curves" | "attribute") => {}
+                ("grease-pencil", "drawing" | "layer" | "layer-group" | "attribute") => {}
                 (_, "nodes") if tree.is_some() => self.nodes(file, a, tree.as_ref().unwrap()),
                 (_, "layout") if tree.is_some() => self.layout(file, a, tree.as_ref().unwrap()),
                 (_, "input" | "output" | "panel") if tree_kind.is_some_and(|(_, g)| g) => {
                     self.interface_line(file, a)
                 }
-                (_, "raw") => self.raw_block(file, a, kind),
+                (_, "raw") => self.raw_block(file, a, kind, &all, props),
                 (_, "action") if animated => self.plays(file, a, kind),
                 (_, "track") if animated => self.track(file, a, kind),
                 _ => match props.iter().find(|p| p.name == a.name) {
@@ -758,6 +772,16 @@ impl<'s> Checker<'s> {
         {
             self.level0(file, ("mesh".to_string(), handle), &all);
         }
+        if matches!(kind, "point-cloud" | "curves")
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.geometry(file, kind, handle, &all);
+        }
+        if kind == "grease-pencil"
+            && let Some((handle, _)) = header(node).handle
+        {
+            self.grease_pencil(file, handle, &all);
+        }
     }
 
     /// The DNA struct whose raw fields a datablock of `kind` takes: its RNA struct, or the first
@@ -778,7 +802,14 @@ impl<'s> Checker<'s> {
     /// A `raw` block (section 19, Sau's task 1d-05b): DNA fields RNA does not reach, each a flat
     /// path of DNA's own names with a value of its DNA type, as the raw table lists them. Without
     /// a raw table its lines are not checked against DNA.
-    fn raw_block(&mut self, file: FileId, a: &Attr<'_>, kind: &str) {
+    fn raw_block(
+        &mut self,
+        file: FileId,
+        a: &Attr<'_>,
+        kind: &str,
+        all: &[Attr<'_>],
+        props: &[&Property],
+    ) {
         let Some(block) = a.node.filter(|n| n.block().is_some()) else {
             return self.out(file).error(
                 codes::TYPE,
@@ -811,7 +842,9 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            if !seen.insert(line.name.clone()) {
+            let resolved = table.resolve(&owner, &line.name);
+            let path = resolved.map_or(line.name.clone(), |(f, _)| f.path.clone());
+            if !seen.insert(path.clone()) {
                 self.out(file).error(
                     codes::REPEATED,
                     line.name_span,
@@ -819,7 +852,19 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            let Some(field) = table.field(&owner, &line.name) else {
+            // A v0 path without an embedded struct array's index reads as element 0 (S94).
+            if let Some((_, true)) = resolved {
+                self.out(file).warning_fix(
+                    codes::RAW_OLD_PATH,
+                    line.name_span,
+                    format!(
+                        "`{}` leaves out the index of the element it names, and reads as element 0: write `{path}`",
+                        line.name
+                    ),
+                    (format!("write `{path}`"), line.name_span, path.clone()),
+                );
+            }
+            let Some((field, _)) = resolved else {
                 let paths = fields.iter().map(|f| f.path.as_str());
                 let suggestion = closest(&line.name, paths);
                 let message = match (fields.is_empty(), suggestion) {
@@ -842,18 +887,69 @@ impl<'s> Checker<'s> {
                 continue;
             };
             match (line.args.as_slice(), line.props.is_empty()) {
-                ([v], true) => {
-                    if let Err(e) = crate::raw::read_value(v, field) {
+                ([v], true) => match crate::raw::read_value(v, field) {
+                    Err(e) => {
                         let at = e.fix.as_ref().map_or(v.span(), |(s, _)| *s);
                         let fix = e.fix.map(|(s, w)| (format!("write `{w}`"), s, w));
                         self.out(file).error_fix(codes::TYPE, at, e.message, fix);
                     }
-                }
+                    Ok(bytes) if field.mask.is_some() => {
+                        self.masked_against_enum(file, v, &bytes, field, &owner, all, props)
+                    }
+                    Ok(_) => {}
+                },
                 _ => self.out(file).error(
                     codes::TYPE,
                     line.span,
                     format!("`{}` takes one value, {}", line.name, field.describe()),
                 ),
+            }
+        }
+    }
+
+    /// A masked raw line against the enum whose bits it carries (Sau's task 1b-03n): where the
+    /// block writes the enum in a state that fixes those bits (`sync-mode frame-drop` sets
+    /// SCE_FRAME_DROP), a line that holds other bits contradicts it, which Blender's setter
+    /// overrides or the line does, by order: a warning.
+    #[allow(clippy::too_many_arguments)]
+    fn masked_against_enum(
+        &mut self,
+        file: FileId,
+        v: &Value<'_>,
+        bytes: &[u8],
+        field: &crate::raw::RawField,
+        owner: &str,
+        all: &[Attr<'_>],
+        props: &[&Property],
+    ) {
+        let carried = field.carried_bits(bytes);
+        for p in props {
+            for h in p
+                .hides
+                .iter()
+                .filter(|h| h.owner == owner && h.path == field.path)
+            {
+                let Some(line) = all.iter().find(|a| a.name == p.name) else {
+                    continue;
+                };
+                let Some(state) = line.args.first().and_then(|w| w.as_word()) else {
+                    continue;
+                };
+                if let Some(want) = h.states.get(state)
+                    && carried & h.mask != *want
+                {
+                    self.out(file).warning(
+                        codes::RAW_STATE_CONFLICT,
+                        v.span(),
+                        format!(
+                            "`{} {state}` sets `{}`'s bits {} to {want}, so `{}` here contradicts it",
+                            p.name,
+                            field.path,
+                            h.mask,
+                            v.text()
+                        ),
+                    );
+                }
             }
         }
     }

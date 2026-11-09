@@ -647,6 +647,160 @@ fn a_curve_and_a_lattice_take_shape_keys_as_a_mesh_does() {
     );
 }
 
+const GEOMETRY: &str = "\
+point-cloud @dust \"Dust\" {
+  points [[0m 0m 0m] [0.1m 0m 0m] [0m 0.1m 0.2m]]
+  attribute @radius point float \"radius\" [0.01 0.02 0.01]
+}
+
+curves @fur \"Fur\" {
+  points [[0m 0m 0m] [0m 0m 0.1m] [0.1m 0m 0m] [0.1m 0m 0.1m] [0.1m 0m 0.2m]]
+  curves [2 3]
+  attribute @radius point float \"radius\" [0.002 0.001 0.002 0.0015 0.001]
+  attribute @curve-type curve int8 \"curve_type\" [0 0]
+}
+
+grease-pencil @sketch \"Sketch\" {
+  drawing @first {
+    points [[0m 0m 0m] [0.5m 0m 0m] [0.5m 0m 0.5m]]
+    curves [3]
+    attribute @radius point float \"radius\" [0.01 0.01 0.01]
+  }
+  drawing @second {
+    points [[0m 0m 0m] [0.5m 0m 0.25m]]
+    curves [2]
+  }
+  layer @lines \"Lines\" {
+    frame 1 @first
+    frame 12 @second keyframe-type=breakdown
+    opacity 0.8
+  }
+  layer-group @effects \"Effects\" {
+    layer @glow \"Glow\" {
+      frame 1 @first
+    }
+  }
+  attribute @tint layer float \"tint\" [0 1]
+}
+";
+
+#[test]
+fn point_clouds_curves_and_grease_pencil_drawings_take_level_0_arrays() {
+    // RFC 0006 (Sau's decision S91, task 1d-06f): a point cloud's points, a curves datablock's
+    // points in curves, a Grease Pencil datablock's drawings, layer tree and frames, and the
+    // attributes of each on their own domains.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    assert_eq!(errors(&schema, &[GEOMETRY]), vec![]);
+    let broken = |from: &str, to: &str| {
+        assert!(GEOMETRY.contains(from), "{from}");
+        errors(&schema, &[&GEOMETRY.replacen(from, to, 1)])
+    };
+    // The curves' sizes add up to the points.
+    let found = broken("curves [2 3]", "curves [2 2]");
+    assert_eq!(found.len(), 1, "{found:#?}");
+    assert!(
+        found[0].message.contains("add up to 4, but `points` has 5"),
+        "{}",
+        found[0].message
+    );
+    // A curve has at least one point.
+    let found = broken("curves [2 3]", "curves [0 5]");
+    assert_eq!(found[0].code, codes::RANGE, "{found:#?}");
+    // Points in a curves datablock need their curves.
+    let found = broken("  curves [2 3]\n", "");
+    assert!(
+        found.iter().any(|d| d
+            .message
+            .contains("a `curves` line gives each curve's number of points")),
+        "{found:#?}"
+    );
+    // A point cloud's attributes are on its points; a curve attribute counts the curves.
+    let found = broken(
+        "attribute @radius point float \"radius\" [0.01 0.02 0.01]",
+        "attribute @radius curve float \"radius\" [0.01 0.02 0.01]",
+    );
+    assert_eq!(found[0].code, codes::ENUM, "{found:#?}");
+    assert!(
+        found[0].message.contains("not a domain here"),
+        "{}",
+        found[0].message
+    );
+    let found = broken("int8 \"curve_type\" [0 0]", "int8 \"curve_type\" [0 0 0]");
+    assert!(
+        found[0].message.contains("one value per curve: 2, not 3"),
+        "{found:#?}"
+    );
+    // A layer attribute has one value per layer, the groups' layers counted.
+    let found = broken("[0 1]\n}", "[0 1 2]\n}");
+    assert!(
+        found[0].message.contains("one value per layer: 2, not 3"),
+        "{found:#?}"
+    );
+    // A frame shows a drawing of the datablock, each frame number once, in a keyframe type.
+    let found = broken("frame 12 @second", "frame 12 @secand");
+    assert_eq!(found[0].code, codes::HANDLE, "{found:#?}");
+    assert_eq!(found[0].fixes[0].edits[0].replacement, "@second");
+    let found = broken("frame 12 @second", "frame 1 @second");
+    assert_eq!(found[0].code, codes::REPEATED, "{found:#?}");
+    let found = broken("keyframe-type=breakdown", "keyframe-type=breakdawn");
+    assert_eq!(found[0].code, codes::ENUM, "{found:#?}");
+    // A drawing holds its geometry's lines alone; a layer group, its layers and settings.
+    let found = broken("    curves [2]\n", "    curves [2]\n    opacity 1\n");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+    let found = broken("    layer @glow", "    frame 1 @first\n    layer @glow");
+    assert_eq!(found[0].code, codes::UNKNOWN_PROPERTY, "{found:#?}");
+}
+
+#[test]
+fn a_drawings_large_arrays_are_named_in_one_word_in_their_data_files() {
+    // RFC 0006: a drawing's array in a data file is named by the drawing's handle, a dot and the
+    // line (`@first.points`), an attribute by the handle, `/` and the attribute's.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let text = "\
+grease-pencil @sketch \"Sketch\" {
+  drawing @first {
+    points file=\"sketch.first.points.noll\" count=2 bounds=[[0m 0m 0m] [1m 0m 0m]]
+    curves [2]
+    attribute @radius point float \"radius\" file=\"sketch.first.radius.noll\" count=2 bounds=[0.1 0.2]
+  }
+  layer @lines \"Lines\" { frame 1 @first }
+}
+";
+    let points = "array grease-pencil @sketch @first.points [\n  [0m 0m 0m]\n  [1m 0m 0m]\n]\n";
+    let radius = "array grease-pencil @sketch @first/@radius [\n  0.1\n  0.2\n]\n";
+    assert_eq!(errors(&schema, &[text, points, radius]), vec![]);
+    // A point cloud's, the same way as a mesh's.
+    let cloud = "point-cloud @dust \"Dust\" {\n  points file=\"dust.points.noll\" count=1 bounds=[[0m 0m 0m] [0m 0m 0m]]\n}\n";
+    let file = "array point-cloud @dust points [\n  [0m 0m 0m]\n]\n";
+    assert_eq!(errors(&schema, &[cloud, file]), vec![]);
+    let wrong = errors(
+        &schema,
+        &[text, &points.replace("@first.points", "@first"), radius],
+    );
+    assert!(wrong.iter().any(|d| d.code == codes::HANDLE), "{wrong:#?}");
+}
+
+#[test]
+fn a_shape_keys_arrays_are_lists() {
+    // 1d-07q's review, fixed in 1d-07r: `tilts 0.5` and `positions [0m 0m 0m]`'s like, a value
+    // where a list of one per point is written, are errors, a mesh's, a curve's and a lattice's.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    for text in [
+        "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { tilts 0.5 }\n}\n",
+        "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { radii 1 }\n}\n",
+        "lattice @cage \"Cage\" {\n  shape-key @squash \"Squash\" { positions 0m }\n}\n",
+        "mesh @m \"M\" {\n  vertices [[0m 0m 0m]]\n  shape-key @up \"Up\" { positions 0m }\n}\n",
+    ] {
+        let found = errors(&schema, &[text]);
+        assert!(
+            found
+                .iter()
+                .any(|d| d.code == codes::TYPE && d.message.contains("is a list, one per point")),
+            "{text}\n{found:?}"
+        );
+    }
+}
+
 #[test]
 fn a_field_written_under_two_names_is_refused() {
     // Sau's task 1b-03m: the schema step classes an alias of another property's DNA field
