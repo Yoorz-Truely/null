@@ -526,6 +526,37 @@ fn an_enums_free_text_item_is_a_string_and_its_fix_is_quoted() {
 }
 
 #[test]
+fn a_handle_inside_an_object_names_its_own_sub_object_first() {
+    // Section 7 and S81 (task 1b-01q): inside the object, `@settle` is its modifier, not the
+    // geometry group of that handle, so `node-group` is given a modifier.
+    let schema = Schema::from_json(PROJECT).unwrap();
+    let clash = "object @tower-base \"Tower Base\" {\n  modifier @settle nodes \"Settle\" { node-group @settle }\n}\n\ngeometry @settle \"Settle\" { is-modifier }\n";
+    let found = errors(&schema, &[clash]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let d = &found[0];
+    assert_eq!(d.code, codes::HANDLE);
+    assert!(
+        d.message.contains("names its modifier `@settle`")
+            && d.message.contains("`node-group` takes a node-tree"),
+        "{}",
+        d.message
+    );
+    let at = clash.find("node-group @settle").unwrap() + "node-group ".len();
+    assert_eq!(
+        (d.primary.span.start, d.primary.span.end),
+        (at, at + "@settle".len())
+    );
+    // With the modifier's handle another, the line names the group.
+    let apart = clash.replace("modifier @settle", "modifier @settling");
+    assert!(errors(&schema, &[&apart]).is_empty());
+    // Outside the object, the handle is the group's.
+    let elsewhere = format!(
+        "{apart}\nobject @other \"Other\" {{\n  modifier @m nodes \"M\" {{ node-group @settle }}\n}}\n"
+    );
+    assert!(errors(&schema, &[&elsewhere]).is_empty());
+}
+
+#[test]
 fn none_empties_a_pointer_blender_lets_be_empty() {
     // Sau's task 1c-02j: `none` empties a pointer (section 6), as write-back writes one, where the
     // schema does not mark the pointer `never-none`; where it does, `none` is an error.
