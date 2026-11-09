@@ -1,8 +1,8 @@
 # 0005: An armature's bones, shape keys and timeline markers
 
-- Status: proposed
+- Status: accepted (S88)
 - Date: November 9, 2026
-- Decided by: (the lead under the user's standing instruction, Sau's decision S59)
+- Decided by: the lead under the user's standing instruction (Sau's decision S59), recorded as Sau's decision S88
 - Affects: forms over RNA, identity, canonical form, write-back
 - Null format: unchanged
 
@@ -58,7 +58,7 @@ armature @rig-bones "Rig" {
 > - `relative-key @h`, the shape key it is relative to (the basis when left out), and `vertex-group @h`, the vertex group that weighs it: both handles, of the mesh's shape keys and vertex groups;
 > - `KeyBlock`'s other settings: `value`, `slider-min`, `slider-max`, `interpolation`, `mute`, `lock-shape`.
 >
-> The first shape key is the basis (Blender's reference key). It gets **no `positions` of its own**: they are the mesh's `vertices`, which Blender keeps equal to it. A `positions` line on the basis is an error.
+> The first shape key is the basis (Blender's reference key). Its `positions` are left out when they equal the mesh's `vertices`, as Blender keeps them, and written when they differ (a script that edits `key_blocks[0].data` can make them differ), so no data is lost. A basis with no `positions` line takes the mesh's `vertices`.
 >
 > `shape-keys { … }` in the same block holds the `Key`'s own settings (`use-relative`, `eval-time`) and what plays on the `Key`: `action @a slot=@s` and NLA `track` lines (section 11), whose slot is of kind `key`. A shape key's animated value is an f-curve of that slot written by the shape key's handle: `fcurve @smile value`.
 
@@ -110,9 +110,9 @@ None: no file changes meaning.
 - **Bones by `head-local` and `tail-local` (the bone's stored values) instead of the edit bones'.** Those are derived and read-only in RNA, and `head` and `tail` relative to the parent read badly. The edit bones' values are what a user sees and types, and what every exporter writes.
 - **A bone's world or object-space matrix.** Exact but unreadable, and roll is lost in it to a reader.
 - **Bone collections listing their bones.** That splits one bone's facts between lines; a bone naming its collections keeps write-back of one bone to one block.
-- **The basis's positions written too.** They would duplicate `vertices` and could disagree with them; Blender keeps the two equal, so one is written.
+- **The basis's positions always written, or never.** Always would duplicate `vertices` in nearly every file; never (this RFC as first proposed, with a `positions` line on the basis an error) would lose basis data that differs from the vertices, which Blender can hold. Written only when they differ keeps both.
 - **Markers as a list on the scene (`markers [[1 "Intro"] …]`).** A list cannot hold a marker's camera, and markers are sub-objects with handles (section 7), so each is a line.
 
 ## Decision
 
-Pending: the lead's, under S59.
+Accepted by the lead under S59, November 9, 2026, recorded as Sau's decision S88, with one amendment: the basis key's `positions` are left out when they equal the mesh's vertices and written when they differ, rather than being an error, since Blender can hold basis data that differs from the vertices and v0 must not lose it. Task 1d-07q carries the spec wording, the forms, Sau's side and the corpus files.
