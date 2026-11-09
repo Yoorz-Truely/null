@@ -39,3 +39,4 @@ Every project names the Null format it is written for (`null-format 1` in `cosmo
 | [0003](0003-media-paths.md) | How a media datablock's file is written | accepted (S83) |
 | [0004](0004-dense-keys.md) | Dense keys in a Null text file of their own | accepted (S86) |
 | [0005](0005-bones-shape-keys-markers.md) | An armature's bones, shape keys and timeline markers | accepted (S88) |
+| [0008](0008-grease-pencil-drawing-references.md) | A Grease Pencil drawing that shows another Grease Pencil datablock | proposed |
