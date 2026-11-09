@@ -219,7 +219,8 @@ impl Checker<'_> {
     /// A `shape-key @h "Name" { … }` of a mesh, a curve, a surface or a lattice (`kind`, the
     /// owner's handle `owner`). A mesh's `positions` are checked with its arrays, one per vertex
     /// (`level0`); a curve's or a lattice's here, element by element, their count Blender's to
-    /// hold, and a curve's Bézier points also take `handles-left` and `handles-right`.
+    /// hold; a curve's points also take `tilts` and `radii`, and its Bézier points
+    /// `handles-left` and `handles-right`.
     pub(super) fn shape_key(
         &mut self,
         file: FileId,
@@ -243,7 +244,7 @@ impl Checker<'_> {
         let mut names: Vec<&str> = props.iter().map(|p| p.name.as_str()).collect();
         names.extend(["positions", "relative-key", "vertex-group"]);
         if curve {
-            names.extend(["handles-left", "handles-right"]);
+            names.extend(["handles-left", "handles-right", "tilts", "radii"]);
         }
         let whose = super::article(kind);
         for b in attrs(block) {
@@ -264,6 +265,22 @@ impl Checker<'_> {
                             owner,
                             &array,
                             super::level0::Elements::Positions,
+                            None,
+                        );
+                    }
+                }
+                // A curve point's tilt and radius, which its shape key stores beside its position
+                // (`key.cc`): one number each per point.
+                "tilts" | "radii" if curve => {
+                    if let Some(owner) = &owner {
+                        let p = crate::level0::element("float").expect("float is a data type");
+                        let array = format!("{own}.{}", b.name);
+                        self.array_line(
+                            file,
+                            &b,
+                            owner,
+                            &array,
+                            super::level0::Elements::Values(Box::new(p)),
                             None,
                         );
                     }

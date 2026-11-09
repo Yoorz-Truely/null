@@ -601,7 +601,7 @@ fn a_curve_and_a_lattice_take_shape_keys_as_a_mesh_does() {
     // blocks, a curve's Bézier handles too; a text curve, which has no shape keys, refuses them.
     let schema = Schema::from_json(PROJECT).unwrap();
     let clean = [
-        "curve @path \"Path\" {\n  shape-key @basis \"Basis\"\n  shape-key @bent \"Bent\" {\n    positions [[0m 0m 0m] [1m 0m 1m]]\n    handles-left [[-0.5m 0m 0m] [0.5m 0m 1m]]\n    handles-right [[0.5m 0m 0m] [1.5m 0m 1m]]\n    relative-key @basis\n    value 0.5\n  }\n  shape-keys { use-relative }\n}\n",
+        "curve @path \"Path\" {\n  shape-key @basis \"Basis\"\n  shape-key @bent \"Bent\" {\n    positions [[0m 0m 0m] [1m 0m 1m]]\n    handles-left [[-0.5m 0m 0m] [0.5m 0m 1m]]\n    handles-right [[0.5m 0m 0m] [1.5m 0m 1m]]\n    tilts [0 0.5]\n    radii [1 2]\n    relative-key @basis\n    value 0.5\n  }\n  shape-keys { use-relative }\n}\n",
         "lattice @cage \"Cage\" {\n  shape-key @basis \"Basis\"\n  shape-key @squash \"Squash\" { positions [[0m 0m 0m]] }\n}\n",
     ];
     for text in clean {
@@ -626,9 +626,23 @@ fn a_curve_and_a_lattice_take_shape_keys_as_a_mesh_does() {
             .any(|d| d.code == codes::HANDLE && d.message.contains("a lattice's shape keys")),
         "{found:?}"
     );
+    // A lattice's points have no tilt; a curve's tilts are numbers.
+    let found = errors(
+        &schema,
+        &[
+            "lattice @cage \"Cage\" {\n  shape-key @squash \"Squash\" { tilts [0] }\n}\n",
+            "curve @path \"Path\" {\n  shape-key @bent \"Bent\" { radii [1m] }\n}\n",
+        ],
+    );
+    assert_eq!(found.len(), 2, "{found:?}");
+    // A text curve takes no shape keys, and suggests no `shape-keys` for `shape-key`.
     let found = errors(
         &schema,
         &["text-curve @t \"T\" {\n  shape-key @k \"K\"\n}\n"],
     );
-    assert!(!found.is_empty(), "a text curve takes no shape keys");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(
+        found[0].fixes.is_empty() && !found[0].message.contains("shape-keys"),
+        "{found:?}"
+    );
 }
