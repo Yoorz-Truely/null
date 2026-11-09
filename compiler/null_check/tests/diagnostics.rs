@@ -127,6 +127,8 @@ const CASES: &[(&str, &[&str])] = &[
         &[
             // A socket the node lacks, and a linked one (S95, S97).
             "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @bsdf [0 0] hide-inputs=[rougness roughness] }\n}\n",
+            // An output another node's line links from (sau-y's review of 1d-07l).
+            "material @m \"M\" {\n  nodes {\n    node @noise tex-noise\n    node @bsdf bsdf-principled { roughness @noise.fac }\n  }\n  layout { @noise [0 0] hide-outputs=[fac color] }\n}\n",
         ],
     ),
     (

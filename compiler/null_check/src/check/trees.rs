@@ -101,6 +101,9 @@ pub(super) struct Entry {
 pub(super) struct Tree {
     pub rna: String,
     entries: HashMap<String, Entry>,
+    /// Each `@node.output` some line of the tree links from (RFC 0009: a linked output cannot be
+    /// hidden), the tree's owner taken off the front.
+    linked_from: HashSet<String>,
     interface: Option<Interface>,
     /// The handle of the datablock the tree is in: a path from it names one of the tree's nodes
     /// as the short path does (section 7; short form 8, task 1d-03j).
@@ -182,9 +185,40 @@ impl Tree {
         if let Some(n) = nodes {
             walk(n, &mut entries);
         }
+        // Every link the tree's lines write, at any depth, by the output it leaves.
+        fn links(n: Node<'_>, owner: Option<&str>, out: &mut HashSet<String>) {
+            for c in n.children() {
+                for v in args_of(c) {
+                    let words: Vec<String> = match &v {
+                        Value::List(_) => v
+                            .items()
+                            .iter()
+                            .filter_map(|i| i.as_word().map(str::to_string))
+                            .collect(),
+                        _ => v.as_word().map(str::to_string).into_iter().collect(),
+                    };
+                    for w in words
+                        .into_iter()
+                        .filter(|w| w.starts_with('@') && w.contains('.'))
+                    {
+                        let local = owner
+                            .and_then(|o| w.strip_prefix(o))
+                            .and_then(|r| r.strip_prefix('/'))
+                            .map_or(w.clone(), str::to_string);
+                        out.insert(local);
+                    }
+                }
+                links(c, owner, out);
+            }
+        }
+        let mut linked_from = HashSet::new();
+        if let Some(n) = nodes {
+            links(n, owner.as_deref(), &mut linked_from);
+        }
         Tree {
             rna: rna.to_string(),
             entries,
+            linked_from,
             interface,
             owner,
         }
@@ -1018,17 +1052,20 @@ impl<'s> Checker<'s> {
                 );
             }
             for (key, value) in hidden {
-                self.hidden_sockets(file, &key, &value, entry, tree);
+                self.hidden_sockets(file, handle, &key, &value, entry, tree);
             }
         }
     }
 
-    /// `hide-inputs=[…]` or `hide-outputs=[…]` on a node's layout line (RFC 0009, S95): the
-    /// node's sockets the editor hides, by the names its input lines use (a group's by its
-    /// interface handles less `@`); a linked input is never hidden, as Blender refuses it.
+    /// `hide-inputs=[…]` or `hide-outputs=[…]` on node `handle`'s layout line (RFC 0009, S95):
+    /// the node's sockets the editor hides, by the names its input lines use (a group's by its
+    /// interface handles less `@`); a linked socket, an input its line links or an output a line
+    /// links from, is never hidden, as Blender refuses it (`rna_NodeSocket_hide_set`).
+    #[allow(clippy::too_many_arguments)]
     fn hidden_sockets(
         &mut self,
         file: FileId,
+        handle: &str,
         key: &SyntaxToken<'_>,
         value: &Value<'_>,
         entry: Option<&Entry>,
@@ -1084,7 +1121,10 @@ impl<'s> Checker<'s> {
                 );
                 continue;
             }
-            if inputs && entry.linked.iter().any(|l| l == w) {
+            // An output is linked where a line links from `@handle.output` (the layout line's
+            // handle is the node's).
+            let output_linked = !inputs && tree.linked_from.contains(&format!("{handle}.{w}"));
+            if (inputs && entry.linked.iter().any(|l| l == w)) || output_linked {
                 self.out(file).error(
                     codes::HIDDEN_SOCKET,
                     item.span(),
